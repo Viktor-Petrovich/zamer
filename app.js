@@ -162,16 +162,16 @@
       const pk = `ent.${e}`, qh = sameDL() && N > 1 ? "Количество на один подъезд. В бланке оно умножится на число подъездов." : "";
       l.push({ p: `${pk}.door.need`, t: "choice", sec, ent: e, first: true, q: "Нужна ли дверь?", ch: ["Да", "Нет"] });
       if (getP(order, `${pk}.door.need`) === "Да") {
-        l.push({ p: `${pk}.door.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота проёма двери", hint: "Размер двери посчитаем сами: высота проёма минус 20 мм, ширина минус 40 мм." });
-        l.push({ p: `${pk}.door.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина проёма двери" });
+        l.push({ p: `${pk}.door.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота строительного проёма двери", hint: "Размер двери посчитаем сами: высота строительного проёма минус 20 мм, ширина минус 40 мм." });
+        l.push({ p: `${pk}.door.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина строительного проёма двери" });
         l.push({ p: `${pk}.door.hinge`, t: "choice", sec, ent: e, q: "С какой стороны петли у двери?", ch: ["Слева", "Справа"] });
         l.push({ p: `${pk}.door.cas`, t: "casing", sec, ent: e, q: "Наличник двери", hint: "Нажмите на наличник на рисунке, чтобы добавить или убрать его." });
         l.push({ p: `${pk}.door.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, ent: e, q: "Количество дверей", hint: qh });
       }
       l.push({ p: `${pk}.hatch.need`, t: "choice", sec, ent: e, q: "Нужен ли люк?", ch: ["Да", "Нет"] });
       if (getP(order, `${pk}.hatch.need`) === "Да") {
-        l.push({ p: `${pk}.hatch.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота проёма люка", hint: "Размер люка посчитаем сами: проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон." });
-        l.push({ p: `${pk}.hatch.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина проёма люка" });
+        l.push({ p: `${pk}.hatch.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота строительного проёма люка", hint: "Размер люка посчитаем сами: строительный проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон." });
+        l.push({ p: `${pk}.hatch.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина строительного проёма люка" });
         l.push({ p: `${pk}.hatch.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, ent: e, q: "Количество люков", hint: qh });
       }
     });
@@ -203,8 +203,8 @@
     const head = [["Адрес", order.address], ["Контакт", order.contact], ["Подъездов", order.entrances], ["Размеры", sameDL() ? "одинаковые" : "разные по подъездам"]];
     const part = it => {
       const d = it.door, h = it.hatch, m = it.mult, L = [];
-      L.push(d.need === "Да" ? `Дверь: проём ${d.h}×${d.w} мм → дверь <b>${d.h - 20}×${d.w - 40}</b> мм, петли ${esc(String(d.hinge || "").toLowerCase())}, наличник: ${["l", "t", "r"].filter(k => d.cas[k]).map(k => ({ l: "слева", t: "сверху", r: "справа" }[k])).join(", ") || "нет"}, ${d.qty * m} шт.` : "Дверь: не требуется");
-      L.push(h.need === "Да" ? `Люк: проём ${h.h}×${h.w} мм → люк <b>${h.h - 10}×${h.w - 10}</b> мм, наличник со всех сторон, ${h.qty * m} шт.` : "Люк: не требуется");
+      L.push(d.need === "Да" ? `Дверь: строительный проём ${d.h}×${d.w} мм → дверь <b>${d.h - 20}×${d.w - 40}</b> мм, петли ${esc(String(d.hinge || "").toLowerCase())}, наличник: ${["l", "t", "r"].filter(k => d.cas[k]).map(k => ({ l: "слева", t: "сверху", r: "справа" }[k])).join(", ") || "нет"}, ${d.qty * m} шт.` : "Дверь: не требуется");
+      L.push(h.need === "Да" ? `Люк: строительный проём ${h.h}×${h.w} мм → люк <b>${h.h - 10}×${h.w - 10}</b> мм, наличник со всех сторон, ${h.qty * m} шт.` : "Люк: не требуется");
       return `<div class="card"><div class="sum"><span><b>${esc(it.label)}</b></span>${L.map(x => `<span>${x}</span>`).join("")}</div></div>`;
     };
     return `<div class="card"><div class="sum">${head.map(([a, b]) => `<span><b>${a}:</b> ${esc(b)}</span>`).join("")}</div></div>` + items.map(part).join("");

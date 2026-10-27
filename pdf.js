@@ -252,10 +252,10 @@
   }
   function row(x, bx, yt, bw, rh, label, val, unit, hint) {
     rr(x, bx, yt, bw, rh, 6, SOFTC, LN, .8);
-    T(x, label, bx + 12, PH - (yt + rh / 2 + 4), { size: 10.5, bold: true, color: INKC });
+    T(x, label, bx + 12, PH - (yt + rh / 2 + 4), { size: label.length > 20 ? 9.5 : 10.5, bold: true, color: INKC });
     if (hint) { T(x, hint, bx + bw - 12, PH - (yt + rh / 2 + 3.5), { size: 8, align: "right", color: MUT }); return; }
-    x.strokeStyle = MUT; x.lineWidth = .9; line(x, bx + 150, PH - (yt + rh - 6), bx + bw - 34, PH - (yt + rh - 6));
-    if (val !== "" && val !== undefined) T(x, String(val), bx + 150 + (bw - 34 - 150) / 2, PH - (yt + rh - 9), { size: 11.5, bold: true, align: "center", color: INKC });
+    x.strokeStyle = MUT; x.lineWidth = .9; line(x, bx + 190, PH - (yt + rh - 6), bx + bw - 34, PH - (yt + rh - 6));
+    if (val !== "" && val !== undefined) T(x, String(val), bx + 190 + (bw - 34 - 190) / 2, PH - (yt + rh - 9), { size: 11.5, bold: true, align: "center", color: INKC });
     T(x, unit, bx + bw - 12, PH - (yt + rh / 2 + 4), { size: 9.5, align: "right", color: MUT });
   }
   function checks(x, bx, yt, bw, rh, title, opts, on, x0, step) {
@@ -283,8 +283,8 @@
     openingDL(x, cx0 + (w - dw) / 2 + 12, top + 58, dw, dh, hatch, cas, { h: d.h, w: d.w });
     const bx = cx0 + 18, bw = w - 36, rh = 24, gap = 4;
     let yt = top + 58 + dh + 38 + (hatch ? 7 : 0);
-    row(x, bx, yt, bw, rh, "Высота проёма", cell(d.h), "мм"); yt += rh + gap;
-    row(x, bx, yt, bw, rh, "Ширина проёма", cell(d.w), "мм"); yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Высота строительного проёма", cell(d.h), "мм"); yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Ширина строительного проёма", cell(d.w), "мм"); yt += rh + gap;
     const rh2 = hatch ? [d.h - 10, d.w - 10] : [d.h - 20, d.w - 40];
     row(x, bx, yt, bw, rh, hatch ? "Размер люка (В × Ш)" : "Размер двери (В × Ш)", "", "", "\u200b");
     // значение расчёта крупно справа
@@ -317,7 +317,7 @@
     const top = 150, ch = 356, cwid = (PW - 2 * M - 18) / 2;
     dlCard(x, M, top, cwid, ch, 1, "Проём двери", false, item.door, item.mult);
     dlCard(x, M + cwid + 18, top, cwid, ch, 2, "Люк", true, item.hatch, item.mult);
-    T(x, "Все размеры в миллиметрах. Размер изделия рассчитывается из размера проёма.", M, PH - 585, { size: 7.5, color: MUT });
+    T(x, "Все размеры в миллиметрах. Размер изделия рассчитывается из строительного проёма.", M, PH - 585, { size: 7.5, color: MUT });
     return c;
   }
 
