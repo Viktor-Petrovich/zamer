@@ -336,7 +336,7 @@
       `<button class="btn" data-a="back2">Назад к заявке</button>`, { menu: false });
   }
   function menuView() {
-    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
+    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
   }
 
   /* ---------- диспетчер ---------- */
@@ -360,6 +360,13 @@
       else if (view === "review") view = "hub";
       else if (pos > 0) pos--; else view = "home";
       wizardView.err = ""; save(); return render();
+    }
+    if (a === "refresh") {
+      toast("Обновляю…");
+      const done = () => location.reload();
+      Promise.all([caches ? caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))) : 0,
+        navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister()))) : 0]).then(done, done);
+      return;
     }
     if (a === "login" || a === "dologin") return startLogin();
     if (a === "sec_door" || a === "sec_win") { soonView.what = a === "sec_win" ? "win" : "door"; view = "soon"; return render(); }
@@ -403,6 +410,10 @@
   } catch (e) {}
   syncAcc();
   window.addEventListener("online", syncAcc);
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) {
+    const had = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && view !== "wizard" && view !== "hub" && !sub) location.reload(); });
+    navigator.serviceWorker.register("sw.js").then(r => r.update()).catch(() => {});
+  }
   render();
 })();
