@@ -1,5 +1,5 @@
-const CACHE = "zamer-v2";
-const FILES = ["./", "./index.html", "./app.js", "./pdf.js", "./icon-512-mask.png", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
+const CACHE = "zamer-v5";
+const FILES = ["./", "./index.html", "./app.js", "./pdf.js", "./config.js", "./icon-512-mask.png", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
   "./form_p1.jpg", "./scheme_A.png", "./scheme_B.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
