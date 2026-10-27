@@ -121,45 +121,66 @@ button:focus-visible{outline:3px solid var(--accent)}
 @keyframes pop{from{transform:scale(.3);opacity:0}70%{transform:scale(1.08)}}
 @keyframes draw{from{stroke-dashoffset:40}}
 
-#lift{position:fixed;inset:0;z-index:100;overflow:hidden;background:#05080b;touch-action:manipulation}
-#lift .door{position:absolute;top:0;bottom:0;width:50%;will-change:transform;transition:transform 2.1s cubic-bezier(.65,.02,.25,1);
+#lift{position:fixed;inset:0;z-index:100;overflow:hidden;touch-action:manipulation;pointer-events:auto}
+#lift .door{position:absolute;top:0;bottom:0;width:50%;will-change:transform;transition:transform 2.3s cubic-bezier(.7,.02,.2,1);
  background:
-  linear-gradient(90deg,rgba(0,0,0,.35),rgba(255,255,255,.0) 8%,rgba(255,255,255,.0) 92%,rgba(0,0,0,.35)),
-  linear-gradient(100deg,transparent 20%,rgba(255,255,255,.28) 38%,transparent 52%,rgba(255,255,255,.16) 70%,transparent 85%),
-  repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,rgba(0,0,0,.05) 1px 2px),
-  linear-gradient(#8f9aa3,#aeb8c0 40%,#7d8892);
- box-shadow:inset 0 0 40px rgba(0,0,0,.35)}
-#lift .door.l{left:0;border-right:2px solid #3c444b}#lift .door.r{right:0;border-left:2px solid #3c444b}
-#lift .door::before{content:"";position:absolute;left:9%;right:9%;top:17%;bottom:6%;border-radius:4px;
- background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(0,0,0,.14));
- box-shadow:inset 0 0 0 2px rgba(0,0,0,.22),inset 3px 3px 10px rgba(0,0,0,.25),0 0 0 2px rgba(255,255,255,.22)}
-#lift .door::after{content:"";position:absolute;top:0;bottom:0;width:10px;background:linear-gradient(90deg,#1d2226,#586068,#1d2226)}
+  linear-gradient(90deg,rgba(0,0,0,.45),transparent 7%,transparent 93%,rgba(0,0,0,.45)),
+  linear-gradient(105deg,transparent 12%,rgba(255,255,255,.55) 27%,transparent 40%,transparent 58%,rgba(255,255,255,.32) 72%,transparent 86%),
+  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.004 0.9' numOctaves='3' seed='7'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='400' height='400' filter='url(%23n)'/></svg>"),
+  linear-gradient(180deg,#6b747c 0%,#b9c2c9 22%,#8a949c 48%,#c3cbd1 70%,#737c84 100%);
+ background-blend-mode:normal,normal,overlay,normal;box-shadow:inset 0 0 50px rgba(0,0,0,.4)}
+#lift .door.l{left:0}#lift .door.r{right:0}
+#lift .door::before{content:"";position:absolute;left:10%;right:10%;top:20%;bottom:7%;border-radius:3px;
+ background:linear-gradient(160deg,rgba(255,255,255,.2),rgba(0,0,0,.18));
+ box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset 0 0 0 3px rgba(0,0,0,.22),inset 4px 6px 14px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.3),0 2px 0 rgba(255,255,255,.3)}
+#lift .door::after{content:"";position:absolute;top:0;bottom:0;width:12px;background:linear-gradient(90deg,#14181b,#6a737b 35%,#d4dade 50%,#6a737b 65%,#14181b)}
 #lift .door.l::after{right:0}#lift .door.r::after{left:0}
-#lift .door.l{transform:translateX(0)}#lift .door.r{transform:translateX(0)}
 #lift.open .door.l{transform:translateX(-101%)}#lift.open .door.r{transform:translateX(101%)}
-#lift .shaft{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#fff6df 0,#e9eef3 40%,#cdd6de 100%);opacity:1;transition:opacity .5s 1.9s}
-#lift.open .shaft{opacity:0}
-#lift .head{position:absolute;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);z-index:3;background:#0a0d10;border:2px solid #4a535b;border-radius:10px;padding:6px 16px;
- font:700 22px/1 ui-monospace,Menlo,monospace;color:#ff6a2b;text-shadow:0 0 8px #ff6a2b;letter-spacing:2px;transition:opacity .4s 1.6s}
+#lift.gone{pointer-events:none}
+#lift .head{position:absolute;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:12px;
+ padding:9px 18px;border-radius:14px;color:#ffb347;
+ background:linear-gradient(180deg,#05070a,#10161c);
+ box-shadow:0 0 0 2px #2a3036,0 0 0 4px #aab4bb,0 0 0 5px #4a535a,0 8px 18px rgba(0,0,0,.5),inset 0 0 14px rgba(255,160,60,.15);transition:opacity .5s .5s}
+#lift .head::after{content:"";position:absolute;inset:0;border-radius:14px;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);pointer-events:none}
+#lift .head b{font:800 30px/1 ui-monospace,Menlo,Consolas,monospace;text-shadow:0 0 6px #ff9a2e,0 0 16px rgba(255,140,30,.7);min-width:1.1em;text-align:center}
+#lift .head i{font-style:normal;font-size:20px;text-shadow:0 0 8px #ff9a2e;animation:arr 1s infinite}
+@keyframes arr{50%{opacity:.25}}
 #lift.open .head{opacity:0}
-#lift .tag{position:absolute;left:0;right:0;bottom:max(26px,env(safe-area-inset-bottom));text-align:center;z-index:3;color:#e9eef2;font:600 13px system-ui;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,.6);transition:opacity .3s}
+#lift .tag{position:absolute;left:0;right:0;bottom:max(28px,env(safe-area-inset-bottom));text-align:center;z-index:3;color:#2b3339;font:700 13px system-ui;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 0 rgba(255,255,255,.55);transition:opacity .3s}
 #lift.open .tag{opacity:0}
-#app.pre{transform:scale(1.07);opacity:.0}#app{transition:transform 2.2s cubic-bezier(.3,.1,.2,1),opacity .6s .9s}
-@media (prefers-reduced-motion:reduce){#lift{display:none}#app.pre{transform:none;opacity:1}}
+#app{transition:transform 2.4s cubic-bezier(.3,.1,.2,1)}#app.pre{transform:scale(1.06)}
+@media (prefers-reduced-motion:reduce){#lift{display:none}#app.pre{transform:none}}
+
+.btn,.tile,.choice,.sch,.ib{position:relative;overflow:hidden;transition:transform .15s,box-shadow .25s,filter .2s,background .2s,border-color .2s;-webkit-tap-highlight-color:transparent}
+.btn:not(.sec):not(.ghost){background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 75%,#000));box-shadow:0 10px 22px -10px var(--accent),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn:not(.sec):not(.ghost)::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.4),transparent);transform:skewX(-20deg);animation:shine 4.5s 1.5s infinite}
+@keyframes shine{0%,70%,100%{left:-60%}85%{left:130%}}
+.btn:active,.tile:active,.choice:active,.sch:active{transform:scale(.97)}
+.btn:active{filter:brightness(.92)}
+.tile{box-shadow:0 10px 24px -16px var(--shadow)}
+.tile:not(.soon):hover,.tile:not(.soon):focus-visible{transform:translateY(-2px);box-shadow:0 16px 28px -14px var(--accent);border-color:var(--accent)}
+.tile .go{transition:transform .2s}.tile:active .go{transform:translateX(5px)}
+.sch.on{transform:translateY(-2px)}
+.rip{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rip .6s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+main>*{animation:rise .45s both}main>*:nth-child(2){animation-delay:.05s}main>*:nth-child(3){animation-delay:.1s}main>*:nth-child(4){animation-delay:.15s}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 100%,#fff),var(--surface))}
+@media (prefers-reduced-motion:reduce){.btn::after,main>*{animation:none}}
 @media (prefers-reduced-motion:reduce){.prog i{transition:none}}
 </style>
 </head>
 <body>
 <div id="app" class="pre"></div>
-<div id="lift" aria-hidden="true"><div class="shaft"></div><div class="head" id="lfl">1 ▲</div><div class="door l"></div><div class="door r"></div><div class="tag">Замер ДШ</div></div>
+<div id="lift" aria-hidden="true"><div class="head"><i>▲</i><b id="lfl">1</b></div><div class="door l"></div><div class="door r"></div><div class="tag">Замер ДШ</div></div>
 <script src="config.js"></script>
 <script src="pdf.js"></script>
 <script src="app.js"></script>
 <script>
 (function(){var L=document.getElementById("lift"),A=document.getElementById("app");if(!L)return;
-var done=false;function fin(){if(done)return;done=true;A.classList.remove("pre");L.classList.add("open");setTimeout(function(){L.remove()},2700)}
+var done=false;function fin(){if(done)return;done=true;A.classList.remove("pre");L.classList.add("open");setTimeout(function(){L.remove()},2800)}
 if(matchMedia("(prefers-reduced-motion: reduce)").matches){L.remove();A.classList.remove("pre");return}
-L.addEventListener("click",fin);setTimeout(function(){document.getElementById("lfl").textContent="1 ●"},500);setTimeout(fin,1100)})();
+L.addEventListener("click",fin);setTimeout(fin,1200)})();
 </script>
 </body>
 </html>
