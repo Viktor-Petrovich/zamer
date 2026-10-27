@@ -28,7 +28,7 @@
   function T(x, s, px, py, o = {}) {
     const { size = 10, bold = false, align = "left", serif = false } = o;
     x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.font = fontStr(size, bold, serif);
-    x.textAlign = align; x.textBaseline = "alphabetic"; x.fillStyle = "#000";
+    x.textAlign = align; x.textBaseline = "alphabetic"; x.fillStyle = o.color || "#000";
     x.fillText(s, px / K, (PH - py) / K); x.restore();
   }
   function fit(x, s, cx, cy, maxw, size = 10.5, minsize = 5.5, bold = false) {
@@ -83,10 +83,13 @@
   }
   const rectS = (x, a, b, w, h) => { x.beginPath(); x.rect(a, b, w, h); x.stroke(); };
 
+  function stampTop(x, order) {
+    if (order.stamp) T(x, "Заявка от: " + order.stamp, PW - 40, PH - 22, { size: 9, align: "right", color: "#333" });
+  }
   function page1(img, order, rows, start) {
     const { c, x } = newPage();
     x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(img, 0, 0, PWpx, PHpx); x.restore();
-    header(x, order);
+    header(x, order); stampTop(x, order);
     const color = (order.common || {}).color;
     rows.forEach((o, i) => {
       const cy = Y((ROW_Y[i] + ROW_Y[i + 1]) / 2);
@@ -105,6 +108,7 @@
 
   function appendix(order) {
     const { c, x } = newPage(); const cm = order.common || {};
+    stampTop(x, order);
     T(x, "Заявка на изготовление обрамлений ДШ. Общие параметры", PW / 2, PH - 50, { size: 14, bold: true, serif: true, align: "center" });
     T(x, "Адрес объекта: " + (order.address || ""), 40, PH - 80, { size: 10.5 });
     T(x, "Контактное лицо: " + (order.contact || ""), 40, PH - 97, { size: 10.5 });
@@ -201,6 +205,7 @@
   }
   function page2(order, thr, nsh, cable) {
     const { c, x } = newPage();
+    stampTop(x, order);
     T(x, "Заявка на изготовление", PW / 2 + 40, PH - 58, { size: 14, bold: true, serif: true, align: "center" });
     T(x, "Адрес объекта:", X(62), Y(240), { size: 11, bold: true, serif: true });
     T(x, "Контактное лицо на объекте:", X(62), Y(477), { size: 11, bold: true, serif: true });
@@ -211,9 +216,115 @@
     return c;
   }
 
+
+  /* ---------- Бланк замера дверей и люков ---------- */
+  const ACC = "#1b6fa8", INKC = "#15212c", MUT = "#5b6b79", LN = "#c9d3dc", SOFTC = "#f1f5f8", TINTC = "#e3eef7", AMB = "#fde3bd", AMBL = "#c9801a";
+  function rr(x, px, yt, w, h, r, fill, stroke, lw) {
+    x.beginPath();
+    if (x.roundRect) x.roundRect(px, PH - yt - h, w, h, r); else x.rect(px, PH - yt - h, w, h);
+    if (fill) { x.fillStyle = fill; x.fill(); }
+    if (stroke) { x.strokeStyle = stroke; x.lineWidth = lw || 1; x.stroke(); }
+  }
+  const cell = (v) => (v === undefined || v === null || v === "") ? "" : fmt(v);
+  function openingDL(x, ox, yt, w, h, hatch, cas, vals) {
+    const y = PH - (yt + h), t = 7;
+    x.fillStyle = TINTC; x.fillRect(ox, y, w, h);
+    x.save(); x.beginPath(); x.rect(ox, y, w, h); x.clip(); x.strokeStyle = "#b7cde0"; x.lineWidth = .6;
+    for (let k = -h; k < w + h; k += 9) line(x, ox + k, y, ox + k + h, y + h);
+    x.restore();
+    x.strokeStyle = INKC; x.lineWidth = 1.8; x.strokeRect(ox, y, w, h);
+    x.fillStyle = AMB; x.strokeStyle = AMBL; x.lineWidth = 1;
+    const L = cas.l, Tp = cas.t, R = cas.r, B = cas.b;
+    if (L) { x.fillRect(ox - t, y - (B ? t : 0), t, h + (Tp ? t : 0) + (B ? t : 0)); x.strokeRect(ox - t, y - (B ? t : 0), t, h + (Tp ? t : 0) + (B ? t : 0)); }
+    if (R) { x.fillRect(ox + w, y - (B ? t : 0), t, h + (Tp ? t : 0) + (B ? t : 0)); x.strokeRect(ox + w, y - (B ? t : 0), t, h + (Tp ? t : 0) + (B ? t : 0)); }
+    if (Tp) { x.fillRect(ox - (L ? t : 0), y + h, w + (L ? t : 0) + (R ? t : 0), t); x.strokeRect(ox - (L ? t : 0), y + h, w + (L ? t : 0) + (R ? t : 0), t); }
+    if (B) { x.fillRect(ox - (L ? t : 0), y - t, w + (L ? t : 0) + (R ? t : 0), t); x.strokeRect(ox - (L ? t : 0), y - t, w + (L ? t : 0) + (R ? t : 0), t); }
+    if (hatch) { x.fillStyle = INKC; x.beginPath(); x.arc(ox + w - 12, y + h / 2, 2.6, 0, 7); x.fill(); }
+    const sx = L ? 9 : 0, by = B ? 7 : 0;
+    x.strokeStyle = MUT; x.lineWidth = .6;
+    line(x, ox - 4 - sx, y + h, ox - 26 - sx, y + h); line(x, ox - 4 - sx, y, ox - 26 - sx, y);
+    x.strokeStyle = ACC; x.fillStyle = ACC; arrowV(x, ox - 20 - sx, y, y + h);
+    x.strokeStyle = MUT; x.lineWidth = .6;
+    line(x, ox, y - 4 - by, ox, y - 24 - by); line(x, ox + w, y - 4 - by, ox + w, y - 24 - by);
+    x.strokeStyle = ACC; x.fillStyle = ACC; arrowH(x, ox, ox + w, y - 18 - by);
+    T(x, "Высота" + (vals.h ? " " + fmt(vals.h) : ""), ox - 30 - sx, PH - yt - h / 2 - 3, { size: 10, bold: true, align: "right", color: ACC });
+    T(x, "Ширина" + (vals.w ? " " + fmt(vals.w) : ""), ox + w / 2, PH - (yt + h + 33 + by), { size: 10, bold: true, align: "center", color: ACC });
+  }
+  function row(x, bx, yt, bw, rh, label, val, unit, hint) {
+    rr(x, bx, yt, bw, rh, 6, SOFTC, LN, .8);
+    T(x, label, bx + 12, PH - (yt + rh / 2 + 4), { size: 10.5, bold: true, color: INKC });
+    if (hint) { T(x, hint, bx + bw - 12, PH - (yt + rh / 2 + 3.5), { size: 8, align: "right", color: MUT }); return; }
+    x.strokeStyle = MUT; x.lineWidth = .9; line(x, bx + 150, PH - (yt + rh - 6), bx + bw - 34, PH - (yt + rh - 6));
+    if (val !== "" && val !== undefined) T(x, String(val), bx + 150 + (bw - 34 - 150) / 2, PH - (yt + rh - 9), { size: 11.5, bold: true, align: "center", color: INKC });
+    T(x, unit, bx + bw - 12, PH - (yt + rh / 2 + 4), { size: 9.5, align: "right", color: MUT });
+  }
+  function checks(x, bx, yt, bw, rh, title, opts, on, x0, step) {
+    rr(x, bx, yt, bw, rh, 6, SOFTC, LN, .8);
+    T(x, title, bx + 12, PH - (yt + rh / 2 + 4), { size: 10.5, bold: true, color: INKC });
+    opts.forEach(([key, lab], k) => {
+      const cx = bx + x0 + k * step, cy = yt + rh / 2 - 6;
+      rr(x, cx, cy, 12, 12, 2, "#fff", INKC, 1);
+      if (on[key]) { x.strokeStyle = ACC; x.lineWidth = 2; x.beginPath(); x.moveTo(cx + 2.5, PH - cy - 6.5); x.lineTo(cx + 5.2, PH - cy - 9.5); x.lineTo(cx + 10, PH - cy - 2.5); x.stroke(); }
+      T(x, lab, cx + 18, PH - (yt + rh / 2 + 4), { size: 10, color: INKC });
+    });
+  }
+  function dlCard(x, cx0, top, w, h, num, title, hatch, d, mult) {
+    rr(x, cx0, top, w, h, 10, "#fff", LN, 1);
+    x.fillStyle = ACC; x.beginPath(); x.arc(cx0 + 24, PH - (top + 24), 11, 0, 7); x.fill();
+    T(x, String(num), cx0 + 24, PH - (top + 28), { size: 12, bold: true, align: "center", color: "#fff" });
+    T(x, title, cx0 + 44, PH - (top + 29), { size: 15, bold: true, color: INKC });
+    x.strokeStyle = LN; x.lineWidth = 1; line(x, cx0 + 14, PH - (top + 42), cx0 + w - 14, PH - (top + 42));
+    if (!d || d.need !== "Да") {
+      T(x, "Не требуется", cx0 + w / 2, PH - (top + h / 2 + 8), { size: 20, bold: true, align: "center", color: "#a3b0bc" });
+      return;
+    }
+    const dw = hatch ? 76 : 54, dh = hatch ? 76 : 84;
+    const cas = hatch ? { l: 1, t: 1, r: 1, b: 1 } : { l: d.cas.l, t: d.cas.t, r: d.cas.r };
+    openingDL(x, cx0 + (w - dw) / 2 + 12, top + 58, dw, dh, hatch, cas, { h: d.h, w: d.w });
+    const bx = cx0 + 18, bw = w - 36, rh = 24, gap = 4;
+    let yt = top + 58 + dh + 38 + (hatch ? 7 : 0);
+    row(x, bx, yt, bw, rh, "Высота проёма", cell(d.h), "мм"); yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Ширина проёма", cell(d.w), "мм"); yt += rh + gap;
+    const rh2 = hatch ? [d.h - 10, d.w - 10] : [d.h - 20, d.w - 40];
+    row(x, bx, yt, bw, rh, hatch ? "Размер люка (В × Ш)" : "Размер двери (В × Ш)", "", "", "\u200b");
+    // значение расчёта крупно справа
+    T(x, `${fmt(rh2[0])} × ${fmt(rh2[1])} мм`, bx + 168, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
+    yt += rh + gap;
+    if (!hatch) { checks(x, bx, yt, bw, rh, "Петли", [["l", "слева"], ["r", "справа"]], { l: d.hinge === "Слева", r: d.hinge === "Справа" }, 118, 82); yt += rh + gap; }
+    if (hatch) row(x, bx, yt, bw, rh, "Наличник", "", "", "всегда, со всех четырёх сторон");
+    else checks(x, bx, yt, bw, rh, "Наличник", [["l", "слева"], ["t", "сверху"], ["r", "справа"]], d.cas, 118, 82);
+    yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Количество", d.qty * mult, "шт.");
+    if (mult > 1) T(x, `по ${d.qty} в каждом из ${mult} подъездов`, bx + 12, PH - (yt + rh + 11), { size: 8, color: MUT });
+  }
+  function dlPage(order, item) {
+    const { c, x } = newPage(), M = 30;
+    x.fillStyle = ACC; x.fillRect(0, PH - 6, PW, 6);
+    T(x, "Бланк замера дверей и люков", M, PH - 50, { size: 22, bold: true, color: INKC });
+    T(x, "Машинное помещение лифта", M, PH - 66, { size: 10, color: MUT });
+    rr(x, PW - M - 170, 32, 170, 26, 13, "#e3eef7", ACC, 1);
+    T(x, item.label, PW - M - 85, PH - 49, { size: 11, bold: true, align: "center", color: ACC });
+    const f = (px, yt, w, label, val) => {
+      x.strokeStyle = LN; x.lineWidth = .9; line(x, px, PH - yt, px + w, PH - yt);
+      if (val) T(x, val, px + 2, PH - (yt - 4), { size: 11.5, bold: true, color: INKC });
+      T(x, label, px, PH - (yt + 11), { size: 8, color: MUT });
+    };
+    const cw = (PW - 2 * M - 40) / 3;
+    f(M, 98, PW - 2 * M, "Адрес объекта", order.address);
+    f(M, 128, cw + 60, "Контактное лицо на объекте, телефон", order.contact);
+    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", order.stamp || new Date().toLocaleDateString("ru-RU"));
+    f(M + 2 * cw + 80, 128, PW - M - (M + 2 * cw + 80), "Замерщик", order.worker);
+    const top = 150, ch = 356, cwid = (PW - 2 * M - 18) / 2;
+    dlCard(x, M, top, cwid, ch, 1, "Проём двери", false, item.door, item.mult);
+    dlCard(x, M + cwid + 18, top, cwid, ch, 2, "Люк", true, item.hatch, item.mult);
+    T(x, "Все размеры в миллиметрах. Размер изделия рассчитывается из размера проёма.", M, PH - 585, { size: 7.5, color: MUT });
+    return c;
+  }
+
   const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 
   async function buildPages(order) {
+    if (order.kind === "dl") return order.items.map(it => dlPage(order, it));
     const img = await loadImg("form_p1.jpg");
     const pages = [], ops = order.openings || [];
     const thr = order.thresholds || [], nsh = order.nashchelnik || [];

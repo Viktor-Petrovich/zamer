@@ -8,7 +8,7 @@
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   /* ---------- состояние ---------- */
-  const fresh = () => ({ paid: "",  common: {}, ops: {}, thresholds: [], nashchelnik: [], cable: {} });
+  const fresh = () => ({ kind: "frame", paid: "", ent: {}, common: {}, ops: {}, thresholds: [], nashchelnik: [], cable: {} });
   let order = fresh(), pos = 0, view = "home", sub = null, pdfCache = null, flash = "";
   const save = () => { try { localStorage.setItem("zamer", JSON.stringify({ order, pos, view })); } catch (e) {} };
   try {
@@ -147,7 +147,75 @@
     ["right_B", "Правое боковое: размер В", "Размер В — это ширина бокового обрамления."]
   ];
   const same = () => order.dsh_same === "Одинаковые на всех этажах";
+  /* ---------- двери и люки ---------- */
+  const sameDL = () => (order.entrances || 0) <= 1 || order.dl_same === "Одинаковые во всех подъездах";
+  function buildListDL() {
+    const l = [
+      { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
+      { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
+      { p: "entrances", t: "int", min: 1, max: 50, unit: "шт.", sec: "Объект", q: "Сколько подъездов?", hint: "Количество подъездов, в которых нужен замер." }
+    ];
+    if ((order.entrances || 0) > 1) l.push({ p: "dl_same", t: "choice", sec: "Объект", q: "Размеры по подъездам", hint: "Если размеры одинаковые, вводим их один раз для всех подъездов.", ch: ["Одинаковые во всех подъездах", "Разные по подъездам"] });
+    const N = order.entrances || 0, es = sameDL() ? [1] : Array.from({ length: N }, (_, i) => i + 1);
+    es.forEach(e => {
+      const sec = sameDL() ? (N > 1 ? "Двери и люки, все подъезды" : "Двери и люки") : `Подъезд ${e} из ${N}`;
+      const pk = `ent.${e}`, qh = sameDL() && N > 1 ? "Количество на один подъезд. В бланке оно умножится на число подъездов." : "";
+      l.push({ p: `${pk}.door.need`, t: "choice", sec, ent: e, first: true, q: "Нужна ли дверь?", ch: ["Да", "Нет"] });
+      if (getP(order, `${pk}.door.need`) === "Да") {
+        l.push({ p: `${pk}.door.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота проёма двери", hint: "Размер двери посчитаем сами: высота проёма минус 20 мм, ширина минус 40 мм." });
+        l.push({ p: `${pk}.door.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина проёма двери" });
+        l.push({ p: `${pk}.door.hinge`, t: "choice", sec, ent: e, q: "С какой стороны петли у двери?", ch: ["Слева", "Справа"] });
+        l.push({ p: `${pk}.door.cas`, t: "casing", sec, ent: e, q: "Наличник двери", hint: "Нажмите на наличник на рисунке, чтобы добавить или убрать его." });
+        l.push({ p: `${pk}.door.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, ent: e, q: "Количество дверей", hint: qh });
+      }
+      l.push({ p: `${pk}.hatch.need`, t: "choice", sec, ent: e, q: "Нужен ли люк?", ch: ["Да", "Нет"] });
+      if (getP(order, `${pk}.hatch.need`) === "Да") {
+        l.push({ p: `${pk}.hatch.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота проёма люка", hint: "Размер люка посчитаем сами: проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон." });
+        l.push({ p: `${pk}.hatch.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина проёма люка" });
+        l.push({ p: `${pk}.hatch.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, ent: e, q: "Количество люков", hint: qh });
+      }
+    });
+    return l;
+  }
+  function dlItems() {
+    const N = order.entrances || 1;
+    const mk = (e, label, mult) => {
+      const d = (order.ent && order.ent[e]) || {};
+      const door = d.door && d.door.need === "Да" ? Object.assign({}, d.door, { cas: Object.assign({ l: true, t: true, r: true }, d.door.cas || {}) }) : { need: "Нет" };
+      const hatch = d.hatch && d.hatch.need === "Да" ? d.hatch : { need: "Нет" };
+      return { label, door, hatch, mult };
+    };
+    return sameDL() ? [mk(1, N > 1 ? `Все подъезды (${N})` : "Подъезд 1", N)] : Array.from({ length: N }, (_, i) => mk(i + 1, `Подъезд ${i + 1} из ${N}`, 1));
+  }
+  function casingHtml(val) {
+    const c = Object.assign({ l: true, t: true, r: true }, val || {});
+    const g = (k, x, y, w, h, tx, ty, name) => `<g class="cas${c[k] ? " on" : ""}" data-cas="${k}" role="button" tabindex="0" aria-label="Наличник ${name}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4"/><text x="${tx}" y="${ty}" text-anchor="middle">${c[k] ? "✓" : "+"}</text></g>`;
+    return `<svg class="doorsvg" viewBox="0 0 240 236" aria-hidden="false"><defs><pattern id="hp" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9" stroke="#b7cde0" stroke-width="1"/></pattern></defs>
+      <rect x="82" y="66" width="76" height="140" fill="#e3eef7"/><rect x="82" y="66" width="76" height="140" fill="url(#hp)"/><rect x="82" y="66" width="76" height="140" fill="none" stroke="currentColor" stroke-width="3"/>
+      <circle cx="148" cy="140" r="3" fill="currentColor"/><line x1="40" y1="206" x2="200" y2="206" stroke="currentColor" stroke-width="2" stroke-dasharray="6 4"/>
+      ${g("l", 56, 40, 26, 166, 69, 128, "слева")}${g("t", 82, 40, 76, 26, 120, 58, "сверху")}${g("r", 158, 40, 26, 166, 171, 128, "справа")}
+      <text x="120" y="226" text-anchor="middle" class="flo">пол</text></svg>
+      <div class="choices">${[["l", "Слева"], ["t", "Сверху"], ["r", "Справа"]].map(([k, n]) => `<button class="choice${c[k] ? " on" : ""}" data-cas="${k}">Наличник ${n.toLowerCase()}</button>`).join("")}</div>`;
+  }
+  const dash = (v, sfx) => (v === undefined || v === "" ? "—" : v + (sfx || ""));
+  function dlSummaryHtml() {
+    const items = dlItems();
+    const head = [["Адрес", order.address], ["Контакт", order.contact], ["Подъездов", order.entrances], ["Размеры", sameDL() ? "одинаковые" : "разные по подъездам"]];
+    const part = it => {
+      const d = it.door, h = it.hatch, m = it.mult, L = [];
+      L.push(d.need === "Да" ? `Дверь: проём ${d.h}×${d.w} мм → дверь <b>${d.h - 20}×${d.w - 40}</b> мм, петли ${esc(String(d.hinge || "").toLowerCase())}, наличник: ${["l", "t", "r"].filter(k => d.cas[k]).map(k => ({ l: "слева", t: "сверху", r: "справа" }[k])).join(", ") || "нет"}, ${d.qty * m} шт.` : "Дверь: не требуется");
+      L.push(h.need === "Да" ? `Люк: проём ${h.h}×${h.w} мм → люк <b>${h.h - 10}×${h.w - 10}</b> мм, наличник со всех сторон, ${h.qty * m} шт.` : "Люк: не требуется");
+      return `<div class="card"><div class="sum"><span><b>${esc(it.label)}</b></span>${L.map(x => `<span>${x}</span>`).join("")}</div></div>`;
+    };
+    return `<div class="card"><div class="sum">${head.map(([a, b]) => `<span><b>${a}:</b> ${esc(b)}</span>`).join("")}</div></div>` + items.map(part).join("");
+  }
+  function newOrder(kind) {
+    if (LIM && !acc.session) { view = "home"; return render(); }
+    if (hasDraft() && !confirm("Начать новую заявку? Текущие ответы будут удалены.")) return;
+    order = fresh(); order.kind = kind; pos = 0; view = "wizard"; sub = null; save(); render();
+  }
   function buildList() {
+    if (order.kind === "dl") return buildListDL();
     const l = SETUP.filter(s => !s.when || s.when(order));
     const floors = same() ? [1] : Array.from({ length: order.stops || 0 }, (_, i) => i + 1);
     floors.forEach(f => {
@@ -178,6 +246,13 @@
     door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M14.5 12h.01M5 21h14"/></svg>',
     win: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M12 4v16M4 12h16"/></svg>'
   };
+  function dateLong(d, withTime) {
+    d = d || new Date();
+    let t = d.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(" г.", "");
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    if (withTime) t += ", " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    return t;
+  }
   function greeting() {
     const h = new Date().getHours();
     const t = h < 5 ? "Доброй ночи" : h < 12 ? "Доброе утро" : h < 18 ? "Добрый день" : "Добрый вечер";
@@ -188,11 +263,12 @@
     const tile = (a, ic, title, sub, soon) => `<button class="tile${soon ? " soon" : ""}" data-a="${a}"><span class="ti">${SECT_ICON[ic]}</span><span class="tt"><b>${title}</b><small>${sub}</small></span>${soon ? `<em>в разработке</em>` : `<span class="go">›</span>`}</button>`;
     $app.innerHTML = `<main style="padding-top:max(24px,env(safe-area-inset-top))">
       <div class="hello"><img src="icon-192.png" alt=""><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div></div>
+      <p class="hint" style="margin:-4px 0 0 2px">${esc(dateLong())}</p>
       ${LIM && acc.session ? `<div class="chip" style="justify-self:start">Осталось замеров: ${left()}</div>` : ""}
-      ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${esc((order.address || "").slice(0, 40))}</small></span><span class="go">›</span></button>` : ""}
+      ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${order.kind === "dl" ? "Двери и люки" : "Обрамления"} · ${esc((order.address || "").slice(0, 32))}</small></span><span class="go">›</span></button>` : ""}
       <div class="tiles">
         ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
-        ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", true)}
+        ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
         ${tile("sec_win", "win", "Замер окон", "Размеры и бланк заявки", true)}
       </div>
       <div class="card tips"><div class="sum"><span>✓ Работает без интернета</span><span>✓ Ответы сохраняются на телефоне</span><span>✓ Готовый бланк PDF в один клик</span></div></div>
@@ -205,17 +281,19 @@
       `<button class="btn" data-a="home">На главный экран</button>`, { back: true, menu: false });
   }
   function wizardView() {
-    const list = buildList(); if (pos >= list.length) { view = "hub"; save(); return render(); }
+    const list = buildList(); if (pos >= list.length) { view = order.kind === "dl" ? "review" : "hub"; save(); return render(); }
     const s = list[pos], val = getP(order, s.p), err = wizardView.err || "";
     let body = `<div class="card"><span class="chip">${esc(s.sec)} · вопрос ${pos + 1} из ${list.length}</span><h2 class="q">${esc(s.q)}</h2>${s.hint ? `<p class="hint">${esc(s.hint)}</p>` : ""}`;
     body += controlHtml(s, val) + `<p class="err" id="err">${esc(err)}</p></div>`;
     let foot = s.t === "choice" || s.t === "scheme" ? "" : `<button class="btn" data-a="next">Далее</button>`;
     if (s.t === "scheme") foot = `<button class="btn" data-a="next">Далее</button>`;
-    if (!same() && s.first && s.floor > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как на этаже ${s.floor - 1}</button>`;
+    if (order.kind === "dl" && !sameDL() && s.first && s.ent > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как в подъезде ${s.ent - 1}</button>`;
+    if (order.kind !== "dl" && !same() && s.first && s.floor > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как на этаже ${s.floor - 1}</button>`;
     shell(s.sec, pos / list.length, body, foot);
     bindInput(s);
   }
   function controlHtml(s, val) {
+    if (s.t === "casing") return casingHtml(val);
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
     if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}"><img src="scheme_${k === "А" ? "A" : "B"}.png" alt="Схема ${k}">Схема ${k}</button>`).join("")}</div>`;
     if (s.t === "color") {
@@ -240,6 +318,7 @@
     return inp ? inp.value : "";
   }
   function advance(s, raw) {
+    if (s.t === "casing") { if (!getP(order, s.p)) setP(order, s.p, { l: true, t: true, r: true }); pos++; save(); return render(); }
     const r = (s.t === "choice" || s.t === "scheme") ? (raw ? { v: raw } : { e: "Выберите вариант" }) : parse(s, raw);
     if (r.e) { wizardView.err = r.e; const el = document.getElementById("err"); if (el) el.textContent = r.e; return; }
     wizardView.err = "";
@@ -276,6 +355,7 @@
   }
 
   function summaryHtml() {
+    if (order.kind === "dl") return dlSummaryHtml();
     const c = order.common, rows = [
       ["Адрес", order.address], ["Контакт", order.contact], ["Схема", order.scheme], ["Остановок", order.stops],
       ["Ширина проёма / С", `${order.width} / ${order.C} мм`], ["Размеры", `${c.bend_mode}, загиб ${c.bend} мм`],
@@ -285,7 +365,7 @@
   }
   async function reviewView() {
     shell("Проверка заявки", 1, summaryHtml() + `<div class="card"><p class="hint" id="gen">Формирую бланк…</p><div class="pages" id="pages"></div></div>`,
-      `<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="hub">Назад к разделам</button>`);
+      `<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="${order.kind === "dl" ? "back" : "hub"}">${order.kind === "dl" ? "Изменить ответы" : "Назад к разделам"}</button>`);
     try {
       const full = exportOrder();
       const canv = await PDFGEN.buildPages(full);
@@ -297,7 +377,9 @@
     } catch (e) { const g = document.getElementById("gen"); if (g) g.textContent = "Не удалось сформировать бланк: " + e.message; }
   }
   function exportOrder() {
-    const o = { address: order.address, contact: order.contact, scheme: order.scheme, stops: order.stops, dsh_same: same(), common: order.common,
+    const stamp = dateLong(new Date(), true);
+    if (order.kind === "dl") return { kind: "dl", stamp, address: order.address, contact: order.contact, worker: acc.name || "", items: dlItems() };
+    const o = { stamp, address: order.address, contact: order.contact, scheme: order.scheme, stops: order.stops, dsh_same: same(), common: order.common,
       thresholds: order.thresholds, nashchelnik: order.nashchelnik, cable: order.cable, openings: [] };
     const n = order.stops || 0;
     for (let f = 1; f <= n; f++) {
@@ -357,7 +439,7 @@
       if (view === "soon") { view = "home"; return render(); }
       if (sub) { if (sub.i > 0) sub.i--; else sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
-      else if (view === "review") view = "hub";
+      else if (view === "review") { if (order.kind === "dl") { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
       else if (pos > 0) pos--; else view = "home";
       wizardView.err = ""; save(); return render();
     }
@@ -369,19 +451,25 @@
       return;
     }
     if (a === "login" || a === "dologin") return startLogin();
-    if (a === "sec_door" || a === "sec_win") { soonView.what = a === "sec_win" ? "win" : "door"; view = "soon"; return render(); }
-    if (a === "sec_frame") return act("new");
+    if (a === "sec_win") { soonView.what = "win"; view = "soon"; return render(); }
+    if (a === "sec_door") return newOrder("dl");
+    if (a === "sec_frame") return newOrder("frame");
     if (a === "home") { view = "home"; return render(); }
     if (a === "back2") { view = "review"; return render(); }
     if (a === "logout") { if (!confirm("Выйти из аккаунта? Неотправленные замеры на телефоне будут возвращены на баланс при следующем входе.")) return; api("/api/release", { tickets: acc.tickets }).catch(() => {}); acc = { session: "", id: "", name: "", credits: null, tickets: [], redeem: acc.redeem }; saveAcc(); view = "home"; return render(); }
-    if (a === "new") { if (LIM && !acc.session) { view = "home"; return render(); } if (hasDraft() && !confirm("Начать новую заявку? Текущие ответы будут удалены.")) return; order = fresh(); pos = 0; view = "wizard"; sub = null; save(); return render(); }
-    if (a === "resume") { view = "wizard"; const n = buildList().length; if (order.stops && pos >= n) view = "hub"; return render(); }
+    if (a === "new") return newOrder(order.kind || "frame");
+    if (a === "resume") { view = "wizard"; const n = buildList().length; if (pos >= n) view = order.kind === "dl" ? "review" : (order.stops ? "hub" : "wizard"); return render(); }
     if (a === "menu") { menuReturn = view; view = "menu"; return render(); }
     if (a === "close") { view = menuReturn === "menu" ? "home" : menuReturn; return render(); }
     if (a === "review") { view = "review"; save(); return render(); }
     if (a === "hub") { view = "hub"; return render(); }
     if (a === "send") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => ok && share()); if (!LIM || order.paid || acc.tickets.length) { charge(); return share(); } return; }
     if (a === "download") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => { if (ok) { download(); toast("Файл сохранён"); } }); charge(); download(); return toast("Файл сохранён"); }
+    if (a === "copyprev" && order.kind === "dl") {
+      const l = buildList(), s = l[pos], e = s.ent;
+      order.ent[e] = JSON.parse(JSON.stringify(order.ent[e - 1] || {}));
+      const nl = buildList(); let k = nl.findIndex(x => x.ent > e); pos = k < 0 ? nl.length : k; save(); return render();
+    }
     if (a === "copyprev") {
       const l = buildList(), s = l[pos], f = s.floor; order.ops[f] = Object.assign({}, order.ops[f - 1]);
       pos += OPEN.length + 1; save(); return render();
@@ -389,6 +477,12 @@
   }
   let menuReturn = "home";
   $app.addEventListener("click", e => {
+    const cs = e.target.closest("[data-cas]");
+    if (cs) {
+      const s = buildList()[pos]; if (!s || s.t !== "casing") return;
+      const cur = Object.assign({ l: true, t: true, r: true }, getP(order, s.p) || {}); cur[cs.dataset.cas] = !cur[cs.dataset.cas];
+      setP(order, s.p, cur); save(); return render();
+    }
     const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.ins) { const i = document.getElementById("inp"); if (i) { const a = i.selectionStart == null ? i.value.length : i.selectionStart, z = i.selectionEnd == null ? a : i.selectionEnd; i.value = i.value.slice(0, a) + b.dataset.ins + i.value.slice(z); i.focus(); try { i.setSelectionRange(a + 1, a + 1); } catch (x) {} } return; }
     if (b.dataset.a) return act(b.dataset.a);
@@ -403,6 +497,7 @@
     if (b.dataset.add) { const d = SUB[b.dataset.add]; sub = { d, key: b.dataset.add, i: 0, vals: {}, err: "" }; return render(); }
     if (b.dataset.del) { const [k, i] = b.dataset.del.split(":"); if (SUB[k].cable) delete order.cable[k]; else order[SUB[k].list].splice(+i, 1); save(); return render(); }
   });
+  $app.addEventListener("keydown", e => { const g = e.target.closest && e.target.closest("g[data-cas]"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.dispatchEvent(new MouseEvent("click", { bubbles: true })); } });
   window.addEventListener("popstate", () => {});
   try {
     const lg = JSON.parse(localStorage.getItem("zamer_login") || "null");

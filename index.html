@@ -89,6 +89,14 @@ button:focus-visible{outline:3px solid var(--accent)}
 .credit b{display:inline-block;color:var(--ink);font-size:15px;font-weight:600;letter-spacing:0;margin-top:2px}
 .soonico{width:72px;height:72px;border-radius:20px;background:var(--soft);color:var(--muted);display:grid;place-items:center}
 .soonico svg{width:38px;height:38px}
+.doorsvg{width:min(240px,70%);justify-self:center;color:var(--ink);display:block;margin:0 auto}
+.doorsvg .flo{font-size:11px;fill:var(--muted)}
+.cas{cursor:pointer;outline:none}
+.cas rect{fill:color-mix(in srgb,var(--accent) 6%,transparent);stroke:#8a98a6;stroke-width:2;stroke-dasharray:5 4}
+.cas text{font:700 18px system-ui,sans-serif;fill:#8a98a6;pointer-events:none;dominant-baseline:middle}
+.cas.on rect{fill:#fde3bd;stroke:#c9801a;stroke-dasharray:none}
+.cas.on text{fill:#8a5200}
+.cas:focus-visible rect{stroke:var(--accent);stroke-width:3}
 @media (prefers-reduced-motion:reduce){.prog i{transition:none}}
 </style>
 </head>
