@@ -1,6 +1,7 @@
 (function () {
   "use strict";
   const $app = document.getElementById("app");
+  try { const th = localStorage.getItem("zamer_theme"); if (th) document.documentElement.dataset.theme = th; } catch (e) {}
   const ICON = {
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'
@@ -25,7 +26,7 @@
     if (acc.session) h.Authorization = "Bearer " + acc.session;
     return fetch(CFG.api.replace(/\/$/, "") + path, { method: body ? "POST" : "GET", headers: h, body: body ? JSON.stringify(body) : undefined })
       .then(async r => {
-        if (r.status === 401) { acc.session = ""; saveAcc(); throw new Error("auth"); }
+        if (r.status === 401 || r.status === 403) { acc.session = ""; saveAcc(); if (r.status === 403) loginErr = "Доступ закрыт администратором."; throw new Error("auth"); }
         const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); return j;
       });
   }
@@ -262,7 +263,7 @@
   function homeView() {
     const tile = (a, ic, title, sub, soon) => `<button class="tile${soon ? " soon" : ""}" data-a="${a}"><span class="ti">${SECT_ICON[ic]}</span><span class="tt"><b>${title}</b><small>${sub}</small></span>${soon ? `<em>в разработке</em>` : `<span class="go">›</span>`}</button>`;
     $app.innerHTML = `<main style="padding-top:max(24px,env(safe-area-inset-top))">
-      <div class="hello"><img src="icon-192.png" alt=""><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div></div>
+      <div class="hello"><button class="logob" data-a="theme" aria-label="Сменить тему"><img src="icon-192.png" alt=""></button><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div></div>
       <p class="hint" style="margin:-4px 0 0 2px">${esc(dateLong())}</p>
       ${LIM && acc.session ? `<div class="chip" style="justify-self:start">Осталось замеров: ${left()}</div>` : ""}
       ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${order.kind === "dl" ? "Двери и люки" : "Обрамления"} · ${esc((order.address || "").slice(0, 32))}</small></span><span class="go">›</span></button>` : ""}
@@ -295,7 +296,7 @@
   function controlHtml(s, val) {
     if (s.t === "casing") return casingHtml(val);
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
-    if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}"><img src="scheme_${k === "А" ? "A" : "B"}.png" alt="Схема ${k}">Схема ${k}</button>`).join("")}</div>`;
+    if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}" aria-label="Схема ${k}">${schemeSvg(k)}<b>Схема ${k}</b><small>${k === "А" ? "Верхнее обрамление накрывает боковые" : "Верхнее обрамление между боковыми"}</small></button>`).join("")}</div>`;
     if (s.t === "color") {
       const sw = [["7035", "#cbd0cc"], ["7040", "#9da3a6"], ["7016", "#383e42"], ["9003", "#f4f4f4"], ["9010", "#f1ede1"], ["9005", "#0e0e10"], ["9006", "#a5a5a5"], ["3020", "#cc0605"]];
       return `<div class="sw">${sw.map(([n, h]) => `<button data-pick="RAL ${n}" class="${val === "RAL " + n ? "on" : ""}"><i style="background:${h}"></i>RAL ${n}</button>`).join("")}</div><div class="field"><input id="inp" value="${esc(val && !sw.some(x => "RAL " + x[0] === val) ? val : "")}" placeholder="Другой цвет" autocomplete="off"></div>`;
@@ -398,10 +399,10 @@
     try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: order.address, text: "Заявка: " + order.address });
-        return toast("Заявка отправлена. Спасибо за работу!");
+        return showDone("sent");
       }
     } catch (e) { if (e && e.name === "AbortError") return; }
-    download(); toast("Файл сохранён. Отправьте его из папки «Загрузки»");
+    download(); showDone("saved");
   }
   function download() {
     if (!pdfCache) return;
@@ -410,12 +411,36 @@
   }
 
   function loginView() {
-    shell("Вход", null, `<div class="card"><h2 class="q">Вход через Telegram</h2><p class="hint">Приложение откроет Telegram. Нажмите там «Запустить» (Start), затем вернитесь сюда. Новым пользователям доступно бесплатных замеров: 10.</p>${loginWait ? `<p class="hint">Ждём подтверждения в Telegram…</p><a class="btn" style="text-decoration:none" href="${esc(loginWait)}">Открыть Telegram</a>` : ""}<p class="err">${esc(loginErr)}</p></div>`,
+    shell("Вход", null, `<div class="card"><h2 class="q">Вход через Telegram</h2><p class="hint">Приложение откроет Telegram. Нажмите там «Запустить» (Start), затем вернитесь сюда. Доступ открывает администратор: если вы входите впервые, ему уйдёт запрос, и бот напишет вам, когда доступ откроют.</p>${loginWait ? `<p class="hint">Ждём подтверждения в Telegram…</p><a class="btn" style="text-decoration:none" href="${esc(loginWait)}">Открыть Telegram</a>` : ""}<p class="err">${esc(loginErr)}</p></div>`,
       loginWait ? "" : `<button class="btn" data-a="dologin">Войти через Telegram</button>`, { menu: false });
   }
   function nocreditsView() {
     shell("Замеры закончились", null, `<div class="card"><h2 class="q">Замеры закончились</h2><p class="hint">Чтобы продолжить, пополните баланс: напишите администратору${CFG.contact ? " (" + esc(CFG.contact) + ")" : ""} и назовите ваш номер: <b>${esc(acc.id)}</b>.</p><p class="hint">Заявка сохранена, после пополнения её можно отправить.</p></div>`,
       `<button class="btn" data-a="back2">Назад к заявке</button>`, { menu: false });
+  }
+  function schemeSvg(k) {
+    const A = k === "А";
+    const side = (x, y, h, lab) => `<rect class="pc side" x="${x}" y="${y}" width="22" height="${h}" rx="2"/><text class="tl" transform="translate(${x + 14.5} ${y + h / 2}) rotate(-90)" text-anchor="middle">${lab}</text>`;
+    const top = A ? `<rect class="pc top" x="40" y="30" width="120" height="26" rx="2"/><text class="tl" x="100" y="46.5" text-anchor="middle">верхнее</text>`
+                  : `<rect class="pc top" x="62" y="30" width="76" height="26" rx="2"/><text class="tl" x="100" y="46.5" text-anchor="middle">верхнее</text>`;
+    const sides = A ? side(40, 56, 114, "левое") + side(138, 56, 114, "правое") : side(40, 30, 140, "левое") + side(138, 30, 140, "правое");
+    const bottom = A ? 170 : 170;
+    return `<svg class="schsvg" viewBox="0 0 200 196" aria-hidden="true"><defs><marker id="ar${k === "А" ? "a" : "b"}" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L6 3L0 6z" class="mk"/></marker></defs>
+      <rect x="62" y="30" width="76" height="140" class="gap"/>${sides}${top}
+      <line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k === "А" ? "a" : "b"})" marker-end="url(#ar${k === "А" ? "a" : "b"})"/><text class="dt" x="14" y="46" text-anchor="middle">A</text>
+      <line x1="182" y1="56" x2="182" y2="170" class="dm" marker-start="url(#ar${k === "А" ? "a" : "b"})" marker-end="url(#ar${k === "А" ? "a" : "b"})"/><text class="dt" x="192" y="117" text-anchor="middle">C</text>
+      <line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/><line x1="164" y1="56" x2="190" y2="56" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
+      <line x1="30" y1="${bottom}" x2="170" y2="${bottom}" class="floor"/></svg>`;
+  }
+  function showDone(kind) { doneKind = kind; view = "done"; save(); render(); }
+  let doneKind = "sent";
+  function doneView() {
+    const sent = doneKind === "sent";
+    $app.innerHTML = `<main style="padding-top:max(40px,env(safe-area-inset-top))"><div class="donebox"><div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>
+      <h2>${sent ? "Заявка отправлена" : "Файл сохранён"}</h2>
+      <p>${sent ? "Спасибо за работу! Снабжение получит ваш бланк." : "Отправьте файл снабжению из папки «Загрузки» на телефоне."}</p>
+      <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
+      <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
@@ -425,6 +450,7 @@
   function render() {
     if (view === "home") return homeView();
     if (view === "menu") return menuView();
+    if (view === "done") return doneView();
     if (view === "soon") return soonView();
     if (view === "login") return loginView();
     if (view === "nocredits") return nocreditsView();
@@ -450,6 +476,14 @@
         navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister()))) : 0]).then(done, done);
       return;
     }
+    if (a === "theme") {
+      const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      const t = dark ? "light" : "dark"; document.documentElement.dataset.theme = t;
+      try { localStorage.setItem("zamer_theme", t); } catch (e) {}
+      return toast(t === "dark" ? "Тёмная тема" : "Светлая тема");
+    }
+    if (a === "finish") { order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
+    if (a === "backrev") { view = "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
     if (a === "sec_win") { soonView.what = "win"; view = "soon"; return render(); }
     if (a === "sec_door") return newOrder("dl");
