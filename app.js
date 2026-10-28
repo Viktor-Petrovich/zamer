@@ -149,14 +149,13 @@
   ];
   const same = () => order.dsh_same === "Одинаковые на всех этажах";
   /* ---------- двери и люки ---------- */
-  const sameDL = () => (order.entrances || 0) <= 1 || order.dl_same === "Одинаковые во всех подъездах";
+  const sameDL = () => (order.entrances || 0) <= 1 || !String(order.dl_same || "").startsWith("Разные");
   function buildListDL() {
     const l = [
       { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
       { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
-      { p: "entrances", t: "int", min: 1, max: 50, unit: "шт.", sec: "Объект", q: "Сколько подъездов?", hint: "Количество подъездов, в которых нужен замер." }
+      { p: "entrances", t: "int", min: 1, max: 50, unit: "шт.", sec: "Объект", q: "Сколько подъездов?", hint: "Если подъездов несколько, выберите: размеры одинаковые или разные.", tg: [["dl_same", "Размеры по подъездам", "Одинаковые", ["Одинаковые", "Разные"]]] }
     ];
-    if ((order.entrances || 0) > 1) l.push({ p: "dl_same", t: "choice", sec: "Объект", q: "Размеры по подъездам", hint: "Если размеры одинаковые, вводим их один раз для всех подъездов.", ch: ["Одинаковые во всех подъездах", "Разные по подъездам"] });
     const N = order.entrances || 0, es = sameDL() ? [1] : Array.from({ length: N }, (_, i) => i + 1);
     es.forEach(e => {
       const sec = sameDL() ? (N > 1 ? "Двери и люки, все подъезды" : "Двери и люки") : `Подъезд ${e} из ${N}`;
@@ -165,13 +164,14 @@
       l.push({ p: `${pk}.tg`, t: "toggles", sec, ent: e, first: true, q: sameDL() && N > 1 ? "Что нужно в каждом подъезде?" : "Что нужно измерить?", hint: "Включите нужное. Размеры спросим дальше.",
         tg: [[`${pk}.door.need`, "Дверь", "Да"], [`${pk}.hatch.need`, "Люк", "Да"]] });
       if (getP(order, `${pk}.door.need`) === "Да") {
-        l.push({ p: `${pk}.door.pair`, t: "pair", min: 100, unit: mm, sec, ent: e, q: "Строительный проём двери", hint: "Размер двери посчитаем сами: высота проёма минус 20 мм, ширина минус 40 мм.", pair: [[`${pk}.door.h`, "Высота"], [`${pk}.door.w`, "Ширина"]] });
-        l.push({ p: `${pk}.door.hinge`, t: "choice", sec, ent: e, q: "С какой стороны петли у двери?", ch: ["Слева", "Справа"] });
-        l.push({ p: `${pk}.door.cas`, t: "casing", sec, ent: e, q: "Наличник двери", hint: "Нажмите на наличник на рисунке, чтобы добавить или убрать его." });
+        if (!getP(order, `${pk}.door.hinge`)) setP(order, `${pk}.door.hinge`, "Слева");
+        if (!getP(order, `${pk}.door.cas`)) setP(order, `${pk}.door.cas`, { l: true, t: true, r: true });
+        l.push({ p: `${pk}.door.pair`, t: "pair", pic: "door", min: 100, unit: mm, sec, ent: e, q: "Дверь: проём, петли, наличник", hint: "Нажимайте на наличник на рисунке. Размер двери: высота минус 20, ширина минус 40.",
+          casP: `${pk}.door.cas`, hingeP: `${pk}.door.hinge`, tg: [[`${pk}.door.hinge`, "Петли", "Слева", ["Слева", "Справа"]]], pair: [[`${pk}.door.h`, "Высота проёма"], [`${pk}.door.w`, "Ширина проёма"]] });
         l.push({ p: `${pk}.door.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество дверей", hint: qh });
       }
       if (getP(order, `${pk}.hatch.need`) === "Да") {
-        l.push({ p: `${pk}.hatch.pair`, t: "pair", min: 100, unit: mm, sec, ent: e, q: "Строительный проём люка", hint: "Размер люка посчитаем сами: проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон.", pair: [[`${pk}.hatch.h`, "Высота"], [`${pk}.hatch.w`, "Ширина"]] });
+        l.push({ p: `${pk}.hatch.pair`, t: "pair", pic: "hatch", min: 100, unit: mm, sec, ent: e, q: "Люк: строительный проём", hint: "Размер люка посчитаем сами: проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон.", pair: [[`${pk}.hatch.h`, "Высота проёма"], [`${pk}.hatch.w`, "Ширина проёма"]] });
         l.push({ p: `${pk}.hatch.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество люков", hint: qh });
       }
     });
@@ -219,6 +219,35 @@
     const hd = kind === "gl" ? "" : kind === "tl" ? `<rect x="${w / 2 - 7}" y="9" width="14" height="4" rx="1"/>` : `<rect x="${L ? w - 11 : 7}" y="${h / 2 - 8}" width="4" height="16" rx="1"/>`;
     return `<svg class="wsvg" viewBox="-8 -8 86 108" aria-hidden="true"><rect x="-6" y="-6" width="82" height="104" rx="2" class="wf"/><rect x="0" y="0" width="${w}" height="${h}" class="wg"/><g class="wl">${g}</g><g class="wh">${hd}</g></svg>`;
   }
+  const dimA = (x1, y1, x2, y2, tx, ty, lab, rot) => `<line class="dm" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-start="url(#pa)" marker-end="url(#pa)"/><text class="dl" x="${tx}" y="${ty}" text-anchor="middle"${rot ? ` transform="rotate(-90 ${tx} ${ty})"` : ""}>${lab}</text>`;
+  const PDEF = '<defs><marker id="pa" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L6 3L0 6z" class="mk"/></marker><pattern id="hp2" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9" stroke="#b7cde0" stroke-width="1"/></pattern></defs>';
+  function casG(c, k, x, y, w, h, tx, ty, name) { return `<g class="cas${c[k] ? " on" : ""}" data-cas="${k}" role="button" tabindex="0" aria-label="Наличник ${name}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4"/><text x="${tx}" y="${ty}" text-anchor="middle">${c[k] ? "✓" : "+"}</text></g>`; }
+  function doorPic(cas, hinge) {
+    const c = Object.assign({ l: true, t: true, r: true }, cas || {});
+    return `<svg class="pic" viewBox="0 0 260 250" role="group" aria-label="Дверь">${PDEF}
+      <rect x="96" y="70" width="76" height="150" fill="#e3eef7"/><rect x="96" y="70" width="76" height="150" fill="url(#hp2)"/><rect x="96" y="70" width="76" height="150" fill="none" stroke="currentColor" stroke-width="3"/>
+      <circle class="hd" cx="${hinge === "Справа" ? 106 : 162}" cy="148" r="3.6" fill="currentColor"/><line x1="50" y1="220" x2="218" y2="220" stroke="currentColor" stroke-width="2" stroke-dasharray="6 4"/>
+      ${casG(c, "l", 68, 44, 28, 176, 82, 136, "слева")}${casG(c, "t", 96, 44, 76, 26, 134, 62, "сверху")}${casG(c, "r", 172, 44, 28, 176, 186, 136, "справа")}
+      ${dimA(46, 70, 46, 220, 36, 145, "Высота", 1)}${dimA(96, 28, 172, 28, 134, 19, "Ширина")}
+      <text x="134" y="240" text-anchor="middle" class="flo">пол</text></svg>`;
+  }
+  function hatchPic() {
+    const g = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" class="cf"/>`;
+    return `<svg class="pic" viewBox="0 0 260 230" role="img" aria-label="Люк">${PDEF}
+      ${g(78, 52, 104, 104 + 0)}<rect x="94" y="68" width="72" height="72" fill="#e3eef7"/><rect x="94" y="68" width="72" height="72" fill="url(#hp2)"/><rect x="94" y="68" width="72" height="72" fill="none" stroke="currentColor" stroke-width="3"/>
+      <circle cx="154" cy="104" r="3.6" fill="currentColor"/>
+      ${dimA(54, 68, 54, 140, 44, 104, "Высота", 1)}${dimA(94, 176, 166, 176, 130, 196, "Ширина")}
+      <text x="130" y="218" text-anchor="middle" class="flo">наличник со всех сторон</text></svg>`;
+  }
+  function winPic(kind, hinge) {
+    const w = 100, h = 126, L = hinge !== "Справа", ln = (a, b, c, d) => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`;
+    let g = "";
+    if (kind === "tr" || kind === "tt") g += L ? ln(w, 0, 0, h / 2) + ln(w, h, 0, h / 2) : ln(0, 0, w, h / 2) + ln(0, h, w, h / 2);
+    if (kind === "tl" || kind === "tt") g += ln(0, 0, w / 2, h) + ln(w, 0, w / 2, h);
+    return `<svg class="pic wsvg" viewBox="0 0 260 230" role="img" aria-label="Окно">${PDEF}
+      <rect x="74" y="30" width="112" height="138" rx="2" class="wf"/><g transform="translate(80 36)"><rect width="${w}" height="${h}" class="wg"/><g class="wl">${g}</g></g>
+      ${dimA(50, 36, 50, 162, 40, 99, "Высота", 1)}${dimA(80, 188, 180, 188, 130, 208, "Ширина")}</svg>`;
+  }
   const winList = () => Math.max(1, Math.min(20, order.wins || 0));
   function buildListWin() {
     const l = [
@@ -229,12 +258,12 @@
     const N = order.wins || 0;
     for (let i = 1; i <= N; i++) {
       const sec = N > 1 ? `Окно ${i} из ${N}` : "Окно", pk = `win.${i}`;
-      l.push({ p: `${pk}.pair`, t: "pair", min: 100, unit: mm, sec, win: i, first: true, q: "Оконный проём", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40.", pair: [[`${pk}.h`, "Высота"], [`${pk}.w`, "Ширина"]] });
-      l.push({ p: `${pk}.kind`, t: "choice", sash: "type", sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Пунктир — как рисуют оконщики, вершина угла у петель.", ch: Object.keys(WK) });
+      l.push({ p: `${pk}.pair`, t: "pair", pic: "win", pk, min: 100, unit: mm, sec, win: i, first: true, q: "Оконный проём", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40.", pair: [[`${pk}.h`, "Высота проёма"], [`${pk}.w`, "Ширина проёма"]] });
+      l.push({ p: `${pk}.kind`, t: "choice", sash: "type", pk, sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Выберите тип, затем при необходимости включите отлив и сторону петель.", ch: Object.keys(WK) });
       const k = WK[getP(order, `${pk}.kind`)];
-      if (k === "tr" || k === "tt") l.push({ p: `${pk}.hinge`, t: "choice", sash: "hinge", kindPath: `${pk}.kind`, sec, q: "С какой стороны петли?", hint: "Смотрим на окно изнутри помещения.", ch: ["Слева", "Справа"] });
       if (!getP(order, `${pk}.ebb.need`)) setP(order, `${pk}.ebb.need`, "Нет");
-      l.push({ p: `${pk}.opt`, t: "toggles", sec, q: "Дополнительно", hint: "Включите, если к этому окну нужен отлив.", tg: [[`${pk}.ebb.need`, "Отлив", "Нет"]] });
+      if (!getP(order, `${pk}.hinge`)) setP(order, `${pk}.hinge`, "Слева");
+      if (!getP(order, `${pk}.ebb.need`)) setP(order, `${pk}.ebb.need`, "Нет");
       if (getP(order, `${pk}.ebb.need`) === "Да") {
         l.push({ p: `${pk}.ebb.pair`, t: "pair", unit: mm, sec, q: "Размеры отлива", hint: "Введите длину и ширину отлива.", pair: [[`${pk}.ebb.l`, "Длина"], [`${pk}.ebb.w`, "Ширина"]] });
       }
@@ -334,6 +363,7 @@
     let body = `<div class="card"><span class="chip">${esc(s.sec)} · вопрос ${pos + 1} из ${list.length}</span><h2 class="q">${esc(s.q)}</h2>${s.hint ? `<p class="hint">${esc(s.hint)}</p>` : ""}`;
     body += controlHtml(s, val) + `<p class="err" id="err">${esc(err)}</p></div>`;
     let foot = s.t === "choice" || s.t === "scheme" ? "" : `<button class="btn" data-a="next">Далее</button>`;
+    if (s.sash === "type") foot = `<button class="btn" data-a="next">Далее</button>`;
     if (s.t === "scheme") foot = `<button class="btn" data-a="next">Далее</button>`;
     if (order.kind === "dl" && !sameDL() && s.first && s.ent > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как в подъезде ${s.ent - 1}</button>`;
     if (order.kind === "win" && s.first && s.win > 1) foot += `<button class="btn sec" data-a="copyprev">Как окно ${s.win - 1}: всё то же</button>`;
@@ -341,13 +371,35 @@
     shell(s.sec, pos / list.length, body, foot);
     bindInput(s);
   }
+  function tglHtml([p, lab, def, seg]) {
+    const v = getP(order, p) || (setP(order, p, def), def);
+    if (seg) return `<div class="tgl segrow"><span>${esc(lab)}</span><div class="seg" role="radiogroup">${seg.map(o => `<button type="button" role="radio" aria-checked="${v === o}" class="${v === o ? "on" : ""}" data-seg="${esc(p)}|${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
+    return `<button class="tgl${v === "Да" ? " on" : ""}" role="switch" aria-checked="${v === "Да"}" data-tg="${p}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`;
+  }
   function controlHtml(s, val) {
+    let h = "";
+    if (s.pic === "door") h += doorPic(getP(order, s.casP), getP(order, s.hingeP));
+    else if (s.pic === "hatch") h += hatchPic();
+    else if (s.pic === "win") h += winPic(WK[getP(order, s.pk + ".kind")], getP(order, s.pk + ".hinge"));
+    if (s.pic && s.tg) h += `<div class="tgls">${s.tg.map(tglHtml).join("")}</div>`;
+    h += controlBase(s, val);
+    if (!s.pic && s.tg && s.t !== "toggles") h += `<div class="tgls" style="margin-top:12px">${s.tg.map(tglHtml).join("")}</div>`;
+    return h;
+  }
+  function controlBase(s, val) {
     if (s.t === "casing") return casingHtml(val);
     if (s.t === "pair") return s.pair.map(([p, lab], k) => { const v = getP(order, p); return `<label class="plab">${esc(lab)}</label><div class="field"><input id="${k ? "inp2" : "inp"}" inputmode="decimal" enterkeyhint="${k ? "done" : "next"}" value="${esc(v == null ? "" : String(v).replace(".", ","))}"><span class="u">${s.unit}</span></div>`; }).join("");
-    if (s.t === "toggles") return `<div class="tgls">${s.tg.map(([p, lab, def]) => { const v = getP(order, p) || (setP(order, p, def), def); return `<button class="tgl${v === "Да" ? " on" : ""}" role="switch" aria-checked="${v === "Да"}" data-tg="${p}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`; }).join("")}</div>`;
+    if (s.t === "toggles") return `<div class="tgls">${s.tg.map(tglHtml).join("")}</div>`;
+    if (false) return `<div class="tgls">${s.tg.map(([p, lab, def, seg]) => { const v = getP(order, p) || (setP(order, p, def), def);
+      if (seg) return `<div class="tgl segrow"><span>${esc(lab)}</span><div class="seg" role="radiogroup">${seg.map(o => `<button type="button" role="radio" aria-checked="${v === o}" class="${v === o ? "on" : ""}" data-seg="${esc(p)}|${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
+      return `<button class="tgl${v === "Да" ? " on" : ""}" role="switch" aria-checked="${v === "Да"}" data-tg="${p}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`; }).join("")}</div>`;
     if (s.t === "choice" && s.sash) {
       const kp = s.sash === "hinge" ? WK[getP(order, s.kindPath)] : null;
-      return `<div class="schemes wsch">${s.ch.map(c => `<button class="sch${val === c ? " on" : ""}" data-pick="${esc(c)}">${s.sash === "hinge" ? sashSvg(kp, c) : sashSvg(WK[c], "Слева")}<b>${esc(c)}</b></button>`).join("")}</div>`;
+      return `<div class="schemes wsch">${s.ch.map(c => `<button class="sch${val === c ? " on" : ""}" data-pick="${esc(c)}">${s.sash === "hinge" ? sashSvg(kp, c) : sashSvg(WK[c], (s.pk && getP(order, s.pk + ".hinge")) || "Слева")}<b>${esc(c)}</b></button>`).join("")}</div>` + (s.sash === "type" ? (() => {
+        const k = WK[val], turn = k === "tr" || k === "tt";
+        if (!val) return "";
+        return `<div class="tgls" style="margin-top:12px">${turn ? tglHtml([`${s.pk}.hinge`, "Петли", "Слева", ["Слева", "Справа"]]) : ""}${tglHtml([`${s.pk}.ebb.need`, "Отлив", "Нет"])}</div>`;
+      })() : "");
     }
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
     if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}" aria-label="Схема ${k}">${schemeSvg(k)}<b>Схема ${k}</b><small>${k === "А" ? "Верхнее обрамление накрывает боковые" : "Верхнее обрамление между боковыми"}</small></button>`).join("")}</div>`;
@@ -593,13 +645,17 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   $app.addEventListener("click", e => {
     const cs = e.target.closest("[data-cas]");
     if (cs) {
-      const s = buildList()[pos]; if (!s || s.t !== "casing") return;
-      const cur = Object.assign({ l: true, t: true, r: true }, getP(order, s.p) || {}); cur[cs.dataset.cas] = !cur[cs.dataset.cas];
-      setP(order, s.p, cur); save(); return render();
+      const s = buildList()[pos]; if (!s || (s.t !== "casing" && !s.casP)) return;
+      const cp = s.casP || s.p;
+      const cur = Object.assign({ l: true, t: true, r: true }, getP(order, cp) || {}); cur[cs.dataset.cas] = !cur[cs.dataset.cas];
+      setP(order, cp, cur); save();
+      if (s.casP) { const g = cs.closest("g[data-cas]") || cs, on = cur[cs.dataset.cas]; g.classList.toggle("on", on); const t = g.querySelector("text"); if (t) t.textContent = on ? "✓" : "+"; return; }
+      return render();
     }
     const b = e.target.closest("button"); if (!b) return;
     try { if (!b.matches(".ghost,.ib")) { const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, sp = document.createElement("span"); sp.className = "rip"; sp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`; b.appendChild(sp); setTimeout(() => sp.remove(), 650); } } catch (x) {}
     if (b.dataset.ins) { const i = document.getElementById("inp"); if (i) { const a = i.selectionStart == null ? i.value.length : i.selectionStart, z = i.selectionEnd == null ? a : i.selectionEnd; i.value = i.value.slice(0, a) + b.dataset.ins + i.value.slice(z); i.focus(); try { i.setSelectionRange(a + 1, a + 1); } catch (x) {} } return; }
+    if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
     if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
     if (b.dataset.a) return act(b.dataset.a);
@@ -607,6 +663,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       const l = buildList(), s = l[pos];
       if (s.t === "color") { setP(order, s.p, b.dataset.pick); const inp = document.getElementById("inp"); if (inp) inp.value = ""; return advance(s, b.dataset.pick); }
       setP(order, s.p, b.dataset.pick);
+      if (s.sash === "type") { save(); return render(); }
       if (s.t === "scheme") { document.querySelectorAll(".sch").forEach(x => x.classList.toggle("on", x === b)); save(); return; }
       b.parentNode.querySelectorAll(".choice,.sch").forEach(x => x.classList.toggle("on", x === b));
       save(); return setTimeout(() => advance(s, b.dataset.pick), 160);
