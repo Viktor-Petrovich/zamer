@@ -797,6 +797,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   /* слизь стекает со значков вниз экрана */
   function slimeFlow() {
     document.querySelectorAll(".slimeflow,.slimepool").forEach(x => x.remove());
+    return; // слизь отключена
+    document.querySelectorAll(".slimeflow,.slimepool").forEach(x => x.remove());
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const icons = [...document.querySelectorAll(".tile .ti, .logob, .card, .chip, .btn:not(.ghost)")].slice(0, 14), H = Math.max(document.documentElement.scrollHeight, innerHeight);
     icons.forEach((el, i) => {
