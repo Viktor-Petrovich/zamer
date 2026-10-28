@@ -177,15 +177,16 @@ main>*{animation:rise .45s both}main>*:nth-child(2){animation-delay:.05s}main>*:
 .sheetbox{width:100%;max-width:520px;background:var(--surface);border-radius:22px 22px 0 0;padding:22px 18px max(18px,env(safe-area-inset-bottom));display:grid;gap:10px;animation:up .28s cubic-bezier(.2,.8,.2,1)}
 .sheetbox h3{margin:0;font-size:19px}.sheetbox p{margin:0;color:var(--muted);font-size:14.5px}
 .sheetbox .btn{text-decoration:none}
+.sheetbox.scroll{max-height:88vh;overflow:auto}.inst b{font-size:16px}.inst ol{margin:6px 0 4px;padding-left:22px;color:var(--ink);font-size:15px;line-height:1.5}
 .mailaddr{font-weight:700;font-size:18px;word-break:break-all;background:var(--soft);border-radius:12px;padding:12px 14px;text-align:center;user-select:all}
 @keyframes fade{from{opacity:0}}@keyframes up{from{transform:translateY(40px);opacity:0}}
 .plab{font-weight:600;color:var(--muted);font-size:14px;margin:4px 0 -4px 2px}
-.segrow{cursor:default}.seg{display:flex;background:#b5c0ca;border-radius:99px;padding:3px;gap:0}
-.seg button{border:0;background:transparent;color:#fff;font:inherit;font-size:16px;font-weight:700;border-radius:99px;min-height:40px;padding:0 16px;cursor:pointer;transition:background .25s,color .25s,box-shadow .25s;overflow:visible}
+.segrow{cursor:default;gap:10px;min-width:0}.segrow>span{flex:none}.seg{min-width:0}.seg{display:flex;background:#b5c0ca;border-radius:99px;padding:3px;gap:0}
+.seg button{border:0;background:transparent;color:#fff;font:inherit;font-size:15px;font-weight:700;border-radius:99px;min-height:40px;padding:0 12px;cursor:pointer;transition:background .25s,color .25s,box-shadow .25s;overflow:visible}
 .seg button.on{background:#fff;color:var(--accent);box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .pic{width:min(320px,94%);justify-self:center;display:block;margin:0 auto;color:var(--ink)}
 .pic .dm{stroke:var(--accent);stroke-width:1.5}.pic .mk{fill:var(--accent)}.pic .dl{font:700 11px system-ui,sans-serif;fill:var(--accent)}
-.pic .flo{font-size:11px;fill:var(--muted)}.pic .cf{fill:#fde3bd;stroke:#c9801a;stroke-width:1.5}
+.pic .hg{fill:var(--accent);stroke:var(--ink);stroke-width:.8}.pic .flo{font-size:11px;fill:var(--muted)}.pic .cf{fill:#fde3bd;stroke:#c9801a;stroke-width:1.5}
 .wsvg.pic{width:min(320px,94%)}
 .tgls{display:grid;gap:10px}
 .tgl{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:16px;min-height:62px;padding:0 18px;font:inherit;font-size:18px;font-weight:600;cursor:pointer}

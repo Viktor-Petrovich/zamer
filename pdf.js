@@ -239,7 +239,10 @@
     if (R) { x.fillRect(ox + w, y - (B ? t : 0), t, h + (Tp ? t : 0) + (B ? t : 0)); x.strokeRect(ox + w, y - (B ? t : 0), t, h + (Tp ? t : 0) + (B ? t : 0)); }
     if (Tp) { x.fillRect(ox - (L ? t : 0), y + h, w + (L ? t : 0) + (R ? t : 0), t); x.strokeRect(ox - (L ? t : 0), y + h, w + (L ? t : 0) + (R ? t : 0), t); }
     if (B) { x.fillRect(ox - (L ? t : 0), y - t, w + (L ? t : 0) + (R ? t : 0), t); x.strokeRect(ox - (L ? t : 0), y - t, w + (L ? t : 0) + (R ? t : 0), t); }
-    if (hatch) { x.fillStyle = INKC; x.beginPath(); x.arc(ox + w - 12, y + h / 2, 2.6, 0, 7); x.fill(); }
+    const hl = hatch ? true : vals.hinge !== "Справа";   // петли у люка всегда слева, напротив ручки
+    x.fillStyle = INKC; x.beginPath(); x.arc(hl ? ox + w - 9 : ox + 9, y + h / 2, 2.6, 0, 7); x.fill();
+    x.fillStyle = ACC; x.strokeStyle = INKC; x.lineWidth = .7;
+    (hatch ? [.25, .75] : [.12, .5, .88]).forEach(k => { const hx = hl ? ox + .5 : ox + w - 5.5, hy = y + h * k - 5; x.fillRect(hx, hy, 5, 10); x.strokeRect(hx, hy, 5, 10); });
     const sx = L ? 9 : 0, by = B ? 7 : 0;
     x.strokeStyle = MUT; x.lineWidth = .6;
     line(x, ox - 4 - sx, y + h, ox - 26 - sx, y + h); line(x, ox - 4 - sx, y, ox - 26 - sx, y);
@@ -268,6 +271,13 @@
       T(x, lab, cx + 18, PH - (yt + rh / 2 + 4), { size: 10, color: INKC });
     });
   }
+  const RED = "#c0392b";
+  function resRow(x, bx, yt, bw, rh, label, text, hint) {
+    rr(x, bx, yt, bw, rh, 6, "#fdecea", RED, 1.4);
+    T(x, label, bx + 12, PH - (yt + rh / 2 + 4), { size: 10.5, bold: true, color: RED });
+    T(x, text, bx + 118, PH - (yt + rh / 2 + 4.5), { size: 13, bold: true, color: RED });
+    if (hint) T(x, hint, bx + bw - 12, PH - (yt + rh / 2 + 3.5), { size: 8, align: "right", color: MUT });
+  }
   function dlCard(x, cx0, top, w, h, num, title, hatch, d, mult) {
     rr(x, cx0, top, w, h, 10, "#fff", LN, 1);
     x.fillStyle = ACC; x.beginPath(); x.arc(cx0 + 24, PH - (top + 24), 11, 0, 7); x.fill();
@@ -280,15 +290,13 @@
     }
     const dw = hatch ? 76 : 54, dh = hatch ? 76 : 84;
     const cas = hatch ? { l: 1, t: 1, r: 1, b: 1 } : { l: d.cas.l, t: d.cas.t, r: d.cas.r };
-    openingDL(x, cx0 + (w - dw) / 2 + 12, top + 58, dw, dh, hatch, cas, { h: d.h, w: d.w });
+    openingDL(x, cx0 + (w - dw) / 2 + 12, top + 58, dw, dh, hatch, cas, { h: d.h, w: d.w, hinge: d.hinge });
     const bx = cx0 + 18, bw = w - 36, rh = 24, gap = 4;
     let yt = top + 58 + dh + 38 + (hatch ? 7 : 0);
     row(x, bx, yt, bw, rh, "Высота строительного проёма", cell(d.h), "мм"); yt += rh + gap;
     row(x, bx, yt, bw, rh, "Ширина строительного проёма", cell(d.w), "мм"); yt += rh + gap;
     const rh2 = hatch ? [d.h - 10, d.w - 10] : [d.h - 20, d.w - 40];
-    row(x, bx, yt, bw, rh, hatch ? "Размер люка (В × Ш)" : "Размер двери (В × Ш)", "", "", "\u200b");
-    // значение расчёта крупно справа
-    T(x, `${fmt(rh2[0])} × ${fmt(rh2[1])} мм`, bx + 168, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
+    resRow(x, bx, yt, bw, rh, hatch ? "Люк (В × Ш)" : "Дверь (В × Ш)", `${fmt(rh2[0])} × ${fmt(rh2[1])} мм`, hatch ? "проём − 10" : "В − 20, Ш − 40");
     yt += rh + gap;
     if (!hatch) { checks(x, bx, yt, bw, rh, "Петли", [["l", "слева"], ["r", "справа"]], { l: d.hinge === "Слева", r: d.hinge === "Справа" }, 118, 82); yt += rh + gap; }
     if (hatch) row(x, bx, yt, bw, rh, "Наличник", "", "", "всегда, со всех четырёх сторон");
@@ -349,9 +357,7 @@
     const bx = cx0 + 18, bw = w - 36, rh = 24, gap = 4; let yt = top + 58 + wh + 52;
     row(x, bx, yt, bw, rh, "Высота оконного проёма", cell(it.h), "мм"); yt += rh + gap;
     row(x, bx, yt, bw, rh, "Ширина оконного проёма", cell(it.w), "мм"); yt += rh + gap;
-    row(x, bx, yt, bw, rh, "Размер окна (В × Ш)", "", "", "\u200b");
-    T(x, `${fmt(it.h - 20)} × ${fmt(it.w - 40)} мм`, bx + 150, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
-    T(x, "высота − 20, ширина − 40", bx + bw - 12, PH - (yt + rh / 2 + 3.5), { size: 8, align: "right", color: MUT }); yt += rh + gap;
+    resRow(x, bx, yt, bw, rh, "Окно (В × Ш)", `${fmt(it.h - 20)} × ${fmt(it.w - 40)} мм`, "В − 20, Ш − 40"); yt += rh + gap;
     row(x, bx, yt, bw, rh, "Отлив (длина × ширина)", "", "", "\u200b");
     if (it.ebb) T(x, `${fmt(it.ebb.l)} × ${fmt(it.ebb.w)} мм`, bx + 168, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
     else T(x, "не требуется", bx + 168, PH - (yt + rh / 2 + 4), { size: 10.5, color: MUT });

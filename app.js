@@ -154,14 +154,15 @@
     const l = [
       { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
       { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
-      { p: "entrances", t: "int", min: 1, max: 50, unit: "шт.", sec: "Объект", q: "Сколько подъездов?", hint: "Если подъездов несколько, выберите: размеры одинаковые или разные.", tg: [["dl_same", "Размеры по подъездам", "Одинаковые", ["Одинаковые", "Разные"]]] }
+      { p: "entrances", t: "int", min: 1, max: 50, unit: "шт.", sec: "Объект", q: "Сколько подъездов?", hint: "Выберите, одинаковые ли размеры по подъездам, и что нужно измерить: дверь, люк или оба.", tg: [["dl_same", "Размеры", "Одинаковые", ["Одинаковые", "Разные"]], ["need_door", "Дверь", "Да"], ["need_hatch", "Люк", "Да"]] }
     ];
     const N = order.entrances || 0, es = sameDL() ? [1] : Array.from({ length: N }, (_, i) => i + 1);
     es.forEach(e => {
       const sec = sameDL() ? (N > 1 ? "Двери и люки, все подъезды" : "Двери и люки") : `Подъезд ${e} из ${N}`;
       const pk = `ent.${e}`, qh = sameDL() && N > 1 ? "Количество на один подъезд. В бланке оно умножится на число подъездов." : "";
-      [["door", "Да"], ["hatch", "Да"]].forEach(([k, d]) => { if (!getP(order, `${pk}.${k}.need`)) setP(order, `${pk}.${k}.need`, d); });
-      l.push({ p: `${pk}.tg`, t: "toggles", sec, ent: e, first: true, q: sameDL() && N > 1 ? "Что нужно в каждом подъезде?" : "Что нужно измерить?", hint: "Включите нужное. Размеры спросим дальше.",
+      const gl = { door: order.need_door || "Да", hatch: order.need_hatch || "Да" };
+      ["door", "hatch"].forEach(k => { if (sameDL() || !getP(order, `${pk}.${k}.need`)) setP(order, `${pk}.${k}.need`, gl[k]); });
+      if (!sameDL() && N > 1) l.push({ p: `${pk}.tg`, t: "toggles", sec, ent: e, first: true, q: `Что нужно в подъезде ${e}?`, hint: "Включите нужное. Размеры спросим дальше.",
         tg: [[`${pk}.door.need`, "Дверь", "Да"], [`${pk}.hatch.need`, "Люк", "Да"]] });
       if (getP(order, `${pk}.door.need`) === "Да") {
         if (!getP(order, `${pk}.door.hinge`)) setP(order, `${pk}.door.hinge`, "Слева");
@@ -226,7 +227,9 @@
     const c = Object.assign({ l: true, t: true, r: true }, cas || {});
     return `<svg class="pic" viewBox="0 0 260 250" role="group" aria-label="Дверь">${PDEF}
       <rect x="96" y="70" width="76" height="150" fill="#e3eef7"/><rect x="96" y="70" width="76" height="150" fill="url(#hp2)"/><rect x="96" y="70" width="76" height="150" fill="none" stroke="currentColor" stroke-width="3"/>
-      <circle class="hd" cx="${hinge === "Справа" ? 106 : 162}" cy="148" r="3.6" fill="currentColor"/><line x1="50" y1="220" x2="218" y2="220" stroke="currentColor" stroke-width="2" stroke-dasharray="6 4"/>
+      <circle class="hd" cx="${hinge === "Справа" ? 106 : 162}" cy="148" r="3.6" fill="currentColor"/>
+      <g class="hgL"${hinge === "Справа" ? ' style="display:none"' : ""}>${[92, 138, 192].map(y => `<rect x="96" y="${y}" width="7" height="16" rx="1.5" class="hg"/>`).join("")}</g>
+      <g class="hgR"${hinge === "Справа" ? "" : ' style="display:none"'}>${[92, 138, 192].map(y => `<rect x="165" y="${y}" width="7" height="16" rx="1.5" class="hg"/>`).join("")}</g><line x1="50" y1="220" x2="218" y2="220" stroke="currentColor" stroke-width="2" stroke-dasharray="6 4"/>
       ${casG(c, "l", 68, 44, 28, 176, 82, 136, "слева")}${casG(c, "t", 96, 44, 76, 26, 134, 62, "сверху")}${casG(c, "r", 172, 44, 28, 176, 186, 136, "справа")}
       ${dimA(46, 70, 46, 220, 36, 145, "Высота", 1)}${dimA(96, 28, 172, 28, 134, 19, "Ширина")}
       <text x="134" y="240" text-anchor="middle" class="flo">пол</text></svg>`;
@@ -236,8 +239,9 @@
     return `<svg class="pic" viewBox="0 0 260 230" role="img" aria-label="Люк">${PDEF}
       ${g(78, 52, 104, 104 + 0)}<rect x="94" y="68" width="72" height="72" fill="#e3eef7"/><rect x="94" y="68" width="72" height="72" fill="url(#hp2)"/><rect x="94" y="68" width="72" height="72" fill="none" stroke="currentColor" stroke-width="3"/>
       <circle cx="154" cy="104" r="3.6" fill="currentColor"/>
+      ${[78, 116].map(y => `<rect x="94" y="${y}" width="7" height="16" rx="1.5" class="hg"/>`).join("")}
       ${dimA(54, 68, 54, 140, 44, 104, "Высота", 1)}${dimA(94, 176, 166, 176, 130, 196, "Ширина")}
-      <text x="130" y="218" text-anchor="middle" class="flo">наличник со всех сторон</text></svg>`;
+      <text x="130" y="214" text-anchor="middle" class="flo">наличник со всех сторон, петли напротив ручки</text></svg>`;
   }
   function winPic(kind, hinge) {
     const w = 100, h = 126, L = hinge !== "Справа", ln = (a, b, c, d) => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`;
@@ -434,6 +438,7 @@
     }
     if (s.t === "toggles") { pos++; save(); return render(); }
     if (s.t === "casing") { if (!getP(order, s.p)) setP(order, s.p, { l: true, t: true, r: true }); pos++; save(); return render(); }
+    if (s.p === "entrances" && order.need_door === "Нет" && order.need_hatch === "Нет") { const m = "Включите хотя бы дверь или люк"; wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; return; }
     const r = (s.t === "choice" || s.t === "scheme") ? (raw ? { v: raw } : { e: "Выберите вариант" }) : parse(s, raw);
     if (r.e) { wizardView.err = r.e; const el = document.getElementById("err"); if (el) el.textContent = r.e; return; }
     wizardView.err = "";
@@ -492,6 +497,8 @@
       document.getElementById("sendBtn").disabled = false;
     } catch (e) { const g = document.getElementById("gen"); if (g) g.textContent = "Не удалось сформировать бланк: " + e.message; }
   }
+  const KIND_NAME = { dl: "Двери и люки", win: "Окна", frame: "Обрамления" };
+  const kindName = () => KIND_NAME[order.kind] || KIND_NAME.frame;
   function exportOrder() {
     const stamp = dateLong(new Date(), true);
     if (order.kind === "win") return { kind: "win", stamp, address: order.address, contact: order.contact, worker: acc.name || "", items: winItems() };
@@ -507,7 +514,7 @@
   }
   function fileName() {
     const a = (order.address || "Заявка").replace(/[\\/:*?"<>|\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "Заявка";
-    return a + ".pdf";
+    return kindName() + " - " + a + ".pdf";
   }
   async function share() {
     if (!pdfCache) return;
@@ -559,7 +566,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
   function menuView() {
-    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
+    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
   }
 
   /* ---------- диспетчер ---------- */
@@ -618,7 +625,19 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "home") { view = "home"; return render(); }
     if (a === "back2") { view = "review"; return render(); }
     if (a === "logout") { if (!confirm("Выйти из аккаунта? Неотправленные замеры на телефоне будут возвращены на баланс при следующем входе.")) return; api("/api/release", { tickets: acc.tickets }).catch(() => {}); acc = { session: "", id: "", name: "", credits: null, tickets: [], redeem: acc.redeem }; saveAcc(); view = "home"; return render(); }
-    if (a === "new") return newOrder(order.kind || "frame");
+    if (a === "new") {
+      if (hasDraft() && !confirm("Начать новую заявку? Текущие ответы будут удалены.")) return;
+      order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render();
+    }
+    if (a === "install") {
+      const o = document.createElement("div"); o.className = "sheet";
+      o.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>Установка на рабочий стол</h3>
+        <div class="inst"><b>Android (Chrome)</b><ol><li>Откройте приложение в браузере Chrome.</li><li>Нажмите значок меню (три вертикальные точки) справа вверху.</li><li>Выберите «Установить приложение» или «Добавить на главный экран».</li><li>Нажмите «Установить» и подтвердите.</li></ol></div>
+        <div class="inst"><b>iPhone (Safari)</b><ol><li>Откройте приложение в браузере Safari (в других браузерах не получится).</li><li>Нажмите «Поделиться» (квадрат со стрелкой вверх) внизу экрана.</li><li>Прокрутите вниз и выберите «На экран “Домой”».</li><li>Нажмите «Добавить» справа вверху.</li></ol></div>
+        <p>После этого значок «Замер ДШ» появится на рабочем столе, и приложение будет открываться на весь экран.</p><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+      o.addEventListener("click", ev => { if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove(); });
+      document.body.appendChild(o); return;
+    }
     if (a === "resume") { view = "wizard"; const n = buildList().length; if (pos >= n) view = isSimple() ? "review" : (order.stops ? "hub" : "wizard"); return render(); }
     if (a === "menu") { menuReturn = view; view = "menu"; return render(); }
     if (a === "close") { view = menuReturn === "menu" ? "home" : menuReturn; return render(); }
@@ -655,7 +674,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     const b = e.target.closest("button"); if (!b) return;
     try { if (!b.matches(".ghost,.ib")) { const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, sp = document.createElement("span"); sp.className = "rip"; sp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`; b.appendChild(sp); setTimeout(() => sp.remove(), 650); } } catch (x) {}
     if (b.dataset.ins) { const i = document.getElementById("inp"); if (i) { const a = i.selectionStart == null ? i.value.length : i.selectionStart, z = i.selectionEnd == null ? a : i.selectionEnd; i.value = i.value.slice(0, a) + b.dataset.ins + i.value.slice(z); i.focus(); try { i.setSelectionRange(a + 1, a + 1); } catch (x) {} } return; }
-    if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
+    if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") { document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); document.querySelectorAll(".pic .hgL").forEach(g => { g.style.display = v === "Справа" ? "none" : ""; }); document.querySelectorAll(".pic .hgR").forEach(g => { g.style.display = v === "Справа" ? "" : "none"; }); } else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
     if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
     if (b.dataset.a) return act(b.dataset.a);
