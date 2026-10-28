@@ -351,6 +351,7 @@
     frame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V6a1 1 0 011-1h12a1 1 0 011 1v15"/><path d="M9 21V9h6v12"/></svg>',
     door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M14.5 12h.01M5 21h14"/></svg>',
     claim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 11v5"/><circle cx="12" cy="18.6" r=".6" fill="currentColor"/></svg>',
+    cv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/></svg>',
     work: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 12l2 2 4-4M8.5 17h7"/></svg>',
     win: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M12 4v16M4 12h16"/></svg>'
   };
@@ -368,6 +369,24 @@
     return t + (n ? ", " + n : "") + "!";
   }
   const tile = (a, ic, title, sub, soon) => `<button class="tile${soon ? " soon" : ""}" data-a="${a}"><span class="ti">${SECT_ICON[ic]}</span><span class="tt"><b>${title}</b><small>${sub}</small></span>${soon ? `<em>в разработке</em>` : `<span class="go">›</span>`}</button>`;
+  let cvData = (() => { try { return JSON.parse(localStorage.getItem("zamer_cv")) || {}; } catch (e) { return {}; } })();
+  const REGIONS = ["Республика Адыгея","Республика Алтай","Республика Башкортостан","Республика Бурятия","Республика Дагестан","Республика Ингушетия","Кабардино-Балкарская Республика","Республика Калмыкия","Карачаево-Черкесская Республика","Республика Карелия","Республика Коми","Республика Крым","Республика Марий Эл","Республика Мордовия","Республика Саха (Якутия)","Республика Северная Осетия — Алания","Республика Татарстан","Республика Тыва","Удмуртская Республика","Республика Хакасия","Чеченская Республика","Чувашская Республика","Алтайский край","Забайкальский край","Камчатский край","Краснодарский край","Красноярский край","Пермский край","Приморский край","Ставропольский край","Хабаровский край","Амурская область","Архангельская область","Астраханская область","Белгородская область","Брянская область","Владимирская область","Волгоградская область","Вологодская область","Воронежская область","Ивановская область","Иркутская область","Калининградская область","Калужская область","Кемеровская область","Кировская область","Костромская область","Курганская область","Курская область","Ленинградская область","Липецкая область","Магаданская область","Московская область","Мурманская область","Нижегородская область","Новгородская область","Новосибирская область","Омская область","Оренбургская область","Орловская область","Пензенская область","Псковская область","Ростовская область","Рязанская область","Самарская область","Саратовская область","Сахалинская область","Свердловская область","Смоленская область","Тамбовская область","Тверская область","Томская область","Тульская область","Тюменская область","Ульяновская область","Челябинская область","Ярославская область","Москва","Санкт-Петербург","Севастополь","Еврейская автономная область","Ненецкий АО","Ханты-Мансийский АО","Чукотский АО","Ямало-Ненецкий АО","Донецкая Народная Республика","Луганская Народная Республика","Запорожская область","Херсонская область"];
+  const CV_SKILLS = ["Монтаж механики", "Электромонтаж", "Наладка"];
+  function cvView() {
+    const d = cvData, inp = (id, lab, val, extra = "") => `<label class="plab">${lab}</label><div class="field"><input id="${id}" value="${esc(val || "")}" autocomplete="off" ${extra}></div>`;
+    shell("Работа монтажником", null, `<div class="card"><span class="chip">Анкета · резюме</span><h2 class="q">Расскажите о себе</h2><p class="hint">Заполните анкету, и мы получим её на почту stroyliftkompleks@yandex.ru. Вопросы только по делу.</p>
+      <div class="form">
+      ${inp("cv_name", "Фамилия, имя, отчество", d.name, 'autocapitalize="words"')}
+      ${inp("cv_phone", "Телефон", d.phone, 'inputmode="tel" placeholder="+7 900 123-45-67"')}
+      ${inp("cv_region", "Регион России, где живёте", d.region, 'list="cv_regs"')}<datalist id="cv_regs">${REGIONS.map(r => `<option value="${esc(r)}">`).join("")}</datalist>
+      ${inp("cv_last", "Где работали последнее время", d.last, 'placeholder="Компания или «самозанятый»"')}
+      ${inp("cv_exp", "Стаж монтажа лифтов, лет", d.exp, 'inputmode="decimal" placeholder="Например, 5"')}
+      ${inp("cv_inn", "ИНН (самозанятый, ИП или организация)", d.inn, 'inputmode="numeric" maxlength="12" placeholder="12 цифр"')}
+      <label class="plab">Что умеете делать</label><div class="suppseg">${CV_SKILLS.map(k => `<button type="button" class="${(d.skills || []).includes(k) ? "on" : ""}" data-cvs="${k}">${k}</button>`).join("")}</div>
+      <button type="button" class="tgl${d.trip === "Да" ? " on" : ""}" role="switch" aria-checked="${d.trip === "Да"}" data-cvtg="1"><span>Готов к командировкам</span><i class="sw2"><b></b></i></button>
+      </div><p class="err" id="err">${esc(d.err || "")}</p></div>`,
+      `<button class="btn" data-a="cv_send">Отправить анкету</button><button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+  }
   function measView() {
     shell("Замеры", null, `<div class="tiles">
         ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
@@ -712,6 +731,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "work") return workView();
     if (view === "claim") return claimView();
     if (view === "meas") return measView();
+    if (view === "cv") return cvView();
     if (view === "jobs") return jobsView();
     if (view === "supply") return supplyView();
     if (view === "login") return loginView();
@@ -818,7 +838,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "next") { if (sub) return subNext(); const l = buildList(), s = l[pos]; return advance(s, readValue(s)); }
     if (a === "back") {
       if (view === "soon") { view = /^claim_/.test(soonView.what) ? "claim" : "home"; return render(); }
-      if (view === "meas" || view === "jobs") { view = "home"; return render(); }
+      if (view === "meas" || view === "jobs" || view === "cv") { view = "home"; return render(); }
     if (view === "work" || view === "claim") { view = "jobs"; return render(); }
       if (sub) { sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
@@ -850,8 +870,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     }
     if (a === "mail") {
       const E = "stroyliftkompleks@yandex.ru", o = document.createElement("div"); o.className = "sheet";
-      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><p class="hint" style="margin:0 0 10px">Разработчик: <b>Кащеев Виктор Петрович</b></p><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><p class="hint" style="margin:0 0 10px">Разработчик: <b>Кащеев Виктор Петрович</b></p><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn sec" data-a="job_cv">Нужна работа монтажником? Анкета</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
       o.addEventListener("click", ev => {
+        if (ev.target.closest("[data-a=job_cv]")) { o.remove(); return act("job_cv"); }
         const c = ev.target.closest("[data-copy]");
         if (c) { (navigator.clipboard ? navigator.clipboard.writeText(E) : Promise.reject()).then(() => { c.textContent = "Адрес скопирован ✓"; }, () => { c.textContent = E; }); return; }
         if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove();
@@ -859,6 +880,24 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       document.body.appendChild(o); return;
     }
     if (a === "sec_win") return newOrder("win");
+    if (a === "job_cv") { wail(); view = "cv"; return render(); }
+    if (a === "cv_send") {
+      const v = id => (document.getElementById(id) || {}).value || "", inn = v("cv_inn").replace(/\D/g, ""), ph = v("cv_phone").replace(/\D/g, ""), exp = parseFloat(v("cv_exp").replace(",", "."));
+      cvData = { name: v("cv_name"), phone: v("cv_phone"), region: v("cv_region"), last: v("cv_last"), exp: v("cv_exp"), inn: v("cv_inn"), trip: cvData.trip || "Нет", skills: cvData.skills || [] };
+      let err = "";
+      if (v("cv_name").trim().split(/\s+/).length < 2) err = "Укажите фамилию и имя";
+      else if (ph.length < 10) err = "Введите телефон полностью";
+      else if (!v("cv_region").trim()) err = "Укажите регион России";
+      else if (!v("cv_last").trim()) err = "Укажите, где работали";
+      else if (!(exp >= 0 && exp <= 60)) err = "Укажите стаж в годах (0 — если опыта нет)";
+      else if (inn.length !== 12 && inn.length !== 10) err = "ИНН: 12 цифр (физлицо, самозанятый, ИП) или 10 (организация)";
+      cvData.err = err;
+      try { localStorage.setItem("zamer_cv", JSON.stringify(cvData)); } catch (e) {}
+      if (err) return render();
+      const E = "stroyliftkompleks@yandex.ru", body = ["ФИО: " + v("cv_name"), "Телефон: " + v("cv_phone"), "Регион России: " + v("cv_region"), "Где работал(а): " + v("cv_last"), "Стаж монтажа лифтов: " + v("cv_exp") + " лет", "ИНН: " + inn, "Специализация: " + (cvData.skills.join(", ") || "—"), "Готов к командировкам: " + (cvData.trip || "Нет")].join("\n");
+      location.href = "mailto:" + E + "?subject=" + encodeURIComponent("Резюме монтажника: " + v("cv_name") + ", " + v("cv_region")) + "&body=" + encodeURIComponent(body);
+      flash = "Открываем письмо…"; return render();
+    }
     if (a === "m_meas") { wail(); view = "meas"; return render(); }
     if (a === "m_jobs") { wail(); view = "jobs"; return render(); }
     if (a === "sec_work") { view = "work"; return render(); }
@@ -948,6 +987,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") { document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); document.querySelectorAll(".pic .hgL").forEach(g => { g.style.display = v === "Справа" ? "none" : ""; }); document.querySelectorAll(".pic .hgR").forEach(g => { g.style.display = v === "Справа" ? "" : "none"; }); } else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
     if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
+    if (b.dataset.cvs) { b.classList.toggle("on"); cvData.skills = [...document.querySelectorAll("[data-cvs].on")].map(x => x.dataset.cvs); return; }
+    if (b.dataset.cvtg) { const on = !b.classList.contains("on"); b.classList.toggle("on", on); b.setAttribute("aria-checked", on); cvData.trip = on ? "Да" : "Нет"; return; }
     if (b.dataset.supp) { supplyView.app = b.dataset.supp; document.querySelectorAll("[data-supp]").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); return; }
     if (b.dataset.a) return act(b.dataset.a);
     if (b.dataset.pick !== undefined) {

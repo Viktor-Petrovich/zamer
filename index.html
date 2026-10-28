@@ -370,6 +370,48 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 .card,.tile{background-image:linear-gradient(160deg,var(--gl),transparent 60%),linear-gradient(0deg,rgba(255,255,255,.14),transparent 30%)}
 /* слизь убрана */
 .btn::before,.tile::before,.choice::before,.sch::before,.card::after,.slimeflow,.slimepool{display:none!important;content:none!important}
+
+/* ===== Современный Liquid Glass 2 ===== */
+body{font-family:ui-rounded,"SF Pro Rounded","SF Pro Display",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:-.011em}
+.q{font-size:25px;font-weight:700;letter-spacing:-.02em}
+header.top{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:0;padding-bottom:4px}
+.bar{background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.1)),color-mix(in srgb,var(--surface) 38%,transparent);-webkit-backdrop-filter:blur(30px) saturate(2.2);backdrop-filter:blur(30px) saturate(2.2);border:1px solid var(--gl);border-radius:26px;padding:4px 8px;box-shadow:inset 0 1px 0 var(--gl),inset 0 -8px 14px -10px rgba(0,0,0,.12),0 14px 30px -16px var(--shadow)}
+.bar h1{font-size:17px;font-weight:700;padding-left:4px}
+.card,.tile,.sheetbox{border-radius:30px}
+.field{border:1px solid var(--gl);background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(255,255,255,.12)),color-mix(in srgb,var(--soft) 55%,transparent);box-shadow:inset 0 2px 6px rgba(0,0,0,.12),inset 0 -1px 0 var(--gl);border-radius:20px}
+.field:focus-within{box-shadow:inset 0 2px 6px rgba(0,0,0,.1),0 0 0 4px color-mix(in srgb,var(--accent) 26%,transparent),0 10px 24px -10px var(--accent)}
+.choice,.sch{border-radius:22px;border:1px solid var(--gl);background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,.04)),color-mix(in srgb,var(--surface) 46%,transparent);box-shadow:inset 0 1px 0 var(--gl),inset 0 -10px 16px -14px rgba(0,0,0,.12),0 10px 22px -16px var(--shadow)}
+.choice.on,.sch.on{background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.08)),color-mix(in srgb,var(--accent) 24%,var(--surface));border-color:color-mix(in srgb,var(--accent) 70%,#fff);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent),0 14px 28px -14px var(--accent)}
+.btn{border-radius:22px;font-weight:700;letter-spacing:-.01em}
+.btn:active{transform:scale(.96);filter:brightness(.95)}
+/* тумблеры */
+.tgl{border-radius:24px;min-height:66px;padding:0 20px;border:1px solid var(--gl);background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,.04)),color-mix(in srgb,var(--surface) 46%,transparent);box-shadow:inset 0 1px 0 var(--gl),0 10px 22px -16px var(--shadow);transition:box-shadow .3s,border-color .3s}
+.tgl.on{border-color:color-mix(in srgb,var(--accent) 55%,#fff);box-shadow:inset 0 1px 0 var(--gl),0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 12px 26px -14px var(--accent)}
+.sw2{width:64px;height:38px;border-radius:99px;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.06)),color-mix(in srgb,var(--muted) 45%,transparent);box-shadow:inset 0 2px 5px rgba(0,0,0,.28),inset 0 -1px 0 rgba(255,255,255,.35);transition:background .35s,box-shadow .35s;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.sw2 b{top:3px;left:3px;width:32px;height:32px;border-radius:99px;background:radial-gradient(circle at 32% 26%,#fff,#e9eef3 60%,#cfd8e0);box-shadow:0 4px 10px rgba(0,0,0,.35),inset 0 -2px 3px rgba(0,0,0,.12),inset 0 2px 2px #fff;transition:transform .38s cubic-bezier(.3,1.5,.5,1),width .2s}
+.tgl:active .sw2 b{width:40px}
+.tgl.on .sw2{background:linear-gradient(135deg,#ffb04a,var(--accent) 55%,var(--hw2));box-shadow:inset 0 2px 5px rgba(0,0,0,.25),0 0 18px color-mix(in srgb,var(--accent) 65%,transparent)}
+.tgl.on .sw2 b{transform:translateX(26px)}
+.tgl.on:active .sw2 b{transform:translateX(18px)}
+/* сегментные переключатели */
+.seg{background:linear-gradient(180deg,rgba(0,0,0,.14),rgba(0,0,0,.05)),color-mix(in srgb,var(--muted) 30%,transparent);box-shadow:inset 0 2px 5px rgba(0,0,0,.22),inset 0 -1px 0 rgba(255,255,255,.35);padding:4px;border-radius:99px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.seg button{background:transparent;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;color:color-mix(in srgb,var(--ink) 75%,transparent);font-weight:700;min-height:42px;transition:background .3s,color .3s,box-shadow .3s,transform .3s cubic-bezier(.3,1.6,.5,1)}
+.seg button.on{background:radial-gradient(120% 120% at 30% 15%,#fff,#eef2f6 70%);color:var(--accent);box-shadow:0 5px 12px rgba(0,0,0,.28),inset 0 -2px 3px rgba(0,0,0,.08);transform:scale(1.03)}
+.suppseg button{border-radius:99px}
+.suppseg button.on{background:linear-gradient(135deg,#ffb04a,var(--accent) 55%,var(--hw2));color:#fff;border-color:transparent;box-shadow:0 10px 20px -8px var(--accent),inset 0 1px 0 rgba(255,255,255,.6);transform:scale(1.04)}
+.chip{border-radius:99px;font-weight:700}
+.tile .go{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.1));box-shadow:inset 0 1px 0 var(--gl);font-size:22px;padding-bottom:3px}
+.tile .tt b{font-weight:700;letter-spacing:-.015em}
+/* радужная кромка у карточек */
+.card{border:1px solid transparent;background-clip:padding-box,padding-box;position:relative}
+.card>*{position:relative}
+
+/* крупная мерцающая надпись на главном экране */
+.hello h2{font-size:34px;line-height:1.08;font-weight:800;letter-spacing:-.03em;background:linear-gradient(100deg,var(--ink) 0%,#ff9a3c 18%,#fff3c4 28%,#ff6a00 40%,var(--hw2) 55%,#ff9a3c 70%,var(--ink) 85%,var(--ink) 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:titlew 3.2s linear infinite,tglo 2.2s ease-in-out infinite;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--accent) 55%,transparent))}
+.hello p{font-size:16px;animation:blink 2.6s ease-in-out infinite}
+@keyframes tglo{50%{filter:drop-shadow(0 0 18px color-mix(in srgb,var(--accent) 90%,transparent)) brightness(1.18)}}
+@keyframes titlew{to{background-position:260% 0}}
+.tile[data-a=job_cv]{border-style:dashed}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
