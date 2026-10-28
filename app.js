@@ -136,10 +136,9 @@
         { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
         { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] },
     { p: "common.color", t: "color", sec: "Общие параметры", q: "Цвет окраски", hint: "Выберите или введите номер RAL" },
-    { p: "stops", t: "int", min: 1, max: 100, sec: "Обрамление ДШ", q: "Количество остановок", hint: "Сколько этажей обслуживает лифт", unit: "шт." },
-    { p: "width", t: "num", unit: mm, sec: "Обрамление ДШ", q: "Ширина проёма", hint: "Применяется ко всей заявке" },
-    { p: "C", t: "num", unit: mm, sec: "Обрамление ДШ", q: "Размер С", hint: "Это высота вертикального обрамления. Применяется ко всей заявке." },
-    { p: "dsh_same", t: "choice", sec: "Обрамление ДШ", q: "Размеры обрамлений на этажах", hint: "Если на всех этажах одинаковые, вводим один раз.", ch: ["Одинаковые на всех этажах", "Индивидуально по этажам"] }
+    { p: "form.shaft", t: "form", sec: "Обрамление ДШ", q: "Лифт и обрамления", hint: "Остановки, общие размеры и как вводить обрамления: одинаковые на всех этажах или по каждому отдельно.", finish: o => { o.ops = o.ops || {}; },
+      fields: [{ k: "int", p: "stops", label: "Количество остановок (этажей)", unit: "шт.", min: 1, max: 100 }, { k: "num", p: "width", label: "Ширина проёма", unit: mm }, { k: "num", p: "C", label: "Размер С (высота вертикального обрамления)", unit: mm },
+        { k: "seg", p: "dsh_same", label: "Размеры на этажах", opts: [["Одинаковые", "Одинаковые на всех этажах"], ["По этажам", "Индивидуально по этажам"]], def: "Одинаковые на всех этажах" }] }
   ];
   const OPEN = [
     ["top", "Верхнее обрамление", "А — высота, Н — глубина верхнего обрамления.", [["top_A", "Размер А (высота)"], ["top_H", "Размер Н (глубина)"]]],
@@ -402,7 +401,7 @@
   function snapForm(s) {
     if (!s || s.t !== "form") return;
     s.fields.forEach((f, i) => {
-      if (f.k === "num" || f.k === "floors") { const e = document.getElementById("f" + i); if (e) formDraft[f.p] = e.value; }
+      if (f.k === "num" || f.k === "int" || f.k === "floors") { const e = document.getElementById("f" + i); if (e) formDraft[f.p] = e.value; }
       if (f.k === "dims2") { const a = document.getElementById("f" + i + "a"), b = document.getElementById("f" + i + "b"); if (a && b) formDraft[f.p] = [a.value, b.value]; }
     });
   }
@@ -418,7 +417,7 @@
         return `<label class="plab">${esc(f.label)}</label><div class="two"><div class="field"><input id="f${i}a" inputmode="decimal" enterkeyhint="next" placeholder="высота" value="${esc(d[0])}"><span class="u">мм</span></div><span class="mul">×</span><div class="field"><input id="f${i}b" inputmode="decimal" enterkeyhint="done" placeholder="ширина" value="${esc(d[1])}"><span class="u">мм</span></div></div>`;
       }
       const raw = formDraft[f.p] !== undefined ? formDraft[f.p] : (v == null ? "" : String(v).replace(".", ","));
-      return `<label class="plab">${esc(f.label)}</label><div class="field"><input id="f${i}" inputmode="${f.k === "floors" ? "text" : "decimal"}" enterkeyhint="next" placeholder="${esc(f.ph || "")}" value="${esc(raw)}">${f.unit ? `<span class="u">${f.unit}</span>` : ""}</div>`;
+      return `<label class="plab">${esc(f.label)}</label><div class="field"><input id="f${i}" inputmode="${f.k === "floors" ? "text" : f.k === "int" ? "numeric" : "decimal"}" enterkeyhint="next" placeholder="${esc(f.ph || "")}" value="${esc(raw)}">${f.unit ? `<span class="u">${f.unit}</span>` : ""}</div>`;
     }).join("") + `</div>`;
   }
   function tglHtml0(p, lab, on) { return `<button class="tgl${on ? " on" : ""}" role="switch" aria-checked="${on}" data-ftg="${esc(p)}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`; }
@@ -429,6 +428,7 @@
     for (let i = 0; i < s.fields.length; i++) {
       const f = s.fields[i]; if (!fvis(s, f)) continue;
       if (f.k === "num") { const r = parse({ t: "num", min: f.min != null ? f.min : 1, max: f.max }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
+      if (f.k === "int") { const r = parse({ t: "int", min: f.min, max: f.max }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
       if (f.k === "floors") { const r = parse({ t: "floors" }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
       if (f.k === "dims2") { const d = formDraft[f.p] || ["", ""]; const r = parse({ t: "dims" }, d[0] + "*" + d[1]); if (r.e) return fail(f.label + ": введите высоту и ширину числами", "f" + i + "a"); out.push([f.p, r.v]); }
     }
@@ -514,19 +514,24 @@
       `<button class="btn" data-a="review">Проверить и сформировать бланк</button><button class="btn ghost" data-a="back">Изменить ответы</button>`);
   }
   function subView() {
-    const d = sub.d, st = d.steps[sub.i], [k, q, t = "num", unit = mm, lo, hi] = st;
-    const body = `<div class="card"><span class="chip">${esc(d.title)}</span><h2 class="q">${esc(q)}</h2>${st[1] === q ? "" : ""}<div class="field"><input id="inp" inputmode="${t === "int" ? "numeric" : "decimal"}" enterkeyhint="next" value="${esc(sub.vals[k] == null ? "" : String(sub.vals[k]).replace(".", ","))}" autocomplete="off"><span class="u">${unit}</span></div><p class="err" id="err">${esc(sub.err || "")}</p></div>`;
-    shell(d.title, sub.i / d.steps.length, body, `<button class="btn" data-a="next">${sub.i === d.steps.length - 1 ? "Готово" : "Далее"}</button>`);
-    const inp = document.getElementById("inp"); setTimeout(() => inp.focus(), 60);
-    inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); act("next"); } });
+    const d = sub.d;
+    const fields = d.steps.map(([k, q, t = "num", unit = mm], i) => `<label class="plab">${esc(q)}</label><div class="field"><input id="sf${i}" inputmode="${t === "int" ? "numeric" : "decimal"}" enterkeyhint="${i === d.steps.length - 1 ? "done" : "next"}" value="${esc(sub.vals[k] == null ? "" : String(sub.vals[k]).replace(".", ","))}" autocomplete="off"><span class="u">${unit}</span></div>`).join("");
+    const body = `<div class="card"><span class="chip">${esc(d.title)}</span><h2 class="q">${esc(d.title)}</h2><p class="hint">Все размеры на одном экране, в миллиметрах.</p><div class="form">${fields}</div><p class="err" id="err">${esc(sub.err || "")}</p></div>`;
+    shell(d.title, null, body, `<button class="btn" data-a="next">Готово</button>`);
+    const ins = [...document.querySelectorAll(".form input")]; setTimeout(() => ins[0] && ins[0].focus(), 60);
+    ins.forEach((el, k) => el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (ins[k + 1]) ins[k + 1].focus(); else act("next"); } }));
   }
   function subNext() {
-    const d = sub.d, [k, , t = "num", , lo, hi] = d.steps[sub.i];
-    const r = parse({ t, min: lo, max: hi }, document.getElementById("inp").value);
-    if (r.e) { sub.err = r.e; document.getElementById("err").textContent = r.e; return; }
-    sub.err = ""; sub.vals[k] = r.v;
-    if (sub.i < d.steps.length - 1) { sub.i++; return render(); }
-    if (d.cable) order.cable[sub.key] = sub.vals; else order[d.list].push(sub.vals);
+    const d = sub.d, vals = {};
+    for (let i = 0; i < d.steps.length; i++) {
+      const [k, q, t = "num", , lo, hi] = d.steps[i], el = document.getElementById("sf" + i);
+      sub.vals[k] = el.value;
+      const r = parse({ t, min: lo, max: hi }, el.value);
+      if (r.e) { sub.err = q + ": " + r.e; document.getElementById("err").textContent = sub.err; el.focus(); return; }
+      vals[k] = r.v;
+    }
+    sub.err = "";
+    if (d.cable) order.cable[sub.key] = vals; else order[d.list].push(vals);
     sub = null; view = "hub"; save(); render();
   }
 
@@ -642,7 +647,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "next") { if (sub) return subNext(); const l = buildList(), s = l[pos]; return advance(s, readValue(s)); }
     if (a === "back") {
       if (view === "soon") { view = "home"; return render(); }
-      if (sub) { if (sub.i > 0) sub.i--; else sub = null; return render(); }
+      if (sub) { sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
       else if (view === "review") { if (isSimple()) { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
       else if (pos > 0) pos--; else view = "home";
