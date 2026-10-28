@@ -639,7 +639,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       ${A ? `<line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/>` : ""}<line x1="164" y1="56" x2="190" y2="56" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
       <line x1="30" y1="${bottom}" x2="170" y2="${bottom}" class="floor"/></svg>`;
   }
-  function showDone(kind) { doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
+  function showDone(kind) { goal(kind === "sent" ? "sent" : "saved"); doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
   function liftClose() {
     const n = order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 0), unit = order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return confetti();
@@ -687,7 +687,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "hub") return hubView();
     return wizardView();
   }
+  function goal(n) { try { if (window.ym) ym(113845787, "reachGoal", n); } catch (e) {} }
   function act(a) {
+    if (/^sec_(win|door|frame|claim)$/.test(a) || a === "download") goal(a);
     if (a === "next") { if (sub) return subNext(); const l = buildList(), s = l[pos]; return advance(s, readValue(s)); }
     if (a === "back") {
       if (view === "soon") { view = "home"; return render(); }
