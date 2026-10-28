@@ -161,19 +161,20 @@
     es.forEach(e => {
       const sec = sameDL() ? (N > 1 ? "Двери и люки, все подъезды" : "Двери и люки") : `Подъезд ${e} из ${N}`;
       const pk = `ent.${e}`, qh = sameDL() && N > 1 ? "Количество на один подъезд. В бланке оно умножится на число подъездов." : "";
-      l.push({ p: `${pk}.door.need`, t: "choice", sec, ent: e, first: true, q: "Нужна ли дверь?", ch: ["Да", "Нет"] });
+      [["door", "Да"], ["hatch", "Да"]].forEach(([k, d]) => { if (!getP(order, `${pk}.${k}.need`)) setP(order, `${pk}.${k}.need`, d); });
+      l.push({ p: `${pk}.tg`, t: "toggles", sec, ent: e, first: true, q: sameDL() && N > 1 ? "Что нужно в каждом подъезде?" : "Что нужно измерить?", hint: "Включите нужное. Размеры спросим дальше.",
+        tg: [[`${pk}.door.need`, "Дверь", "Да"], [`${pk}.hatch.need`, "Люк", "Да"]] });
       if (getP(order, `${pk}.door.need`) === "Да") {
         l.push({ p: `${pk}.door.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота строительного проёма двери", hint: "Размер двери посчитаем сами: высота строительного проёма минус 20 мм, ширина минус 40 мм." });
         l.push({ p: `${pk}.door.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина строительного проёма двери" });
         l.push({ p: `${pk}.door.hinge`, t: "choice", sec, ent: e, q: "С какой стороны петли у двери?", ch: ["Слева", "Справа"] });
         l.push({ p: `${pk}.door.cas`, t: "casing", sec, ent: e, q: "Наличник двери", hint: "Нажмите на наличник на рисунке, чтобы добавить или убрать его." });
-        l.push({ p: `${pk}.door.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, ent: e, q: "Количество дверей", hint: qh });
+        l.push({ p: `${pk}.door.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество дверей", hint: qh });
       }
-      l.push({ p: `${pk}.hatch.need`, t: "choice", sec, ent: e, q: "Нужен ли люк?", ch: ["Да", "Нет"] });
       if (getP(order, `${pk}.hatch.need`) === "Да") {
         l.push({ p: `${pk}.hatch.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота строительного проёма люка", hint: "Размер люка посчитаем сами: строительный проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон." });
         l.push({ p: `${pk}.hatch.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина строительного проёма люка" });
-        l.push({ p: `${pk}.hatch.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, ent: e, q: "Количество люков", hint: qh });
+        l.push({ p: `${pk}.hatch.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество люков", hint: qh });
       }
     });
     return l;
@@ -230,17 +231,18 @@
     const N = order.wins || 0;
     for (let i = 1; i <= N; i++) {
       const sec = N > 1 ? `Окно ${i} из ${N}` : "Окно", pk = `win.${i}`;
-      l.push({ p: `${pk}.h`, t: "num", min: 100, unit: mm, sec, q: "Высота оконного проёма", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40." });
+      l.push({ p: `${pk}.h`, t: "num", min: 100, unit: mm, sec, win: i, first: true, q: "Высота оконного проёма", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40." });
       l.push({ p: `${pk}.w`, t: "num", min: 100, unit: mm, sec, q: "Ширина оконного проёма" });
       l.push({ p: `${pk}.kind`, t: "choice", sash: "type", sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Пунктир — как рисуют оконщики, вершина угла у петель.", ch: Object.keys(WK) });
       const k = WK[getP(order, `${pk}.kind`)];
       if (k === "tr" || k === "tt") l.push({ p: `${pk}.hinge`, t: "choice", sash: "hinge", kindPath: `${pk}.kind`, sec, q: "С какой стороны петли?", hint: "Смотрим на окно изнутри помещения.", ch: ["Слева", "Справа"] });
-      l.push({ p: `${pk}.ebb.need`, t: "choice", sec, q: "Нужен ли отлив?", ch: ["Да", "Нет"] });
+      if (!getP(order, `${pk}.ebb.need`)) setP(order, `${pk}.ebb.need`, "Нет");
+      l.push({ p: `${pk}.opt`, t: "toggles", sec, q: "Дополнительно", hint: "Включите, если к этому окну нужен отлив.", tg: [[`${pk}.ebb.need`, "Отлив", "Нет"]] });
       if (getP(order, `${pk}.ebb.need`) === "Да") {
         l.push({ p: `${pk}.ebb.l`, t: "num", min: 10, unit: mm, sec, q: "Длина отлива" });
         l.push({ p: `${pk}.ebb.w`, t: "num", min: 10, unit: mm, sec, q: "Ширина отлива" });
       }
-      l.push({ p: `${pk}.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, q: "Количество таких окон", hint: "Отлив тоже считается на каждое такое окно." });
+      l.push({ p: `${pk}.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, win: i, qtyStep: true, q: "Количество таких окон", hint: "Отлив тоже считается на каждое такое окно." });
     }
     return l;
   }
@@ -322,7 +324,7 @@
         ${tile("sec_claim", "claim", "Составление рекламации", "Оформление претензии по заказу", true)}
       </div>
       <div class="card tips"><div class="sum"><span>✓ Работает без интернета</span><span>✓ Ответы сохраняются на телефоне</span><span>✓ Готовый бланк PDF в один клик</span></div></div>
-      <p class="credit">Разработчик<br><b>Кащеев Виктор Петрович</b><br><span class="co">СтройЛифтКомплекс</span></p>
+      <p class="credit">Разработчик<br><b>Кащеев Виктор Петрович</b><br><button class="co" data-a="mail">СтройЛифтКомплекс</button></p>
     </main>${LIM && !acc.session ? `<footer class="act"><button class="btn" data-a="login">Войти через Telegram</button></footer>` : ""}`;
   }
   function soonView() {
@@ -338,12 +340,14 @@
     let foot = s.t === "choice" || s.t === "scheme" ? "" : `<button class="btn" data-a="next">Далее</button>`;
     if (s.t === "scheme") foot = `<button class="btn" data-a="next">Далее</button>`;
     if (order.kind === "dl" && !sameDL() && s.first && s.ent > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как в подъезде ${s.ent - 1}</button>`;
+    if (order.kind === "win" && s.first && s.win > 1) foot += `<button class="btn sec" data-a="copyprev">Как окно ${s.win - 1}: всё то же</button>`;
     if (order.kind === "frame" && !same() && s.first && s.floor > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как на этаже ${s.floor - 1}</button>`;
     shell(s.sec, pos / list.length, body, foot);
     bindInput(s);
   }
   function controlHtml(s, val) {
     if (s.t === "casing") return casingHtml(val);
+    if (s.t === "toggles") return `<div class="tgls">${s.tg.map(([p, lab, def]) => { const v = getP(order, p) || (setP(order, p, def), def); return `<button class="tgl${v === "Да" ? " on" : ""}" role="switch" aria-checked="${v === "Да"}" data-tg="${p}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`; }).join("")}</div>`;
     if (s.t === "choice" && s.sash) {
       const kp = s.sash === "hinge" ? WK[getP(order, s.kindPath)] : null;
       return `<div class="schemes wsch">${s.ch.map(c => `<button class="sch${val === c ? " on" : ""}" data-pick="${esc(c)}">${s.sash === "hinge" ? sashSvg(kp, c) : sashSvg(WK[c], "Слева")}<b>${esc(c)}</b></button>`).join("")}</div>`;
@@ -356,7 +360,7 @@
     }
     const mode = s.t === "int" ? "numeric" : s.t === "num" ? "decimal" : s.t === "floors" ? "text" : "text";
     const inner = s.area ? `<textarea id="inp" rows="3" placeholder="${esc(s.ph || "")}">${esc(val || "")}</textarea>` : `<input id="inp" inputmode="${mode}" enterkeyhint="next" value="${esc(val == null ? "" : String(val).replace(".", ","))}" placeholder="${esc(s.ph || "")}" autocomplete="off">`;
-    return `<div class="field">${inner}${s.unit ? `<span class="u">${s.unit}</span>` : ""}</div>` + (s.t === "dims" ? `<button class="btn sec" type="button" data-ins="*" style="font-size:26px">*</button><p class="hint" style="text-align:center">Нажмите *, чтобы поставить значок между высотой и шириной</p>` : "");
+    return `<div class="field">${inner}${s.unit ? `<span class="u">${s.unit}</span>` : ""}</div>` + (s.quick ? `<div class="quick">${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<button type="button" data-q="${n}">${n}</button>`).join("")}</div>` : "") + (s.t === "dims" ? `<button class="btn sec" type="button" data-ins="*" style="font-size:26px">*</button><p class="hint" style="text-align:center">Нажмите *, чтобы поставить значок между высотой и шириной</p>` : "");
   }
   function bindInput(s) {
     const inp = document.getElementById("inp");
@@ -372,6 +376,7 @@
     return inp ? inp.value : "";
   }
   function advance(s, raw) {
+    if (s.t === "toggles") { pos++; save(); return render(); }
     if (s.t === "casing") { if (!getP(order, s.p)) setP(order, s.p, { l: true, t: true, r: true }); pos++; save(); return render(); }
     const r = (s.t === "choice" || s.t === "scheme") ? (raw ? { v: raw } : { e: "Выберите вариант" }) : parse(s, raw);
     if (r.e) { wizardView.err = r.e; const el = document.getElementById("err"); if (el) el.textContent = r.e; return; }
@@ -540,6 +545,16 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "finish") { order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
     if (a === "backrev") { view = "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
+    if (a === "mail") {
+      const E = "stroyliftkompleks@yandex.ru", o = document.createElement("div"); o.className = "sheet";
+      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+      o.addEventListener("click", ev => {
+        const c = ev.target.closest("[data-copy]");
+        if (c) { (navigator.clipboard ? navigator.clipboard.writeText(E) : Promise.reject()).then(() => { c.textContent = "Адрес скопирован ✓"; }, () => { c.textContent = E; }); return; }
+        if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove();
+      });
+      document.body.appendChild(o); return;
+    }
     if (a === "sec_win") return newOrder("win");
     if (a === "sec_claim") { soonView.what = "claim"; view = "soon"; return render(); }
     if (a === "sec_door") return newOrder("dl");
@@ -555,6 +570,11 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "hub") { view = "hub"; return render(); }
     if (a === "send") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => ok && share()); if (!LIM || order.paid || acc.tickets.length) { charge(); return share(); } return; }
     if (a === "download") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => { if (ok) { download(); toast("Файл сохранён"); } }); charge(); download(); return toast("Файл сохранён"); }
+    if (a === "copyprev" && order.kind === "win") {
+      const l0 = buildList(), i = l0[pos].win;
+      order.win = order.win || {}; order.win[i] = JSON.parse(JSON.stringify(order.win[i - 1] || {}));
+      const nl = buildList(); const k = nl.findIndex(x => x.win === i && x.qtyStep); pos = k < 0 ? nl.length : k; save(); return render();
+    }
     if (a === "copyprev" && order.kind === "dl") {
       const l = buildList(), s = l[pos], e = s.ent;
       order.ent[e] = JSON.parse(JSON.stringify(order.ent[e - 1] || {}));
@@ -576,6 +596,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     const b = e.target.closest("button"); if (!b) return;
     try { if (!b.matches(".ghost,.ib")) { const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, sp = document.createElement("span"); sp.className = "rip"; sp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`; b.appendChild(sp); setTimeout(() => sp.remove(), 650); } } catch (x) {}
     if (b.dataset.ins) { const i = document.getElementById("inp"); if (i) { const a = i.selectionStart == null ? i.value.length : i.selectionStart, z = i.selectionEnd == null ? a : i.selectionEnd; i.value = i.value.slice(0, a) + b.dataset.ins + i.value.slice(z); i.focus(); try { i.setSelectionRange(a + 1, a + 1); } catch (x) {} } return; }
+    if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
+    if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
     if (b.dataset.a) return act(b.dataset.a);
     if (b.dataset.pick !== undefined) {
       const l = buildList(), s = l[pos];
