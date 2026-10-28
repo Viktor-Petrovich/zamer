@@ -344,6 +344,30 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 @keyframes drip{0%,100%{transform:scaleY(.78)}50%{transform:scaleY(1.22)}}
 .tile::before,.btn::before{background-repeat:no-repeat}
 @media (prefers-reduced-motion:reduce){.btn::before,.tile::before,.choice::before,.sch::before{animation:none!important}}
+
+/* переливающаяся слизь со значков вниз экрана */
+.slimeflow{position:absolute;z-index:40;pointer-events:none;transform-origin:50% 0;border-radius:0 0 10px 10px;
+ background:linear-gradient(180deg,#c5ff7d,#4fe016,#9dff3a,#1fd08a,#b8ff6a,#4fe016);background-size:100% 300%;
+ filter:drop-shadow(0 0 5px rgba(120,255,60,.7));opacity:.9;animation:sflow 9s ease-in-out infinite,shim 2.4s linear infinite,hue 6s ease-in-out infinite}
+.slimeflow b{position:absolute;left:50%;bottom:-6px;width:150%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#eaffc0,#5be31c 55%,#2aa10c);box-shadow:0 0 10px rgba(120,255,60,.8)}
+@keyframes sflow{0%{transform:scaleY(0);opacity:0}8%{opacity:.9}70%{transform:scaleY(1);opacity:.9}100%{transform:scaleY(1);opacity:0}}
+@keyframes shim{to{background-position:0 300%}}
+@keyframes hue{0%,100%{filter:drop-shadow(0 0 5px rgba(120,255,60,.7)) hue-rotate(0)}50%{filter:drop-shadow(0 0 7px rgba(60,255,200,.8)) hue-rotate(45deg)}}
+.slimepool{position:fixed;left:0;right:0;bottom:0;height:16px;z-index:41;pointer-events:none;border-radius:50% 50% 0 0/100% 100% 0 0;
+ background:linear-gradient(90deg,#4fe016,#b8ff6a,#1fd08a,#9dff3a,#4fe016);background-size:300% 100%;box-shadow:0 -4px 14px rgba(120,255,60,.6);animation:pool 5s linear infinite,hue 6s ease-in-out infinite}
+@keyframes pool{to{background-position:300% 0}}
+@media (prefers-reduced-motion:reduce){.slimeflow,.slimepool{display:none}}
+
+/* ещё больше стекла */
+.card::after{content:"";position:absolute;left:0;right:0;top:0;height:30px;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse 5px 18px at 10% 6px,#7dff3a 55%,transparent 62%),radial-gradient(ellipse 4px 11px at 31% 6px,#7dff3a 55%,transparent 62%),radial-gradient(ellipse 6px 24px at 56% 6px,#7dff3a 55%,transparent 62%),radial-gradient(ellipse 4px 14px at 78% 6px,#7dff3a 55%,transparent 62%),radial-gradient(ellipse 5px 19px at 93% 6px,#7dff3a 55%,transparent 62%),linear-gradient(180deg,#a6ff5c,#4fd41a 18%,transparent 19%);background-repeat:no-repeat;filter:drop-shadow(0 0 5px rgba(120,255,60,.5));transform-origin:50% 0;animation:drip 6.5s ease-in-out infinite}
+.ib{background:color-mix(in srgb,var(--surface) 45%,transparent);-webkit-backdrop-filter:blur(16px) saturate(1.8);backdrop-filter:blur(16px) saturate(1.8);border:1px solid var(--gl);box-shadow:inset 0 1px 0 var(--gl),0 8px 18px -10px var(--shadow);border-radius:50%}
+.chip,.seg button,.suppseg button,.tgl{background:color-mix(in srgb,var(--surface) 45%,transparent);border-color:var(--gl);-webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);box-shadow:inset 0 1px 0 var(--gl)}
+.prog{background:color-mix(in srgb,var(--surface) 40%,transparent);box-shadow:inset 0 1px 3px rgba(0,0,0,.2);backdrop-filter:blur(8px)}
+.prog i{background:linear-gradient(90deg,var(--accent),var(--hw2));box-shadow:0 0 12px var(--accent)}
+.toast,.sheetbox{-webkit-backdrop-filter:blur(36px) saturate(2.1);backdrop-filter:blur(36px) saturate(2.1)}
+.sheet{background:rgba(20,5,40,.38);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.btn:not(.sec):not(.ghost){border:1px solid rgba(255,255,255,.55)}
+.card,.tile{background-image:linear-gradient(160deg,var(--gl),transparent 60%),linear-gradient(0deg,rgba(255,255,255,.14),transparent 30%)}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>

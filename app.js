@@ -668,7 +668,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       ${A ? `<line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/>` : ""}<line x1="164" y1="56" x2="190" y2="56" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
       <line x1="30" y1="${bottom}" x2="170" y2="${bottom}" class="floor"/></svg>`;
   }
-  function showDone(kind) { goal(kind === "sent" ? "sent" : "saved"); doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
+  function showDone(kind) { ominous("toll"); goal(kind === "sent" ? "sent" : "saved"); doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
   function liftClose() {
     const n = order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 0), unit = order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return confetti();
@@ -758,6 +758,31 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       setTimeout(() => { try { out.disconnect(); } catch (e) {} }, (dur + 2) * 1000);
     } catch (e) {}
   }
+  /* зловещие звуки: колокол, скрип, сердцебиение, гул */
+  function ominous(kind) {
+    if (!sndOn) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
+      const t = AC.currentTime, out = AC.createGain(); out.gain.value = 1; out.connect(AC.destination);
+      const env = (g, a, pk, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(pk, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + d); };
+      const k = kind || ["toll", "creak", "heart", "drone", "whisper", "bat", "cackle"][Math.floor(Math.random() * 7)];
+      if (k === "toll") { [1, 2.76, 5.4, 8.9].forEach((m, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.value = 110 * m; env(g, 0.01, 0.16 / (i + 1), 4.2 - i * 0.6); o.connect(g); g.connect(out); o.start(t); o.stop(t + 4.4); }); }
+      else if (k === "creak") { const o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(), l = AC.createOscillator(), lg = AC.createGain(); o.type = "sawtooth"; o.frequency.setValueAtTime(90, t); o.frequency.linearRampToValueAtTime(240, t + 0.9); o.frequency.linearRampToValueAtTime(130, t + 1.7); l.frequency.value = 23; lg.gain.value = 40; l.connect(lg); lg.connect(o.frequency); f.type = "bandpass"; f.frequency.value = 700; f.Q.value = 5; env(g, 0.25, 0.09, 1.8); o.connect(f); f.connect(g); g.connect(out); o.start(t); l.start(t); o.stop(t + 1.9); l.stop(t + 1.9); }
+      else if (k === "heart") { [0, 0.42, 1.3, 1.72].forEach(dt => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.setValueAtTime(70, t + dt); o.frequency.exponentialRampToValueAtTime(38, t + dt + 0.22); g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.35, t + dt + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.28); o.connect(g); g.connect(out); o.start(t + dt); o.stop(t + dt + 0.3); }); }
+      else if (k === "whisper") { const n = AC.sampleRate * 2.2, buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; const sr = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), lf = AC.createOscillator(), lg = AC.createGain(); sr.buffer = buf; f.type = "bandpass"; f.frequency.value = 2600; f.Q.value = 3; lf.frequency.value = 3.2; lg.gain.value = 0.05; lf.connect(lg); lg.connect(g.gain); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.1); sr.connect(f); f.connect(g); g.connect(out); sr.start(t); lf.start(t); lf.stop(t + 2.2); }
+      else if (k === "bat") { [0, 0.14, 0.3].forEach(dt => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.setValueAtTime(5200, t + dt); o.frequency.exponentialRampToValueAtTime(2400, t + dt + 0.09); g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.05, t + dt + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.1); o.connect(g); g.connect(out); o.start(t + dt); o.stop(t + dt + 0.12); }); }
+      else if (k === "cackle") { for (let i = 0; i < 7; i++) { const dt = i * 0.13, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(); o.type = "sawtooth"; o.frequency.setValueAtTime(420 - i * 18, t + dt); o.frequency.exponentialRampToValueAtTime(260 - i * 12, t + dt + 0.11); f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 4; g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.07, t + dt + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.12); o.connect(f); f.connect(g); g.connect(out); o.start(t + dt); o.stop(t + dt + 0.14); } }
+      else if (k === "bloop") { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(520, t + 0.09); o.frequency.exponentialRampToValueAtTime(260, t + 0.2); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.26); }
+      else { [55, 55.7, 82.4].forEach(fq => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sawtooth"; o.frequency.value = fq; const f = AC.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 220; env(g, 1.6, 0.07, 4.5); o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + 4.6); }); }
+    } catch (e) {}
+  }
+  document.addEventListener("focusin", e => { if (e.target.matches && e.target.matches("input,textarea") && Math.random() < 0.5) ominous("whisper"); });
+  let ambT = null;
+  function ambient() {
+    clearTimeout(ambT);
+    ambT = setTimeout(() => { if (!document.hidden) ominous(); ambient(); }, 8000 + Math.random() * 12000);
+  }
+  document.addEventListener("pointerdown", function once() { document.removeEventListener("pointerdown", once, true); setTimeout(() => ominous("drone"), 600); ambient(); }, true);
   function spook(x, y) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const E = ["🦇", "💀", "🎃", "👻", "🕷️", "🦴"];
@@ -768,7 +793,23 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       document.body.appendChild(p); setTimeout(() => p.remove(), 1000);
     }
   }
-  document.addEventListener("pointerdown", e => { if (e.target.closest("button,a.btn")) { moan(); spook(e.clientX, e.clientY); } }, true);
+  document.addEventListener("pointerdown", e => { if (e.target.closest("button,a.btn")) { moan(); if (sndOn) setTimeout(() => ominous("bloop"), 120); if (Math.random() < 0.22) setTimeout(() => ominous(), 700); spook(e.clientX, e.clientY); } }, true);
+  /* слизь стекает со значков вниз экрана */
+  function slimeFlow() {
+    document.querySelectorAll(".slimeflow,.slimepool").forEach(x => x.remove());
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const icons = [...document.querySelectorAll(".tile .ti, .logob, .card, .chip, .btn:not(.ghost)")].slice(0, 14), H = Math.max(document.documentElement.scrollHeight, innerHeight);
+    icons.forEach((el, i) => {
+      const r = el.getBoundingClientRect(), big = r.width > 120, x = r.left + r.width * (big ? 0.12 + ((i * 37) % 76) / 100 : 0.3 + (i % 3) * 0.2) + scrollX, y = (big ? r.top + 14 : r.bottom - 6) + scrollY;
+      const d = document.createElement("div"); d.className = "slimeflow";
+      d.style.cssText = `left:${x}px;top:${y}px;height:${Math.max(40, H - y)}px;animation-delay:${i * 0.9}s;width:${7 + (i % 3) * 2}px`;
+      d.innerHTML = "<b></b>"; document.body.appendChild(d);
+    });
+    if (icons.length) { const p = document.createElement("div"); p.className = "slimepool"; document.body.appendChild(p); }
+  }
+  let slT = null;
+  new MutationObserver(() => { clearTimeout(slT); slT = setTimeout(slimeFlow, 250); }).observe($app, { childList: true });
+  addEventListener("resize", () => { clearTimeout(slT); slT = setTimeout(slimeFlow, 250); });
   function goal(n) { try { if (window.ym) ym(113845787, "reachGoal", n); } catch (e) {} }
   function act(a) {
     if (/^sec_(win|door|frame|claim)$/.test(a) || a === "download") goal(a);
