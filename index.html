@@ -265,12 +265,54 @@ footer.act{background:linear-gradient(180deg,transparent,color-mix(in srgb,var(-
 .sparkle{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 8px 2px rgba(255,255,255,.9);pointer-events:none;animation:spk 1.4s ease-out forwards}
 @keyframes spk{from{transform:scale(0);opacity:1}to{transform:scale(2.2) translateY(-10px);opacity:0}}
 @media (prefers-reduced-motion:reduce){body::before{animation:none}.sparkle{display:none}}
+
+/* ===== Хэллоуин + больше стекла ===== */
+:root{--accent:#e4600b;--hw2:#7b3fe4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent:#ff9a3c;--accent-ink:#1a0d00;--bg:#120a1c;--surface:#1d1230;--soft:#281a3f;--line:#3b2a57}}
+:root[data-theme="dark"]{--accent:#ff9a3c;--accent-ink:#1a0d00;--bg:#120a1c;--surface:#1d1230;--soft:#281a3f;--line:#3b2a57}
+:root[data-theme="light"]{--bg:#fbf1e6}
+body::before{background:radial-gradient(38% 30% at 16% 12%,#ff8a2b 0,transparent 70%),radial-gradient(34% 28% at 88% 20%,#9b5cff 0,transparent 70%),radial-gradient(40% 32% at 74% 80%,#ff4fa3 0,transparent 70%),radial-gradient(36% 30% at 10% 84%,#6be34f 0,transparent 70%)}
+.card,.tile,.sheetbox{backdrop-filter:blur(34px) saturate(2);-webkit-backdrop-filter:blur(34px) saturate(2);border-radius:28px;position:relative;box-shadow:inset 0 1px 0 var(--gl),inset 0 0 0 1px var(--gl2),inset 0 -14px 28px -18px color-mix(in srgb,var(--accent) 25%,transparent),0 24px 48px -24px var(--shadow)}
+.card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 70% at 12% -10%,rgba(255,255,255,.55),transparent 55%);opacity:.7}
+.btn{backdrop-filter:blur(10px)}
+header.top{backdrop-filter:blur(30px) saturate(2);-webkit-backdrop-filter:blur(30px) saturate(2)}
+/* молнии (бегущий блик) убираем, вместо них мерцание */
+.btn::after,.tile::after,.tile::before{animation:none!important}
+.btn:not(.sec):not(.ghost)::after,.btn.sec::after,.tile::after,.tile.soon::after{content:"✦";position:absolute;top:50%;left:auto;right:16px;bottom:auto;width:auto;height:auto;transform:translateY(-50%);background:none;font-size:15px;line-height:1;color:#fff;text-shadow:0 0 8px #fff,0 0 16px var(--accent);opacity:.2;animation:twk 2.2s ease-in-out infinite!important;pointer-events:none}
+.btn.sec::after,.tile::after{color:var(--accent);text-shadow:0 0 8px var(--accent)}
+.tile::after{right:44px;top:14px;transform:none}
+.tile.soon::after{opacity:.2}.tile::before{display:none}
+@keyframes twk{0%,100%{opacity:.15;transform:translateY(-50%) scale(.7) rotate(0)}50%{opacity:1;transform:translateY(-50%) scale(1.25) rotate(45deg)}}
+.tile::after{animation-name:twk2!important}@keyframes twk2{0%,100%{opacity:.15;transform:scale(.7) rotate(0)}50%{opacity:1;transform:scale(1.3) rotate(45deg)}}
+.tiles .tile:nth-child(2)::after,.btn.sec:nth-of-type(2)::after{animation-delay:.5s!important}.tiles .tile:nth-child(3)::after{animation-delay:1s!important}.tiles .tile:nth-child(4)::after{animation-delay:1.5s!important}.tiles .tile:nth-child(5)::after{animation-delay:.8s!important}
+.btn:not(.sec):not(.ghost){background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,0) 52%),linear-gradient(135deg,#ffa23c,var(--accent) 45%,#8a2be2);animation:bglow 2s ease-in-out infinite,flick 3.1s steps(1) infinite}
+@keyframes flick{0%,92%,96%,100%{filter:brightness(1)}94%{filter:brightness(1.25)}98%{filter:brightness(1.15)}}
+.tile:not(.soon) .ti,.tile .ti{animation:tglow 2.6s ease-in-out infinite}
+.logob{animation:shake 3s ease-in-out infinite;transform-origin:50% 60%}
+@keyframes shake{0%,70%,100%{transform:rotate(0) translate(0)}72%{transform:rotate(-5deg) translate(-1px,0)}74%{transform:rotate(5deg) translate(1px,0)}76%{transform:rotate(-4deg)}78%{transform:rotate(4deg)}80%{transform:rotate(-2deg)}82%{transform:rotate(0)}}
+.credit .co{animation:cotw 1.8s ease-in-out infinite}
+@keyframes cotw{0%,100%{opacity:.55;text-shadow:none}50%{opacity:1;text-shadow:0 0 6px var(--accent),0 0 14px var(--accent),0 0 22px var(--hw2)}}
+.hw{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;font-size:26px}
+.hw span{position:absolute;opacity:.75;filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))}
+.hw .b1{top:16%;left:-10%;animation:fly 16s linear infinite}.hw .b2{top:46%;left:-10%;font-size:20px;animation:fly 22s 5s linear infinite}
+.hw .p{bottom:9%;right:5%;font-size:44px;animation:bob 3.4s ease-in-out infinite}
+.hw .g{top:30%;right:6%;font-size:30px;animation:bob 4.2s .6s ease-in-out infinite}
+.hw .s{top:0;left:0;font-size:46px;opacity:.5}
+@keyframes fly{0%{transform:translate(0,0) rotate(-8deg)}25%{transform:translate(35vw,-30px) rotate(8deg)}50%{transform:translate(70vw,10px) rotate(-6deg)}100%{transform:translate(125vw,-20px) rotate(6deg)}}
+@keyframes bob{50%{transform:translateY(-12px) rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){.logob,.credit .co,.btn,.hw span,.btn::after,.tile::after{animation:none!important}}
+
+/* зловещая тень тыквы на дверях лифта */
+#lift .door{overflow:hidden}
+#lift .pk{position:absolute;top:24%;width:200%;height:38%;background:url("data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 180%22%3E%3Cdefs%3E%3Cfilter id=%22g%22%3E%3CfeGaussianBlur stdDeviation=%222.2%22/%3E%3C/filter%3E%3C/defs%3E%3Cg fill=%22%2307020c%22 opacity=%22.78%22%3E%3Cellipse cx=%22100%22 cy=%22102%22 rx=%2250%22 ry=%2262%22/%3E%3Cellipse cx=%2262%22 cy=%22104%22 rx=%2240%22 ry=%2256%22/%3E%3Cellipse cx=%22138%22 cy=%22104%22 rx=%2240%22 ry=%2256%22/%3E%3Cpath d=%22M92 42 Q94 18 114 12 L118 24 Q106 28 108 44Z%22/%3E%3C/g%3E%3Cg fill=%22%23ff7a1a%22 filter=%22url%28%23g%29%22%3E%3Cpath d=%22M60 94 L86 94 L72 70Z%22/%3E%3Cpath d=%22M114 94 L140 94 L126 70Z%22/%3E%3Cpath d=%22M95 110 L105 110 L100 100Z%22/%3E%3Cpath d=%22M54 122 L70 138 L84 124 L100 142 L116 124 L130 138 L146 122 L138 148 Q100 172 62 148Z%22/%3E%3C/g%3E%3Cg fill=%22%23ffd27a%22 opacity=%22.85%22%3E%3Cpath d=%22M68 90 L80 90 L72 78Z%22/%3E%3Cpath d=%22M120 90 L132 90 L126 78Z%22/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;pointer-events:none;mix-blend-mode:multiply;filter:drop-shadow(0 0 22px rgba(255,110,20,.55)) blur(.6px);animation:pkf 3.4s ease-in-out infinite;z-index:2}
+#lift .door.l .pk{left:0}#lift .door.r .pk{right:0}
+@keyframes pkf{0%,100%{opacity:.85}45%{opacity:1;filter:drop-shadow(0 0 32px rgba(255,120,20,.85)) blur(.6px)}50%{opacity:.55}55%{opacity:1}}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
 <body>
 <div id="app" class="pre"></div>
-<div id="lift" aria-hidden="true"><div class="head"><i>▲</i><b id="lfl">1</b></div><div class="door l"></div><div class="door r"></div><div class="tag">Замер ДШ</div></div>
+<div id="lift" aria-hidden="true"><div class="head"><i>▲</i><b id="lfl">1</b></div><div class="door l"><i class="pk"></i></div><div class="door r"><i class="pk"></i></div><div class="tag">Замер ДШ</div></div>
 <script src="config.js"></script>
 <script src="pdf.js"></script>
 <script src="app.js"></script>
@@ -280,5 +322,6 @@ var done=false;function fin(){if(done)return;done=true;A.classList.remove("pre")
 if(matchMedia("(prefers-reduced-motion: reduce)").matches){L.remove();A.classList.remove("pre");return}
 L.addEventListener("click",fin);setTimeout(fin,1200)})();
 </script>
+<div class="hw" aria-hidden="true"><span class="s">🕸️</span><span class="b1">🦇</span><span class="b2">🦇</span><span class="g">👻</span><span class="p">🎃</span></div>
 </body>
 </html>

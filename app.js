@@ -665,7 +665,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     const n = order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 0), unit = order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return confetti();
     const L = document.createElement("div"); L.id = "lift"; L.className = "open";
-    L.innerHTML = `<div class="head"><i>▲</i><b>1</b></div><div class="door l"></div><div class="door r"></div><div class="tag"><span>заказано ${unit}: ${n}</span></div>`;
+    L.innerHTML = `<div class="head"><i>▲</i><b>1</b></div><div class="door l"><i class="pk"></i></div><div class="door r"><i class="pk"></i></div><div class="tag"><span>заказано ${unit}: ${n}</span></div>`;
     document.body.appendChild(L); void L.offsetWidth;
     const b = L.querySelector("b"); let off = false;
     const open = () => { if (off) return; off = true; clearInterval(iv); L.classList.add("open"); confetti(); setTimeout(() => L.remove(), 2600); };
