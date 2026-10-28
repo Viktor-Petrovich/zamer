@@ -692,7 +692,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
   function menuView() {
-    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
+    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Жуткие звуки: включены" : "🔇 Жуткие звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
   }
 
   /* ---------- диспетчер ---------- */
@@ -711,6 +711,36 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "hub") return hubView();
     return wizardView();
   }
+  /* ---------- жуткие звуки и эффекты ---------- */
+  let sndOn = (() => { try { return localStorage.getItem("zamer_snd") !== "0"; } catch (e) { return true; } })(), AC = null, lastSnd = 0;
+  function moan() {
+    if (!sndOn) return;
+    const now = Date.now(); if (now - lastSnd < 250) return; lastSnd = now;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
+      const t = AC.currentTime, f0 = 200 + Math.random() * 130, dur = 0.9 + Math.random() * 0.5;
+      const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(), lfo = AC.createOscillator(), lg = AC.createGain();
+      o.type = "sawtooth"; o2.type = "triangle";
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 0.62, t + dur);
+      o2.frequency.setValueAtTime(f0 * 1.5, t); o2.frequency.exponentialRampToValueAtTime(f0 * 0.93, t + dur);
+      lfo.frequency.value = 5.5; lg.gain.value = 9; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
+      fl.type = "lowpass"; fl.frequency.setValueAtTime(380, t); fl.frequency.linearRampToValueAtTime(900, t + dur * 0.35); fl.frequency.linearRampToValueAtTime(260, t + dur); fl.Q.value = 6;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.18); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(AC.destination);
+      o.start(t); o2.start(t); lfo.start(t); o.stop(t + dur + .05); o2.stop(t + dur + .05); lfo.stop(t + dur + .05);
+    } catch (e) {}
+  }
+  function spook(x, y) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const E = ["🦇", "💀", "🎃", "👻", "🕷️", "🦴"];
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement("span"); p.className = "spk2"; p.textContent = E[Math.floor(Math.random() * E.length)];
+      const a = Math.random() * Math.PI * 2, d = 40 + Math.random() * 60;
+      p.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d - 30}px;--r:${(Math.random() - .5) * 120}deg`;
+      document.body.appendChild(p); setTimeout(() => p.remove(), 1000);
+    }
+  }
+  document.addEventListener("pointerdown", e => { if (e.target.closest("button,a.btn")) { moan(); spook(e.clientX, e.clientY); } }, true);
   function goal(n) { try { if (window.ym) ym(113845787, "reachGoal", n); } catch (e) {} }
   function act(a) {
     if (/^sec_(win|door|frame|claim)$/.test(a) || a === "download") goal(a);
@@ -790,6 +820,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     }
     if (a === "resume") { view = "wizard"; const n = buildList().length; if (pos >= n) view = isSimple() ? "review" : (order.stops ? "hub" : "wizard"); return render(); }
     if (a === "menu") { menuReturn = view; view = "menu"; return render(); }
+    if (a === "snd") { sndOn = !sndOn; try { localStorage.setItem("zamer_snd", sndOn ? "1" : "0"); } catch (e) {} if (sndOn) moan(); return render(); }
     if (a === "supply") { supplyView.app = ""; supplyView.err = ""; view = "supply"; return render(); }
     if (a === "supply_save") {
       const ph = document.getElementById("sphone").value, d = digits(ph);

@@ -307,6 +307,26 @@ header.top{backdrop-filter:blur(30px) saturate(2);-webkit-backdrop-filter:blur(3
 #lift .pk{position:absolute;top:24%;width:200%;height:38%;background:url("data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 180%22%3E%3Cdefs%3E%3Cfilter id=%22g%22%3E%3CfeGaussianBlur stdDeviation=%222.2%22/%3E%3C/filter%3E%3C/defs%3E%3Cg fill=%22%2307020c%22 opacity=%22.78%22%3E%3Cellipse cx=%22100%22 cy=%22102%22 rx=%2250%22 ry=%2262%22/%3E%3Cellipse cx=%2262%22 cy=%22104%22 rx=%2240%22 ry=%2256%22/%3E%3Cellipse cx=%22138%22 cy=%22104%22 rx=%2240%22 ry=%2256%22/%3E%3Cpath d=%22M92 42 Q94 18 114 12 L118 24 Q106 28 108 44Z%22/%3E%3C/g%3E%3Cg fill=%22%23ff7a1a%22 filter=%22url%28%23g%29%22%3E%3Cpath d=%22M60 94 L86 94 L72 70Z%22/%3E%3Cpath d=%22M114 94 L140 94 L126 70Z%22/%3E%3Cpath d=%22M95 110 L105 110 L100 100Z%22/%3E%3Cpath d=%22M54 122 L70 138 L84 124 L100 142 L116 124 L130 138 L146 122 L138 148 Q100 172 62 148Z%22/%3E%3C/g%3E%3Cg fill=%22%23ffd27a%22 opacity=%22.85%22%3E%3Cpath d=%22M68 90 L80 90 L72 78Z%22/%3E%3Cpath d=%22M120 90 L132 90 L126 78Z%22/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;pointer-events:none;mix-blend-mode:multiply;filter:drop-shadow(0 0 22px rgba(255,110,20,.55)) blur(.6px);animation:pkf 3.4s ease-in-out infinite;z-index:2}
 #lift .door.l .pk{left:0}#lift .door.r .pk{right:0}
 @keyframes pkf{0%,100%{opacity:.85}45%{opacity:1;filter:drop-shadow(0 0 32px rgba(255,120,20,.85)) blur(.6px)}50%{opacity:.55}55%{opacity:1}}
+
+/* ещё Хэллоуина */
+.spk2{position:fixed;z-index:200;pointer-events:none;font-size:20px;transform:translate(-50%,-50%);animation:spp 1s ease-out forwards}
+@keyframes spp{to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r)) scale(1.3);opacity:0}}
+.hw .sp{top:0;left:78%;font-size:26px;opacity:.9;transform-origin:50% 0;animation:swing 3s ease-in-out infinite}
+.hw .sp::before{content:"";position:absolute;left:50%;bottom:100%;width:1px;height:70px;background:linear-gradient(#fff8,#fff3)}
+@keyframes swing{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(34px) rotate(3deg)}}
+.hw .sk{bottom:7%;left:5%;font-size:36px;animation:bob 3.8s 1s ease-in-out infinite}
+.hw .m{top:7%;right:10%;font-size:46px;opacity:.85;animation:moon 6s ease-in-out infinite;filter:drop-shadow(0 0 14px #ffd27a)}
+@keyframes moon{50%{filter:drop-shadow(0 0 26px #ffb347);transform:scale(1.06)}}
+.hw .g2{top:62%;left:-12%;font-size:34px;opacity:.5;animation:fly 28s 8s linear infinite}
+.hw .b3{top:24%;left:-10%;font-size:16px;animation:fly 13s 2s linear infinite}
+.hw .em{position:absolute;bottom:-10px;width:5px;height:5px;border-radius:50%;background:#ffb347;box-shadow:0 0 8px 2px #ff7a1a;animation:ember 7s linear infinite;opacity:0}
+@keyframes ember{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translate(30px,-90vh);opacity:0}}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 90% at 50% 50%,transparent 55%,rgba(40,0,60,.38));animation:candle 4s ease-in-out infinite}
+@keyframes candle{0%,100%{opacity:.7}30%{opacity:1}55%{opacity:.8}75%{opacity:1}}
+.hello h2{background:linear-gradient(90deg,var(--ink),var(--accent),var(--hw2),var(--ink));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:titlew 6s linear infinite}
+@keyframes titlew{to{background-position:300% 0}}
+.donebox .ring{filter:drop-shadow(0 0 14px var(--accent))}
+@media (prefers-reduced-motion:reduce){.hw .em,body::after,.hello h2,.hw span{animation:none!important}}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
@@ -322,6 +342,6 @@ var done=false;function fin(){if(done)return;done=true;A.classList.remove("pre")
 if(matchMedia("(prefers-reduced-motion: reduce)").matches){L.remove();A.classList.remove("pre");return}
 L.addEventListener("click",fin);setTimeout(fin,1200)})();
 </script>
-<div class="hw" aria-hidden="true"><span class="s">🕸️</span><span class="b1">🦇</span><span class="b2">🦇</span><span class="g">👻</span><span class="p">🎃</span></div>
+<div class="hw" aria-hidden="true"><span class="s">🕸️</span><span class="b1">🦇</span><span class="b2">🦇</span><span class="g">👻</span><span class="p">🎃</span><span class="sp">🕷️</span><span class="sk">💀</span><span class="m">🌕</span><span class="g2">👻</span><span class="b3">🦇</span><i class="em" style="left:8%;animation-delay:0s;animation-duration:7s"></i><i class="em" style="left:22%;animation-delay:2s;animation-duration:8s"></i><i class="em" style="left:38%;animation-delay:4s;animation-duration:6.5s"></i><i class="em" style="left:55%;animation-delay:1s;animation-duration:9s"></i><i class="em" style="left:70%;animation-delay:3s;animation-duration:7.5s"></i><i class="em" style="left:85%;animation-delay:5s;animation-duration:8.5s"></i><i class="em" style="left:95%;animation-delay:0.5s;animation-duration:7s"></i></div>
 </body>
 </html>
