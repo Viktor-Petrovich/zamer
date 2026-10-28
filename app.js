@@ -367,19 +367,27 @@
     const n = (acc.name || "").split(" ")[0];
     return t + (n ? ", " + n : "") + "!";
   }
+  const tile = (a, ic, title, sub, soon) => `<button class="tile${soon ? " soon" : ""}" data-a="${a}"><span class="ti">${SECT_ICON[ic]}</span><span class="tt"><b>${title}</b><small>${sub}</small></span>${soon ? `<em>в разработке</em>` : `<span class="go">›</span>`}</button>`;
+  function measView() {
+    shell("Замеры", null, `<div class="tiles">
+        ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
+        ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
+        ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}</div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+  }
+  function jobsView() {
+    shell("Работа", null, `<div class="tiles">
+        ${tile("sec_work", "work", "% выполнения работ по замене лифта", "Тестовая функция · отчёт монтажника о проделанной работе", false)}
+        ${tile("sec_claim", "claim", "Составление рекламации", "Поломка, недопоставка, пропажа", false)}</div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+  }
   function homeView() {
-    const tile = (a, ic, title, sub, soon) => `<button class="tile${soon ? " soon" : ""}" data-a="${a}"><span class="ti">${SECT_ICON[ic]}</span><span class="tt"><b>${title}</b><small>${sub}</small></span>${soon ? `<em>в разработке</em>` : `<span class="go">›</span>`}</button>`;
     $app.innerHTML = `<main style="padding-top:max(24px,env(safe-area-inset-top))">
       <div class="hello"><button class="logob" data-a="theme" aria-label="Сменить тему"><img src="icon-192.png" alt=""></button><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div><button class="ib hmenu" data-a="menu" aria-label="Меню">${ICON.menu}</button></div>
       <p class="hint" style="margin:-4px 0 0 2px">${esc(dateLong())}</p>
       ${LIM && acc.session ? `<div class="chip" style="justify-self:start">Осталось замеров: ${left()}</div>` : ""}
       ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${order.kind === "dl" ? "Двери и люки" : order.kind === "win" ? "Окна" : "Обрамления"} · ${esc((order.address || "").slice(0, 32))}</small></span><span class="go">›</span></button>` : ""}
       <div class="tiles">
-        ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
-        ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
-        ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}
-        ${tile("sec_work", "work", "% выполнения работ по замене лифта", "Тестовая функция · отчёт монтажника о проделанной работе", false)}
-        ${tile("sec_claim", "claim", "Составление рекламации", "Поломка, недопоставка, пропажа", false)}
+        ${tile("m_meas", "frame", "Замеры", "Обрамления, двери и люки, окна", false)}
+        ${tile("m_jobs", "work", "Работа", "% выполнения работ, рекламации", false)}
       </div>
       <div class="card tips"><div class="sum"><span>✓ Работает без интернета</span><span>✓ Ответы сохраняются на телефоне</span><span>✓ Готовый бланк PDF в один клик</span></div></div>
       <p class="credit">Разработано отделом<br><b>информационных технологий</b><br><button class="co" data-a="mail">СтройЛифтКомплекс</button></p>
@@ -703,6 +711,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "soon") return soonView();
     if (view === "work") return workView();
     if (view === "claim") return claimView();
+    if (view === "meas") return measView();
+    if (view === "jobs") return jobsView();
     if (view === "supply") return supplyView();
     if (view === "login") return loginView();
     if (view === "nocredits") return nocreditsView();
@@ -730,6 +740,24 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       o.start(t); o2.start(t); lfo.start(t); o.stop(t + dur + .05); o2.stop(t + dur + .05); lfo.stop(t + dur + .05);
     } catch (e) {}
   }
+  function wail() {
+    if (!sndOn) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
+      const t = AC.currentTime, dur = 1.9;
+      const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(), lfo = AC.createOscillator(), lg = AC.createGain(), d = AC.createDelay(), fb = AC.createGain(), out = AC.createGain();
+      o.type = "sine"; o2.type = "triangle";
+      o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(720, t + dur * 0.45); o.frequency.exponentialRampToValueAtTime(210, t + dur);
+      o2.frequency.setValueAtTime(392, t); o2.frequency.exponentialRampToValueAtTime(1080, t + dur * 0.45); o2.frequency.exponentialRampToValueAtTime(315, t + dur);
+      lfo.frequency.value = 6.5; lg.gain.value = 14; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
+      fl.type = "bandpass"; fl.frequency.value = 900; fl.Q.value = 1.2;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      d.delayTime.value = 0.23; fb.gain.value = 0.45; out.gain.value = 1;
+      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(out); g.connect(d); d.connect(fb); fb.connect(d); d.connect(out); out.connect(AC.destination);
+      o.start(t); o2.start(t); lfo.start(t); o.stop(t + dur + .1); o2.stop(t + dur + .1); lfo.stop(t + dur + .1);
+      setTimeout(() => { try { out.disconnect(); } catch (e) {} }, (dur + 2) * 1000);
+    } catch (e) {}
+  }
   function spook(x, y) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const E = ["🦇", "💀", "🎃", "👻", "🕷️", "🦴"];
@@ -747,7 +775,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "next") { if (sub) return subNext(); const l = buildList(), s = l[pos]; return advance(s, readValue(s)); }
     if (a === "back") {
       if (view === "soon") { view = /^claim_/.test(soonView.what) ? "claim" : "home"; return render(); }
-      if (view === "work" || view === "claim") { view = "home"; return render(); }
+      if (view === "meas" || view === "jobs") { view = "home"; return render(); }
+    if (view === "work" || view === "claim") { view = "jobs"; return render(); }
       if (sub) { sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
       else if (view === "review") { if (isSimple()) { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
@@ -787,12 +816,14 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       document.body.appendChild(o); return;
     }
     if (a === "sec_win") return newOrder("win");
+    if (a === "m_meas") { wail(); view = "meas"; return render(); }
+    if (a === "m_jobs") { wail(); view = "jobs"; return render(); }
     if (a === "sec_work") { view = "work"; return render(); }
     if (a === "work_yes" || a === "work_no") {
       try { localStorage.setItem("zamer_work", JSON.stringify({ stopped: a === "work_yes", at: new Date().toISOString() })); } catch (e) {}
       flash = a === "work_yes" ? "Остановка лифта отмечена ✓" : "Отмечено: лифт ещё не остановлен"; view = "home"; return render();
     }
-    if (a === "sec_claim") { view = "claim"; return render(); }
+    if (a === "sec_claim") { wail(); view = "claim"; return render(); }
     if (a === "fb_send") {
       const t = (document.getElementById("fb") || {}).value || ""; soonView.fb = t;
       if (!t.trim()) { flash = "Напишите пожелание"; return render(); }
@@ -819,6 +850,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       document.body.appendChild(o); return;
     }
     if (a === "resume") { view = "wizard"; const n = buildList().length; if (pos >= n) view = isSimple() ? "review" : (order.stops ? "hub" : "wizard"); return render(); }
+    if (a === "menu") { wail(); }
     if (a === "menu") { menuReturn = view; view = "menu"; return render(); }
     if (a === "snd") { sndOn = !sndOn; try { localStorage.setItem("zamer_snd", sndOn ? "1" : "0"); } catch (e) {} if (sndOn) moan(); return render(); }
     if (a === "supply") { supplyView.app = ""; supplyView.err = ""; view = "supply"; return render(); }
