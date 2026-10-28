@@ -165,15 +165,13 @@
       l.push({ p: `${pk}.tg`, t: "toggles", sec, ent: e, first: true, q: sameDL() && N > 1 ? "Что нужно в каждом подъезде?" : "Что нужно измерить?", hint: "Включите нужное. Размеры спросим дальше.",
         tg: [[`${pk}.door.need`, "Дверь", "Да"], [`${pk}.hatch.need`, "Люк", "Да"]] });
       if (getP(order, `${pk}.door.need`) === "Да") {
-        l.push({ p: `${pk}.door.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота строительного проёма двери", hint: "Размер двери посчитаем сами: высота строительного проёма минус 20 мм, ширина минус 40 мм." });
-        l.push({ p: `${pk}.door.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина строительного проёма двери" });
+        l.push({ p: `${pk}.door.pair`, t: "pair", min: 100, unit: mm, sec, ent: e, q: "Строительный проём двери", hint: "Размер двери посчитаем сами: высота проёма минус 20 мм, ширина минус 40 мм.", pair: [[`${pk}.door.h`, "Высота"], [`${pk}.door.w`, "Ширина"]] });
         l.push({ p: `${pk}.door.hinge`, t: "choice", sec, ent: e, q: "С какой стороны петли у двери?", ch: ["Слева", "Справа"] });
         l.push({ p: `${pk}.door.cas`, t: "casing", sec, ent: e, q: "Наличник двери", hint: "Нажмите на наличник на рисунке, чтобы добавить или убрать его." });
         l.push({ p: `${pk}.door.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество дверей", hint: qh });
       }
       if (getP(order, `${pk}.hatch.need`) === "Да") {
-        l.push({ p: `${pk}.hatch.h`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Высота строительного проёма люка", hint: "Размер люка посчитаем сами: строительный проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон." });
-        l.push({ p: `${pk}.hatch.w`, t: "num", min: 100, unit: mm, sec, ent: e, q: "Ширина строительного проёма люка" });
+        l.push({ p: `${pk}.hatch.pair`, t: "pair", min: 100, unit: mm, sec, ent: e, q: "Строительный проём люка", hint: "Размер люка посчитаем сами: проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон.", pair: [[`${pk}.hatch.h`, "Высота"], [`${pk}.hatch.w`, "Ширина"]] });
         l.push({ p: `${pk}.hatch.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество люков", hint: qh });
       }
     });
@@ -231,16 +229,14 @@
     const N = order.wins || 0;
     for (let i = 1; i <= N; i++) {
       const sec = N > 1 ? `Окно ${i} из ${N}` : "Окно", pk = `win.${i}`;
-      l.push({ p: `${pk}.h`, t: "num", min: 100, unit: mm, sec, win: i, first: true, q: "Высота оконного проёма", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40." });
-      l.push({ p: `${pk}.w`, t: "num", min: 100, unit: mm, sec, q: "Ширина оконного проёма" });
+      l.push({ p: `${pk}.pair`, t: "pair", min: 100, unit: mm, sec, win: i, first: true, q: "Оконный проём", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40.", pair: [[`${pk}.h`, "Высота"], [`${pk}.w`, "Ширина"]] });
       l.push({ p: `${pk}.kind`, t: "choice", sash: "type", sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Пунктир — как рисуют оконщики, вершина угла у петель.", ch: Object.keys(WK) });
       const k = WK[getP(order, `${pk}.kind`)];
       if (k === "tr" || k === "tt") l.push({ p: `${pk}.hinge`, t: "choice", sash: "hinge", kindPath: `${pk}.kind`, sec, q: "С какой стороны петли?", hint: "Смотрим на окно изнутри помещения.", ch: ["Слева", "Справа"] });
       if (!getP(order, `${pk}.ebb.need`)) setP(order, `${pk}.ebb.need`, "Нет");
       l.push({ p: `${pk}.opt`, t: "toggles", sec, q: "Дополнительно", hint: "Включите, если к этому окну нужен отлив.", tg: [[`${pk}.ebb.need`, "Отлив", "Нет"]] });
       if (getP(order, `${pk}.ebb.need`) === "Да") {
-        l.push({ p: `${pk}.ebb.l`, t: "num", min: 10, unit: mm, sec, q: "Длина отлива" });
-        l.push({ p: `${pk}.ebb.w`, t: "num", min: 10, unit: mm, sec, q: "Ширина отлива" });
+        l.push({ p: `${pk}.ebb.pair`, t: "pair", unit: mm, sec, q: "Размеры отлива", hint: "Введите длину и ширину отлива.", pair: [[`${pk}.ebb.l`, "Длина"], [`${pk}.ebb.w`, "Ширина"]] });
       }
       l.push({ p: `${pk}.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, win: i, qtyStep: true, q: "Количество таких окон", hint: "Отлив тоже считается на каждое такое окно." });
     }
@@ -347,6 +343,7 @@
   }
   function controlHtml(s, val) {
     if (s.t === "casing") return casingHtml(val);
+    if (s.t === "pair") return s.pair.map(([p, lab], k) => { const v = getP(order, p); return `<label class="plab">${esc(lab)}</label><div class="field"><input id="${k ? "inp2" : "inp"}" inputmode="decimal" enterkeyhint="${k ? "done" : "next"}" value="${esc(v == null ? "" : String(v).replace(".", ","))}"><span class="u">${s.unit}</span></div>`; }).join("");
     if (s.t === "toggles") return `<div class="tgls">${s.tg.map(([p, lab, def]) => { const v = getP(order, p) || (setP(order, p, def), def); return `<button class="tgl${v === "Да" ? " on" : ""}" role="switch" aria-checked="${v === "Да"}" data-tg="${p}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`; }).join("")}</div>`;
     if (s.t === "choice" && s.sash) {
       const kp = s.sash === "hinge" ? WK[getP(order, s.kindPath)] : null;
@@ -366,7 +363,8 @@
     const inp = document.getElementById("inp");
     if (inp) {
       setTimeout(() => inp.focus(), 60);
-      inp.addEventListener("keydown", e => { if (e.key === "Enter" && !s.area) { e.preventDefault(); act("next"); } });
+      inp.addEventListener("keydown", e => { if (e.key === "Enter" && !s.area) { e.preventDefault(); const i2 = s.t === "pair" && document.getElementById("inp2"); if (i2) i2.focus(); else act("next"); } });
+      const i2 = document.getElementById("inp2"); if (i2) i2.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); act("next"); } });
     }
   }
   function readValue(s) {
@@ -376,6 +374,12 @@
     return inp ? inp.value : "";
   }
   function advance(s, raw) {
+    if (s.t === "pair") {
+      const ids = ["inp", "inp2"], rs = s.pair.map((x, k) => parse({ t: "num", min: s.min || 10 }, (document.getElementById(ids[k]) || {}).value));
+      const bad = rs.findIndex(r => r.e);
+      if (bad >= 0) { const m = s.pair[bad][1] + ": " + rs[bad].e; wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; const f = document.getElementById(ids[bad]); if (f) f.focus(); return; }
+      wizardView.err = ""; s.pair.forEach(([p], k) => setP(order, p, rs[k].v)); pos++; save(); return render();
+    }
     if (s.t === "toggles") { pos++; save(); return render(); }
     if (s.t === "casing") { if (!getP(order, s.p)) setP(order, s.p, { l: true, t: true, r: true }); pos++; save(); return render(); }
     const r = (s.t === "choice" || s.t === "scheme") ? (raw ? { v: raw } : { e: "Выберите вариант" }) : parse(s, raw);
