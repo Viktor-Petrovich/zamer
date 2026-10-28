@@ -124,15 +124,17 @@
     { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
     { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
     { p: "scheme", t: "scheme", sec: "Объект", q: "Схема обрамления", hint: "Выбор действует на всю заявку." },
-    { p: "common.ind_floor", t: "choice", sec: "Общие параметры", q: "Табло индикации", hint: "Спрашиваем один раз на всю заявку.", ch: ["Нет табло", "Только на 1 этаже", "На всех этажах"] },
-    { p: "common.ind_size", t: "dims", unit: mm, ph: "80*120", sec: "Общие параметры", q: "Размер отверстия под табло", hint: "Сначала высота, потом ширина, через значок *. Например: 80*120", when: o => (o.common.ind_floor || "") !== "Нет табло" },
-    { p: "common.bend_mode", t: "choice", sec: "Общие параметры", q: "Размеры обрамлений указаны", ch: ["С учётом загиба", "Без учёта загиба"] },
-    { p: "common.bend", t: "num", unit: mm, sec: "Общие параметры", q: "Размер загиба", hint: "В миллиметрах", max: 500 },
-    { p: "common.btn_all", t: "choice", sec: "Кнопка вызова", q: "Кнопка вызова ставится", ch: ["На всех этажах", "Не на всех этажах"] },
-    { p: "common.btn_floors", t: "floors", sec: "Кнопка вызова", q: "На каких этажах кнопка вызова", hint: "Через запятую или диапазон: 1, 3, 5-7", ph: "1, 3, 5-7", when: o => o.common.btn_all === "Не на всех этажах" },
-    { p: "common.btn_side", t: "choice", sec: "Кнопка вызова", q: "С какой стороны кнопка вызова", ch: ["Слева", "Справа"] },
-    { p: "common.btn_height", t: "num", unit: mm, sec: "Кнопка вызова", q: "Расстояние от пола до кнопки", hint: "В миллиметрах" },
-    { p: "common.btn_size", t: "dims", unit: mm, ph: "30*30", sec: "Кнопка вызова", q: "Размер отверстия под кнопку", hint: "Сначала высота, потом ширина, через значок *. Например: 30*30. Один раз для всей заявки." },
+    { p: "form.tablo", t: "form", sec: "Общие параметры", q: "Табло индикации", hint: "Спрашиваем один раз на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
+      fields: [{ k: "tgl", p: "common.ind_on", label: "Есть табло", def: "Да" }, { k: "seg", p: "common.ind_where", label: "Где", opts: [["Только 1 этаж", "Только на 1 этаже"], ["Все этажи", "На всех этажах"]], def: "На всех этажах", when: o => o.common.ind_on !== "Нет" },
+        { k: "dims2", p: "common.ind_size", label: "Размер отверстия под табло", ph: ["80", "120"], when: o => o.common.ind_on !== "Нет" }] },
+    { p: "form.bend", t: "form", sec: "Общие параметры", q: "Загиб", hint: "Как указаны размеры обрамлений и какой размер загиба.",
+      fields: [{ k: "seg", p: "common.bend_mode", label: "Размеры", opts: [["С загибом", "С учётом загиба"], ["Без загиба", "Без учёта загиба"]], def: "С учётом загиба" }, { k: "num", p: "common.bend", label: "Размер загиба", unit: mm, max: 500, min: 0 }] },
+    { p: "form.btn", t: "form", sec: "Кнопка вызова", q: "Кнопка вызова", hint: "Всё про кнопку вызова на одном экране.",
+      fields: [{ k: "seg", p: "common.btn_all", label: "Ставится", opts: [["На всех этажах", "На всех этажах"], ["Не на всех", "Не на всех этажах"]], def: "На всех этажах" },
+        { k: "floors", p: "common.btn_floors", label: "На каких этажах", ph: "1, 3, 5-7", when: o => o.common.btn_all === "Не на всех этажах" },
+        { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева" },
+        { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
+        { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] },
     { p: "common.color", t: "color", sec: "Общие параметры", q: "Цвет окраски", hint: "Выберите или введите номер RAL" },
     { p: "stops", t: "int", min: 1, max: 100, sec: "Обрамление ДШ", q: "Количество остановок", hint: "Сколько этажей обслуживает лифт", unit: "шт." },
     { p: "width", t: "num", unit: mm, sec: "Обрамление ДШ", q: "Ширина проёма", hint: "Применяется ко всей заявке" },
@@ -140,12 +142,9 @@
     { p: "dsh_same", t: "choice", sec: "Обрамление ДШ", q: "Размеры обрамлений на этажах", hint: "Если на всех этажах одинаковые, вводим один раз.", ch: ["Одинаковые на всех этажах", "Индивидуально по этажам"] }
   ];
   const OPEN = [
-    ["top_A", "Верхнее обрамление: размер А", "Размер А — это высота верхнего обрамления."],
-    ["top_H", "Верхнее обрамление: размер Н", "Размер Н — это глубина верхнего обрамления."],
-    ["left_H", "Левое боковое: размер Н", "Размер Н — это глубина бокового обрамления."],
-    ["left_B", "Левое боковое: размер В", "Размер В — это ширина бокового обрамления."],
-    ["right_H", "Правое боковое: размер Н", "Размер Н — это глубина бокового обрамления."],
-    ["right_B", "Правое боковое: размер В", "Размер В — это ширина бокового обрамления."]
+    ["top", "Верхнее обрамление", "А — высота, Н — глубина верхнего обрамления.", [["top_A", "Размер А (высота)"], ["top_H", "Размер Н (глубина)"]]],
+    ["left", "Левое боковое обрамление", "Н — глубина, В — ширина бокового обрамления.", [["left_H", "Размер Н (глубина)"], ["left_B", "Размер В (ширина)"]]],
+    ["right", "Правое боковое обрамление", "Н — глубина, В — ширина бокового обрамления.", [["right_H", "Размер Н (глубина)"], ["right_B", "Размер В (ширина)"]]]
   ];
   const same = () => order.dsh_same === "Одинаковые на всех этажах";
   /* ---------- двери и люки ---------- */
@@ -257,13 +256,12 @@
     const l = [
       { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
       { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
-      { p: "wins", t: "int", min: 1, max: 20, unit: "шт.", sec: "Объект", q: "Сколько видов окон?", hint: "Окна одного размера и с одинаковым открыванием — это один вид. Количество одинаковых окон спросим дальше." }
     ];
-    const N = order.wins || 0;
+    const N = Math.max(1, order.wins || 1);
     for (let i = 1; i <= N; i++) {
       const sec = N > 1 ? `Окно ${i} из ${N}` : "Окно", pk = `win.${i}`;
       l.push({ p: `${pk}.pair`, t: "pair", pic: "win", pk, min: 100, unit: mm, sec, win: i, first: true, q: "Оконный проём", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40.", pair: [[`${pk}.h`, "Высота проёма"], [`${pk}.w`, "Ширина проёма"]] });
-      l.push({ p: `${pk}.kind`, t: "choice", sash: "type", pk, sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Выберите тип, затем при необходимости включите отлив и сторону петель.", ch: Object.keys(WK) });
+      l.push({ p: `${pk}.kind`, t: "choice", sash: "type", pk, sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Выберите тип, сторону петель и нужен ли отлив.", ch: Object.keys(WK) });
       const k = WK[getP(order, `${pk}.kind`)];
       if (!getP(order, `${pk}.ebb.need`)) setP(order, `${pk}.ebb.need`, "Нет");
       if (!getP(order, `${pk}.hinge`)) setP(order, `${pk}.hinge`, "Слева");
@@ -272,17 +270,18 @@
         l.push({ p: `${pk}.ebb.pair`, t: "pair", unit: mm, sec, q: "Размеры отлива", hint: "Введите длину и ширину отлива.", pair: [[`${pk}.ebb.l`, "Длина"], [`${pk}.ebb.w`, "Ширина"]] });
       }
       l.push({ p: `${pk}.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, win: i, qtyStep: true, q: "Количество таких окон", hint: "Отлив тоже считается на каждое такое окно." });
+      l.push({ p: `${pk}.more`, t: "choice", sec, win: i, more: true, q: "Есть ещё окна?", hint: "Если в заявке окна другого размера или с другим открыванием, добавьте ещё одно.", ch: ["Добавить ещё окно", "Нет, это все окна"] });
     }
     return l;
   }
   function winItems() {
-    return Array.from({ length: order.wins || 0 }, (_, i) => {
+    return Array.from({ length: Math.max(1, order.wins || 1) }, (_, i) => {
       const d = (order.win && order.win[i + 1]) || {}, k = WK[d.kind] || "gl";
       return { n: i + 1, h: d.h, w: d.w, kind: k, kindName: d.kind, hinge: k === "tr" || k === "tt" ? (d.hinge === "Справа" ? "Справа" : "Слева") : "", qty: d.qty, ebb: d.ebb && d.ebb.need === "Да" ? { l: d.ebb.l, w: d.ebb.w } : null };
     });
   }
   function winSummaryHtml() {
-    const head = [["Адрес", order.address], ["Контакт", order.contact], ["Видов окон", order.wins]];
+    const head = [["Адрес", order.address], ["Контакт", order.contact], ["Окон (видов)", Math.max(1, order.wins || 1)]];
     const part = it => `<div class="card"><div class="sum"><span><b>Окно ${it.n}</b></span><span>Проём ${it.h}×${it.w} мм → окно <b>${it.h - 20}×${it.w - 40}</b> мм</span><span>${esc(it.kindName || "")}${it.hinge ? ", петли " + esc(it.hinge.toLowerCase()) : ""}</span><span>Отлив: ${it.ebb ? `${it.ebb.l}×${it.ebb.w} мм` : "не требуется"}</span><span>${it.qty} шт.</span></div></div>`;
     return `<div class="card"><div class="sum">${head.map(([a, b]) => `<span><b>${a}:</b> ${esc(b)}</span>`).join("")}</div></div>` + winItems().map(part).join("");
   }
@@ -292,15 +291,22 @@
     if (hasDraft() && !confirm("Начать новую заявку? Текущие ответы будут удалены.")) return;
     order = fresh(); order.kind = kind; pos = 0; view = "wizard"; sub = null; save(); render();
   }
+  function ensureForms() {
+    order.common = order.common || {};
+    const c = order.common;
+    if (c.ind_on === undefined) c.ind_on = c.ind_floor ? (c.ind_floor === "Нет табло" ? "Нет" : "Да") : "Да";
+    if (c.ind_where === undefined && c.ind_floor && c.ind_floor !== "Нет табло") c.ind_where = c.ind_floor;
+    SETUP.forEach(st => { if (st.t === "form") st.fields.forEach(f => { if ((f.k === "seg" || f.k === "tgl") && getP(order, f.p) === undefined) setP(order, f.p, f.def); }); });
+  }
   function buildList() {
     if (order.kind === "dl") return buildListDL();
     if (order.kind === "win") return buildListWin();
+    ensureForms();
     const l = SETUP.filter(s => !s.when || s.when(order));
     const floors = same() ? [1] : Array.from({ length: order.stops || 0 }, (_, i) => i + 1);
     floors.forEach(f => {
       const sec = same() ? "Обрамление, все этажи" : `Этаж ${f} из ${order.stops}`;
-      OPEN.forEach(([k, q, h], i) => l.push({ p: `ops.${f}.${k}`, t: "num", unit: mm, sec, q, hint: h + " Введите в миллиметрах.", floor: f, first: i === 0 }));
-      l.push({ p: `ops.${f}.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, q: "Количество комплектов", floor: f });
+      OPEN.forEach(([k, q, h, pr], i) => l.push({ p: `ops.${f}.${k}.pair`, t: "pair", min: 1, unit: mm, sec, q, hint: h + " В миллиметрах.", floor: f, first: i === 0, pair: pr.map(([key, lab]) => [`ops.${f}.${key}`, lab]) }));
     });
     return l;
   }
@@ -390,7 +396,48 @@
     if (!s.pic && s.tg && s.t !== "toggles") h += `<div class="tgls" style="margin-top:12px">${s.tg.map(tglHtml).join("")}</div>`;
     return h;
   }
+  let formDraft = {};
+  const fvis = (s, f) => !f.when || f.when(order);
+  const splitDims = v => String(v == null ? "" : v).split("×");
+  function snapForm(s) {
+    if (!s || s.t !== "form") return;
+    s.fields.forEach((f, i) => {
+      if (f.k === "num" || f.k === "floors") { const e = document.getElementById("f" + i); if (e) formDraft[f.p] = e.value; }
+      if (f.k === "dims2") { const a = document.getElementById("f" + i + "a"), b = document.getElementById("f" + i + "b"); if (a && b) formDraft[f.p] = [a.value, b.value]; }
+    });
+  }
+  function formHtml(s) {
+    if (formDraft.__s !== s.p) formDraft = { __s: s.p };
+    return `<div class="form">` + s.fields.map((f, i) => {
+      if (!fvis(s, f)) return "";
+      const v = getP(order, f.p);
+      if (f.k === "tgl") return tglHtml0(f.p, f.label, v === "Да");
+      if (f.k === "seg") return `<div class="tgl segrow"><span>${esc(f.label)}</span><div class="seg" role="radiogroup">${f.opts.map(([lab, val]) => `<button type="button" role="radio" aria-checked="${v === val}" class="${v === val ? "on" : ""}" data-fseg="${esc(f.p)}|${esc(val)}">${esc(lab)}</button>`).join("")}</div></div>`;
+      if (f.k === "dims2") {
+        const d = formDraft[f.p] || (v ? splitDims(v) : ["", ""]);
+        return `<label class="plab">${esc(f.label)}</label><div class="two"><div class="field"><input id="f${i}a" inputmode="decimal" enterkeyhint="next" placeholder="высота" value="${esc(d[0])}"><span class="u">мм</span></div><span class="mul">×</span><div class="field"><input id="f${i}b" inputmode="decimal" enterkeyhint="done" placeholder="ширина" value="${esc(d[1])}"><span class="u">мм</span></div></div>`;
+      }
+      const raw = formDraft[f.p] !== undefined ? formDraft[f.p] : (v == null ? "" : String(v).replace(".", ","));
+      return `<label class="plab">${esc(f.label)}</label><div class="field"><input id="f${i}" inputmode="${f.k === "floors" ? "text" : "decimal"}" enterkeyhint="next" placeholder="${esc(f.ph || "")}" value="${esc(raw)}">${f.unit ? `<span class="u">${f.unit}</span>` : ""}</div>`;
+    }).join("") + `</div>`;
+  }
+  function tglHtml0(p, lab, on) { return `<button class="tgl${on ? " on" : ""}" role="switch" aria-checked="${on}" data-ftg="${esc(p)}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`; }
+  function submitForm(s) {
+    snapForm(s);
+    const fail = (m, id) => { wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; const f = document.getElementById(id); if (f) f.focus(); };
+    const out = [];
+    for (let i = 0; i < s.fields.length; i++) {
+      const f = s.fields[i]; if (!fvis(s, f)) continue;
+      if (f.k === "num") { const r = parse({ t: "num", min: f.min != null ? f.min : 1, max: f.max }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
+      if (f.k === "floors") { const r = parse({ t: "floors" }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
+      if (f.k === "dims2") { const d = formDraft[f.p] || ["", ""]; const r = parse({ t: "dims" }, d[0] + "*" + d[1]); if (r.e) return fail(f.label + ": введите высоту и ширину числами", "f" + i + "a"); out.push([f.p, r.v]); }
+    }
+    out.forEach(([p, v]) => setP(order, p, v));
+    wizardView.err = ""; if (s.finish) s.finish(order);
+    formDraft = {}; pos++; save(); return render();
+  }
   function controlBase(s, val) {
+    if (s.t === "form") return formHtml(s);
     if (s.t === "casing") return casingHtml(val);
     if (s.t === "pair") return s.pair.map(([p, lab], k) => { const v = getP(order, p); return `<label class="plab">${esc(lab)}</label><div class="field"><input id="${k ? "inp2" : "inp"}" inputmode="decimal" enterkeyhint="${k ? "done" : "next"}" value="${esc(v == null ? "" : String(v).replace(".", ","))}"><span class="u">${s.unit}</span></div>`; }).join("");
     if (s.t === "toggles") return `<div class="tgls">${s.tg.map(tglHtml).join("")}</div>`;
@@ -401,8 +448,7 @@
       const kp = s.sash === "hinge" ? WK[getP(order, s.kindPath)] : null;
       return `<div class="schemes wsch">${s.ch.map(c => `<button class="sch${val === c ? " on" : ""}" data-pick="${esc(c)}">${s.sash === "hinge" ? sashSvg(kp, c) : sashSvg(WK[c], (s.pk && getP(order, s.pk + ".hinge")) || "Слева")}<b>${esc(c)}</b></button>`).join("")}</div>` + (s.sash === "type" ? (() => {
         const k = WK[val], turn = k === "tr" || k === "tt";
-        if (!val) return "";
-        return `<div class="tgls" style="margin-top:12px">${turn ? tglHtml([`${s.pk}.hinge`, "Петли", "Слева", ["Слева", "Справа"]]) : ""}${tglHtml([`${s.pk}.ebb.need`, "Отлив", "Нет"])}</div>`;
+        return `<div class="tgls" style="margin-top:12px"><div${turn ? "" : ' style="opacity:.45"'}>${tglHtml([`${s.pk}.hinge`, "Петли", "Слева", ["Слева", "Справа"]])}</div>${tglHtml([`${s.pk}.ebb.need`, "Отлив", "Нет"])}</div>`;
       })() : "");
     }
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
@@ -416,6 +462,11 @@
     return `<div class="field">${inner}${s.unit ? `<span class="u">${s.unit}</span>` : ""}</div>` + (s.quick ? `<div class="quick">${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<button type="button" data-q="${n}">${n}</button>`).join("")}</div>` : "") + (s.t === "dims" ? `<button class="btn sec" type="button" data-ins="*" style="font-size:26px">*</button><p class="hint" style="text-align:center">Нажмите *, чтобы поставить значок между высотой и шириной</p>` : "");
   }
   function bindInput(s) {
+    if (s.t === "form") {
+      const ins = [...document.querySelectorAll(".form input")];
+      ins.forEach((el, k) => el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (ins[k + 1]) ins[k + 1].focus(); else act("next"); } }));
+      return;
+    }
     const inp = document.getElementById("inp");
     if (inp) {
       setTimeout(() => inp.focus(), 60);
@@ -430,6 +481,11 @@
     return inp ? inp.value : "";
   }
   function advance(s, raw) {
+    if (s.more) {
+      setP(order, s.p, raw); order.wins = String(raw).startsWith("Добавить") ? Math.max(order.wins || 1, s.win + 1) : s.win;
+      pos++; save(); return render();
+    }
+    if (s.t === "form") return submitForm(s);
     if (s.t === "pair") {
       const ids = ["inp", "inp2"], rs = s.pair.map((x, k) => parse({ t: "num", min: s.min || 10 }, (document.getElementById(ids[k]) || {}).value));
       const bad = rs.findIndex(r => r.e);
@@ -508,7 +564,7 @@
     const n = order.stops || 0;
     for (let f = 1; f <= n; f++) {
       const src = order.ops[same() ? 1 : f] || {};
-      o.openings.push(Object.assign({ floor: f, width: order.width, C: order.C }, src));
+      o.openings.push(Object.assign({}, src, { floor: f, width: order.width, C: order.C, qty: 1 }));
     }
     return o;
   }
@@ -551,8 +607,8 @@
     return `<svg class="schsvg" viewBox="0 0 200 196" aria-hidden="true"><defs><marker id="ar${k === "А" ? "a" : "b"}" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L6 3L0 6z" class="mk"/></marker></defs>
       <rect x="62" y="30" width="76" height="140" class="gap"/>${sides}${top}
 ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k === "А" ? "a" : "b"})" marker-end="url(#ar${k === "А" ? "a" : "b"})"/><text class="dt" x="14" y="46" text-anchor="middle">A</text>` : ""}
-      <line x1="182" y1="${A ? 56 : 30}" x2="182" y2="170" class="dm" marker-start="url(#ar${k === "А" ? "a" : "b"})" marker-end="url(#ar${k === "А" ? "a" : "b"})"/><text class="dt" x="192" y="${A ? 113 : 100}" text-anchor="middle">C</text>
-      ${A ? `<line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/>` : ""}<line x1="164" y1="${A ? 56 : 30}" x2="190" y2="${A ? 56 : 30}" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
+      <line x1="182" y1="56" x2="182" y2="170" class="dm" marker-start="url(#ar${k === "А" ? "a" : "b"})" marker-end="url(#ar${k === "А" ? "a" : "b"})"/><text class="dt" x="192" y="113" text-anchor="middle">C</text>
+      ${A ? `<line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/>` : ""}<line x1="164" y1="56" x2="190" y2="56" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
       <line x1="30" y1="${bottom}" x2="170" y2="${bottom}" class="floor"/></svg>`;
   }
   function showDone(kind) { doneKind = kind; view = "done"; save(); render(); }
@@ -674,6 +730,12 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     const b = e.target.closest("button"); if (!b) return;
     try { if (!b.matches(".ghost,.ib")) { const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, sp = document.createElement("span"); sp.className = "rip"; sp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`; b.appendChild(sp); setTimeout(() => sp.remove(), 650); } } catch (x) {}
     if (b.dataset.ins) { const i = document.getElementById("inp"); if (i) { const a = i.selectionStart == null ? i.value.length : i.selectionStart, z = i.selectionEnd == null ? a : i.selectionEnd; i.value = i.value.slice(0, a) + b.dataset.ins + i.value.slice(z); i.focus(); try { i.setSelectionRange(a + 1, a + 1); } catch (x) {} } return; }
+    if (b.dataset.fseg || b.dataset.ftg) {
+      const s0 = buildList()[pos]; snapForm(s0);
+      if (b.dataset.fseg) { const i = b.dataset.fseg.lastIndexOf("|"); setP(order, b.dataset.fseg.slice(0, i), b.dataset.fseg.slice(i + 1)); }
+      else setP(order, b.dataset.ftg, getP(order, b.dataset.ftg) === "Да" ? "Нет" : "Да");
+      save(); return render();
+    }
     if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") { document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); document.querySelectorAll(".pic .hgL").forEach(g => { g.style.display = v === "Справа" ? "none" : ""; }); document.querySelectorAll(".pic .hgR").forEach(g => { g.style.display = v === "Справа" ? "" : "none"; }); } else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
     if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
