@@ -198,6 +198,28 @@ main>*{animation:rise .45s both}main>*:nth-child(2){animation-delay:.05s}main>*:
 .quick button{border:1.5px solid var(--line);background:var(--soft);color:var(--ink);border-radius:12px;min-height:46px;font:inherit;font-size:18px;font-weight:700;cursor:pointer}
 .quick button:active{background:var(--accent);color:var(--accent-ink)}
 @media (prefers-reduced-motion:reduce){.prog i{transition:none}}
+
+#lift .tag span{background:rgba(255,255,255,.8);padding:7px 14px;border-radius:10px;letter-spacing:.14em}
+.secpic{max-width:230px;margin:2px auto 10px}.secpic .pic{width:100%;height:auto}
+.pic .bf2{fill:color-mix(in srgb,var(--accent) 30%,var(--surface));stroke:currentColor;stroke-width:2;stroke-linejoin:round}.pic .bs2{fill:color-mix(in srgb,var(--accent) 48%,var(--surface));stroke:currentColor;stroke-width:2;stroke-linejoin:round}.pic .bt2{fill:color-mix(in srgb,var(--accent) 16%,var(--surface));stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.pic .dl{font:700 14px system-ui;fill:var(--accent)}
+/* эффекты */
+body::before{content:"";position:fixed;inset:-20% -20% auto -20%;height:60vh;z-index:-1;pointer-events:none;background:radial-gradient(40% 50% at 30% 40%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),radial-gradient(35% 45% at 75% 30%,color-mix(in srgb,#ffb347 14%,transparent),transparent 70%);animation:drift 14s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(6%,8%) scale(1.15)}}
+.prog i{position:relative;overflow:hidden}.prog i::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:translateX(-100%);animation:pshine 2.2s infinite}
+@keyframes pshine{to{transform:translateX(100%)}}
+.card{animation:cardin .4s cubic-bezier(.2,.8,.2,1) both}@keyframes cardin{from{opacity:0;transform:translateX(24px) scale(.98)}}
+.field:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent),0 8px 20px -10px var(--accent);transition:box-shadow .25s}
+.sw2 b{transition:transform .3s cubic-bezier(.3,1.6,.5,1)}.tgl.on .sw2{box-shadow:0 0 14px color-mix(in srgb,var(--accent) 60%,transparent)}
+.tile .ico,.tile svg{transition:transform .35s cubic-bezier(.3,1.6,.5,1)}.tile:not(.soon):hover svg,.tile:not(.soon):active svg{transform:scale(1.12) rotate(-4deg)}
+.tile:not(.soon)::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,color-mix(in srgb,var(--accent) 14%,transparent) 50%,transparent 60%);transform:translateX(-120%);transition:transform .7s;pointer-events:none}.tile:not(.soon):hover::before,.tile:not(.soon):active::before{transform:translateX(120%)}
+.chip{animation:rise .5s both}
+.choice.on,.sch.on{animation:bump .35s cubic-bezier(.3,1.6,.5,1)}@keyframes bump{40%{transform:scale(1.05)}}
+.donebox .ring{animation:pop .6s both,glow 2s 1s infinite}@keyframes glow{50%{box-shadow:0 0 0 14px color-mix(in srgb,var(--accent) 12%,transparent)}}
+.donebox h2{animation:rise .5s .3s both}.donebox p,.donebox .chip{animation:rise .5s .45s both}
+.confetti{position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden}.confetti i{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{top:105%;transform:translateX(30px) rotate(720deg);opacity:.8}}
+@media (prefers-reduced-motion:reduce){body::before,.prog i::after,.card{animation:none}}
 </style>
 </head>
 <body>

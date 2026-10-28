@@ -127,7 +127,7 @@
     { p: "form.tablo", t: "form", sec: "Общие параметры", q: "Табло индикации", hint: "Спрашиваем один раз на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
       fields: [{ k: "tgl", p: "common.ind_on", label: "Есть табло", def: "Да" }, { k: "seg", p: "common.ind_where", label: "Где", opts: [["Только 1 этаж", "Только на 1 этаже"], ["Все этажи", "На всех этажах"]], def: "На всех этажах", when: o => o.common.ind_on !== "Нет" },
         { k: "dims2", p: "common.ind_size", label: "Размер отверстия под табло", ph: ["80", "120"], when: o => o.common.ind_on !== "Нет" }] },
-    { p: "form.bend", t: "form", sec: "Общие параметры", q: "Загиб", hint: "Как указаны размеры обрамлений и какой размер загиба.",
+    { p: "form.bend", t: "form", sec: "Общие параметры", q: "Размеры с учётом загиба или без учёта загиба?", hint: "Выберите, как указаны размеры обрамлений, и укажите размер загиба.",
       fields: [{ k: "seg", p: "common.bend_mode", label: "Размеры", opts: [["С загибом", "С учётом загиба"], ["Без загиба", "Без учёта загиба"]], def: "С учётом загиба" }, { k: "num", p: "common.bend", label: "Размер загиба", unit: mm, max: 500, min: 0 }] },
     { p: "form.btn", t: "form", sec: "Кнопка вызова", q: "Кнопка вызова", hint: "Всё про кнопку вызова на одном экране.",
       fields: [{ k: "seg", p: "common.btn_all", label: "Ставится", opts: [["На всех этажах", "На всех этажах"], ["Не на всех", "Не на всех этажах"]], def: "На всех этажах" },
@@ -242,6 +242,17 @@
       ${dimA(88, 26, 88, 190, 76, 112, "Н", 1)}
       <line x1="112" y1="194" x2="112" y2="222" stroke="var(--muted)" stroke-width=".8"/><line x1="196" y1="194" x2="196" y2="222" stroke="var(--muted)" stroke-width=".8"/>
       ${dimA(112, 216, 196, 216, 154, 236, "В")}</svg>`;
+  }
+  function bortPic() {
+    return `<svg class="pic bort" viewBox="0 0 300 200" role="img" aria-label="Бортик">
+      <path d="M70 70 L170 70 L170 150 L70 150 Z" class="bf2"/><path d="M170 70 L230 40 L230 120 L170 150 Z" class="bs2"/><path d="M70 70 L130 40 L230 40 L170 70 Z" class="bt2"/>
+      <path d="M130 40 L130 52 L222 52" fill="none" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 3"/>
+      <line x1="52" y1="70" x2="52" y2="150" stroke="var(--accent)" stroke-width="1.4"/><path d="M48 76 L52 68 L56 76 M48 144 L52 152 L56 144" fill="none" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="40" y="115" text-anchor="middle" class="dl">h</text>
+      <line x1="70" y1="170" x2="170" y2="170" stroke="var(--accent)" stroke-width="1.4"/><path d="M78 166 L68 170 L78 174 M162 166 L172 170 L162 174" fill="none" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="120" y="188" text-anchor="middle" class="dl">w</text>
+      <line x1="180" y1="162" x2="240" y2="132" stroke="var(--accent)" stroke-width="1.4"/><path d="M184 154 L178 163 L188 163 M236 140 L242 131 L232 131" fill="none" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="224" y="152" text-anchor="middle" class="dl">l</text></svg>`;
   }
   function hatchPic() {
     const g = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" class="cf"/>`;
@@ -369,7 +380,7 @@
         ${tile("sec_claim", "claim", "Составление рекламации", "Оформление претензии по заказу", true)}
       </div>
       <div class="card tips"><div class="sum"><span>✓ Работает без интернета</span><span>✓ Ответы сохраняются на телефоне</span><span>✓ Готовый бланк PDF в один клик</span></div></div>
-      <p class="credit">Разработчик<br><b>Кащеев Виктор Петрович</b><br><button class="co" data-a="mail">СтройЛифтКомплекс</button></p>
+      <p class="credit">Разработано отделом<br><b>информационных технологий</b><br><button class="co" data-a="mail">СтройЛифтКомплекс</button></p>
     </main>${LIM && !acc.session ? `<footer class="act"><button class="btn" data-a="login">Войти через Telegram</button></footer>` : ""}`;
   }
   function soonView() {
@@ -400,7 +411,7 @@
     let h = "";
     if (s.pic === "door") h += doorPic(getP(order, s.casP), getP(order, s.hingeP));
     else if (s.pic === "hatch") h += hatchPic();
-    else if (s.pic === "section") h += `<button type="button" class="btn sec hintbtn" data-a="hint">💡 Подсказка: сечение I – I</button>`;
+    else if (s.pic === "section") h += `<div class="secpic">${sectionPic()}</div>`;
     else if (s.pic === "win") h += winPic(WK[getP(order, s.pk + ".kind")], getP(order, s.pk + ".hinge"));
     if (s.pic && s.tg) h += `<div class="tgls">${s.tg.map(tglHtml).join("")}</div>`;
     h += controlBase(s, val);
@@ -528,7 +539,7 @@
   function subView() {
     const d = sub.d;
     const fields = d.steps.map(([k, q, t = "num", unit = mm], i) => `<label class="plab">${esc(q)}</label><div class="field"><input id="sf${i}" inputmode="${t === "int" ? "numeric" : "decimal"}" enterkeyhint="${i === d.steps.length - 1 ? "done" : "next"}" value="${esc(sub.vals[k] == null ? "" : String(sub.vals[k]).replace(".", ","))}" autocomplete="off"><span class="u">${unit}</span></div>`).join("");
-    const body = `<div class="card"><span class="chip">${esc(d.title)}</span><h2 class="q">${esc(d.title)}</h2><p class="hint">Все размеры на одном экране, в миллиметрах.</p><div class="form">${fields}</div><p class="err" id="err">${esc(sub.err || "")}</p></div>`;
+    const body = `<div class="card"><span class="chip">${esc(d.title)}</span><h2 class="q">${esc(d.title)}</h2><p class="hint">Все размеры на одном экране, в миллиметрах.</p>${d.cable ? `<div class="secpic">${bortPic()}</div>` : ""}<div class="form">${fields}</div><p class="err" id="err">${esc(sub.err || "")}</p></div>`;
     shell(d.title, null, body, `<button class="btn" data-a="next">Готово</button>`);
     const ins = [...document.querySelectorAll(".form input")]; setTimeout(() => ins[0] && ins[0].focus(), 60);
     ins.forEach((el, k) => el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (ins[k + 1]) ins[k + 1].focus(); else act("next"); } }));
@@ -628,7 +639,28 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       ${A ? `<line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/>` : ""}<line x1="164" y1="56" x2="190" y2="56" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
       <line x1="30" y1="${bottom}" x2="170" y2="${bottom}" class="floor"/></svg>`;
   }
-  function showDone(kind) { doneKind = kind; view = "done"; save(); render(); }
+  function showDone(kind) { doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
+  function liftClose() {
+    const n = order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 0), unit = order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return confetti();
+    const L = document.createElement("div"); L.id = "lift"; L.className = "open";
+    L.innerHTML = `<div class="head"><i>▲</i><b>1</b></div><div class="door l"></div><div class="door r"></div><div class="tag"><span>заказано ${unit}: ${n}</span></div>`;
+    document.body.appendChild(L); void L.offsetWidth;
+    const b = L.querySelector("b"); let off = false;
+    const open = () => { if (off) return; off = true; clearInterval(iv); L.classList.add("open"); confetti(); setTimeout(() => L.remove(), 2600); };
+    let c = 1, iv;
+    L.addEventListener("click", open);
+    setTimeout(() => { L.classList.remove("open"); L.querySelector(".tag").style.opacity = 1; }, 50);
+    setTimeout(() => { iv = setInterval(() => { c = Math.min(n, c + Math.max(1, Math.ceil(n / 14))); b.textContent = c; if (c >= n) clearInterval(iv); }, 90); }, 1500);
+    setTimeout(open, 4200);
+  }
+  function confetti() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const w = document.createElement("div"); w.className = "confetti";
+    const cols = ["#1b6fa8", "#ffb347", "#2e9e6b", "#c0392b", "#6aa9d6"];
+    for (let i = 0; i < 36; i++) { const p = document.createElement("i"); p.style.cssText = `left:${Math.random() * 100}%;background:${cols[i % 5]};animation-delay:${Math.random() * .5}s;animation-duration:${1.6 + Math.random() * 1.4}s;transform:rotate(${Math.random() * 360}deg)`; w.appendChild(p); }
+    document.body.appendChild(w); setTimeout(() => w.remove(), 3500);
+  }
   let doneKind = "sent";
   function doneView() {
     const sent = doneKind === "sent";
@@ -689,7 +721,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     }
     if (a === "mail") {
       const E = "stroyliftkompleks@yandex.ru", o = document.createElement("div"); o.className = "sheet";
-      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><p class="hint" style="margin:0 0 10px">Разработчик: <b>Кащеев Виктор Петрович</b></p><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
       o.addEventListener("click", ev => {
         const c = ev.target.closest("[data-copy]");
         if (c) { (navigator.clipboard ? navigator.clipboard.writeText(E) : Promise.reject()).then(() => { c.textContent = "Адрес скопирован ✓"; }, () => { c.textContent = E; }); return; }
