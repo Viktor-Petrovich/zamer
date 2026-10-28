@@ -321,10 +321,71 @@
     return c;
   }
 
+  function sashDraw(x, ox, y, w, h, kind, hinge, lw) {
+    x.fillStyle = "#e8f3fb"; x.fillRect(ox, y, w, h);
+    x.strokeStyle = INKC; x.lineWidth = lw || 1.2; x.strokeRect(ox, y, w, h);
+    x.strokeStyle = "#9db4c6"; x.lineWidth = .6; x.strokeRect(ox + 3, y + 3, w - 6, h - 6);
+    x.strokeStyle = INKC; x.lineWidth = .9; x.setLineDash([3.2, 2.2]);
+    const cx = ox + w / 2, cy = y + h / 2, L = hinge !== "Справа";
+    if (kind === "tr" || kind === "tt") { if (L) { line(x, ox + w, y, ox, cy); line(x, ox + w, y + h, ox, cy); } else { line(x, ox, y, ox + w, cy); line(x, ox, y + h, ox + w, cy); } }
+    if (kind === "tl" || kind === "tt") { line(x, ox, y + h, cx, y); line(x, ox + w, y + h, cx, y); }
+    x.setLineDash([]);
+    if (kind !== "gl") { x.fillStyle = INKC; if (kind === "tl") x.fillRect(cx - 5, y + h - 10.5, 10, 3); else x.fillRect(L ? ox + w - 8.5 : ox + 5.5, cy - 5, 3, 10); }
+  }
+  function winCard(x, cx0, top, w, h, num, it, mult) {
+    rr(x, cx0, top, w, h, 10, "#fff", LN, 1);
+    x.fillStyle = ACC; x.beginPath(); x.arc(cx0 + 24, PH - (top + 24), 11, 0, 7); x.fill();
+    T(x, String(num), cx0 + 24, PH - (top + 28), { size: 12, bold: true, align: "center", color: "#fff" });
+    T(x, "Окно " + num, cx0 + 44, PH - (top + 29), { size: 15, bold: true, color: INKC });
+    x.strokeStyle = LN; x.lineWidth = 1; line(x, cx0 + 14, PH - (top + 42), cx0 + w - 14, PH - (top + 42));
+    const ww = 84, wh = 100, ox = cx0 + (w - ww) / 2 + 14, y = PH - (top + 58 + wh), f = 6;
+    x.fillStyle = "#f4f6f8"; x.fillRect(ox, y, ww, wh); x.strokeStyle = INKC; x.lineWidth = 1.8; x.strokeRect(ox, y, ww, wh);
+    sashDraw(x, ox + f, y + f, ww - 2 * f, wh - 2 * f, it.kind, it.hinge);
+    x.strokeStyle = INKC; x.lineWidth = 1.8; x.strokeRect(ox, y, ww, wh);
+    x.strokeStyle = ACC; x.fillStyle = ACC; arrowV(x, ox - 14, y, y + wh); arrowH(x, ox, ox + ww, y - 14);
+    T(x, "Высота" + (it.h ? " " + fmt(it.h) : ""), ox - 22, PH - (top + 58 + wh / 2 + 3), { size: 10, bold: true, align: "right", color: ACC });
+    T(x, "Ширина" + (it.w ? " " + fmt(it.w) : ""), ox + ww / 2, PH - (top + 58 + wh + 28), { size: 10, bold: true, align: "center", color: ACC });
+    T(x, "Вид изнутри помещения", cx0 + w / 2, PH - (top + 58 + wh + 42), { size: 8, align: "center", color: MUT });
+    const bx = cx0 + 18, bw = w - 36, rh = 24, gap = 4; let yt = top + 58 + wh + 52;
+    row(x, bx, yt, bw, rh, "Высота оконного проёма", cell(it.h), "мм"); yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Ширина оконного проёма", cell(it.w), "мм"); yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Размер окна (В × Ш)", "", "", "\u200b");
+    T(x, `${fmt(it.h - 20)} × ${fmt(it.w - 40)} мм`, bx + 150, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
+    T(x, "высота − 20, ширина − 40", bx + bw - 12, PH - (yt + rh / 2 + 3.5), { size: 8, align: "right", color: MUT }); yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Отлив (длина × ширина)", "", "", "\u200b");
+    if (it.ebb) T(x, `${fmt(it.ebb.l)} × ${fmt(it.ebb.w)} мм`, bx + 168, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
+    else T(x, "не требуется", bx + 168, PH - (yt + rh / 2 + 4), { size: 10.5, color: MUT });
+    yt += rh + gap;
+    checks(x, bx, yt, bw, rh, "Створка", [["gl", "глухая"], ["tr", "повор."], ["tl", "откидн."], ["tt", "пов.-отк."]], { [it.kind]: true }, 70, 72); yt += rh + gap;
+    checks(x, bx, yt, bw, rh, "Петли", [["l", "слева"], ["r", "справа"]], { l: it.hinge === "Слева", r: it.hinge === "Справа" }, 118, 82); yt += rh + gap;
+    row(x, bx, yt, bw, rh, "Количество", it.qty, "шт.");
+  }
+  function winPage(order, items, pn, pc) {
+    const { c, x } = newPage(), M = 30;
+    x.fillStyle = ACC; x.fillRect(0, PH - 6, PW, 6);
+    T(x, "Бланк замера окон", M, PH - 50, { size: 22, bold: true, color: INKC });
+    T(x, "Оконный проём и схема открывания створки", M, PH - 66, { size: 10, color: MUT });
+    if (pc > 1) { rr(x, PW - M - 120, 32, 120, 26, 13, "#e3eef7", ACC, 1); T(x, `Лист ${pn} из ${pc}`, PW - M - 60, PH - 49, { size: 11, bold: true, align: "center", color: ACC }); }
+    const f = (px, yt, w, label, val) => {
+      x.strokeStyle = LN; x.lineWidth = .9; line(x, px, PH - yt, px + w, PH - yt);
+      if (val) T(x, val, px + 2, PH - (yt - 4), { size: 11.5, bold: true, color: INKC });
+      T(x, label, px, PH - (yt + 11), { size: 8, color: MUT });
+    };
+    const cw = (PW - 2 * M - 40) / 3;
+    f(M, 98, PW - 2 * M, "Адрес объекта", order.address);
+    f(M, 128, cw + 60, "Контактное лицо на объекте, телефон", order.contact);
+    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", order.stamp || new Date().toLocaleDateString("ru-RU"));
+    f(M + 2 * cw + 80, 128, PW - M - (M + 2 * cw + 80), "Замерщик", order.worker);
+    const top = 150, ch = 410, cwid = (PW - 2 * M - 18) / 2;
+    items.forEach((it, i) => winCard(x, M + i * (cwid + 18), top, cwid, ch, it.n, it, 1));
+    T(x, "Все размеры в миллиметрах. Размер окна рассчитывается из оконного проёма. Вид изнутри помещения.", M, PH - 585, { size: 7.5, color: MUT });
+    return c;
+  }
   const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 
   async function buildPages(order) {
     if (order.kind === "dl") return order.items.map(it => dlPage(order, it));
+    if (order.kind === "win") { const pc = Math.max(1, Math.ceil(order.items.length / 2)); return Array.from({ length: pc }, (_, i) => winPage(order, order.items.slice(i * 2, i * 2 + 2), i + 1, pc)); }
     const img = await loadImg("form_p1.jpg");
     const pages = [], ops = order.openings || [];
     const thr = order.thresholds || [], nsh = order.nashchelnik || [];

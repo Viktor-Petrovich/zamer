@@ -210,6 +210,52 @@
     };
     return `<div class="card"><div class="sum">${head.map(([a, b]) => `<span><b>${a}:</b> ${esc(b)}</span>`).join("")}</div></div>` + items.map(part).join("");
   }
+  /* ---------- окна ---------- */
+  const WK = { "Глухое": "gl", "Поворотное": "tr", "Откидное": "tl", "Поворотно-откидное": "tt" };
+  function sashSvg(kind, hinge) {
+    const L = hinge !== "Справа", w = 70, h = 92, ln = (a, b, c, d) => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`;
+    let g = "";
+    if (kind === "tr" || kind === "tt") g += L ? ln(w, 0, 0, h / 2) + ln(w, h, 0, h / 2) : ln(0, 0, w, h / 2) + ln(0, h, w, h / 2);
+    if (kind === "tl" || kind === "tt") g += ln(0, 0, w / 2, h) + ln(w, 0, w / 2, h);
+    const hd = kind === "gl" ? "" : kind === "tl" ? `<rect x="${w / 2 - 7}" y="9" width="14" height="4" rx="1"/>` : `<rect x="${L ? w - 11 : 7}" y="${h / 2 - 8}" width="4" height="16" rx="1"/>`;
+    return `<svg class="wsvg" viewBox="-8 -8 86 108" aria-hidden="true"><rect x="-6" y="-6" width="82" height="104" rx="2" class="wf"/><rect x="0" y="0" width="${w}" height="${h}" class="wg"/><g class="wl">${g}</g><g class="wh">${hd}</g></svg>`;
+  }
+  const winList = () => Math.max(1, Math.min(20, order.wins || 0));
+  function buildListWin() {
+    const l = [
+      { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
+      { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
+      { p: "wins", t: "int", min: 1, max: 20, unit: "шт.", sec: "Объект", q: "Сколько видов окон?", hint: "Окна одного размера и с одинаковым открыванием — это один вид. Количество одинаковых окон спросим дальше." }
+    ];
+    const N = order.wins || 0;
+    for (let i = 1; i <= N; i++) {
+      const sec = N > 1 ? `Окно ${i} из ${N}` : "Окно", pk = `win.${i}`;
+      l.push({ p: `${pk}.h`, t: "num", min: 100, unit: mm, sec, q: "Высота оконного проёма", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40." });
+      l.push({ p: `${pk}.w`, t: "num", min: 100, unit: mm, sec, q: "Ширина оконного проёма" });
+      l.push({ p: `${pk}.kind`, t: "choice", sash: "type", sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Пунктир — как рисуют оконщики, вершина угла у петель.", ch: Object.keys(WK) });
+      const k = WK[getP(order, `${pk}.kind`)];
+      if (k === "tr" || k === "tt") l.push({ p: `${pk}.hinge`, t: "choice", sash: "hinge", kindPath: `${pk}.kind`, sec, q: "С какой стороны петли?", hint: "Смотрим на окно изнутри помещения.", ch: ["Слева", "Справа"] });
+      l.push({ p: `${pk}.ebb.need`, t: "choice", sec, q: "Нужен ли отлив?", ch: ["Да", "Нет"] });
+      if (getP(order, `${pk}.ebb.need`) === "Да") {
+        l.push({ p: `${pk}.ebb.l`, t: "num", min: 10, unit: mm, sec, q: "Длина отлива" });
+        l.push({ p: `${pk}.ebb.w`, t: "num", min: 10, unit: mm, sec, q: "Ширина отлива" });
+      }
+      l.push({ p: `${pk}.qty`, t: "int", min: 1, max: 999, unit: "шт.", sec, q: "Количество таких окон", hint: "Отлив тоже считается на каждое такое окно." });
+    }
+    return l;
+  }
+  function winItems() {
+    return Array.from({ length: order.wins || 0 }, (_, i) => {
+      const d = (order.win && order.win[i + 1]) || {}, k = WK[d.kind] || "gl";
+      return { n: i + 1, h: d.h, w: d.w, kind: k, kindName: d.kind, hinge: k === "tr" || k === "tt" ? (d.hinge === "Справа" ? "Справа" : "Слева") : "", qty: d.qty, ebb: d.ebb && d.ebb.need === "Да" ? { l: d.ebb.l, w: d.ebb.w } : null };
+    });
+  }
+  function winSummaryHtml() {
+    const head = [["Адрес", order.address], ["Контакт", order.contact], ["Видов окон", order.wins]];
+    const part = it => `<div class="card"><div class="sum"><span><b>Окно ${it.n}</b></span><span>Проём ${it.h}×${it.w} мм → окно <b>${it.h - 20}×${it.w - 40}</b> мм</span><span>${esc(it.kindName || "")}${it.hinge ? ", петли " + esc(it.hinge.toLowerCase()) : ""}</span><span>Отлив: ${it.ebb ? `${it.ebb.l}×${it.ebb.w} мм` : "не требуется"}</span><span>${it.qty} шт.</span></div></div>`;
+    return `<div class="card"><div class="sum">${head.map(([a, b]) => `<span><b>${a}:</b> ${esc(b)}</span>`).join("")}</div></div>` + winItems().map(part).join("");
+  }
+  const isSimple = () => order.kind === "dl" || order.kind === "win";
   function newOrder(kind) {
     if (LIM && !acc.session) { view = "home"; return render(); }
     if (hasDraft() && !confirm("Начать новую заявку? Текущие ответы будут удалены.")) return;
@@ -217,6 +263,7 @@
   }
   function buildList() {
     if (order.kind === "dl") return buildListDL();
+    if (order.kind === "win") return buildListWin();
     const l = SETUP.filter(s => !s.when || s.when(order));
     const floors = same() ? [1] : Array.from({ length: order.stops || 0 }, (_, i) => i + 1);
     floors.forEach(f => {
@@ -245,6 +292,7 @@
   const SECT_ICON = {
     frame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V6a1 1 0 011-1h12a1 1 0 011 1v15"/><path d="M9 21V9h6v12"/></svg>',
     door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M14.5 12h.01M5 21h14"/></svg>',
+    claim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 11v5"/><circle cx="12" cy="18.6" r=".6" fill="currentColor"/></svg>',
     win: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M12 4v16M4 12h16"/></svg>'
   };
   function dateLong(d, withTime) {
@@ -266,35 +314,40 @@
       <div class="hello"><button class="logob" data-a="theme" aria-label="Сменить тему"><img src="icon-192.png" alt=""></button><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div></div>
       <p class="hint" style="margin:-4px 0 0 2px">${esc(dateLong())}</p>
       ${LIM && acc.session ? `<div class="chip" style="justify-self:start">Осталось замеров: ${left()}</div>` : ""}
-      ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${order.kind === "dl" ? "Двери и люки" : "Обрамления"} · ${esc((order.address || "").slice(0, 32))}</small></span><span class="go">›</span></button>` : ""}
+      ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${order.kind === "dl" ? "Двери и люки" : order.kind === "win" ? "Окна" : "Обрамления"} · ${esc((order.address || "").slice(0, 32))}</small></span><span class="go">›</span></button>` : ""}
       <div class="tiles">
         ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
         ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
-        ${tile("sec_win", "win", "Замер окон", "Размеры и бланк заявки", true)}
+        ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}
+        ${tile("sec_claim", "claim", "Составление рекламации", "Оформление претензии по заказу", true)}
       </div>
       <div class="card tips"><div class="sum"><span>✓ Работает без интернета</span><span>✓ Ответы сохраняются на телефоне</span><span>✓ Готовый бланк PDF в один клик</span></div></div>
-      <p class="credit">Разработчик<br><b>Кащеев Виктор Петрович</b></p>
+      <p class="credit">Разработчик<br><b>Кащеев Виктор Петрович</b><br><span class="co">СтройЛифтКомплекс</span></p>
     </main>${LIM && !acc.session ? `<footer class="act"><button class="btn" data-a="login">Войти через Telegram</button></footer>` : ""}`;
   }
   function soonView() {
-    const w = soonView.what === "win" ? "Замер окон" : "Замер дверей и люков";
-    shell(w, null, `<div class="card" style="text-align:center;justify-items:center"><div class="soonico">${SECT_ICON[soonView.what === "win" ? "win" : "door"]}</div><h2 class="q">Этот раздел в разработке</h2><p class="hint">Мы готовим удобный опросник и бланк заявки. Скоро он появится в приложении, обновление придёт само.</p><p class="hint">А пока можно оформить замер обрамлений.</p></div>`,
+    const w = soonView.what === "claim" ? "Составление рекламации" : soonView.what === "win" ? "Замер окон" : "Замер дверей и люков";
+    shell(w, null, `<div class="card" style="text-align:center;justify-items:center"><div class="soonico">${SECT_ICON[soonView.what === "claim" ? "claim" : soonView.what === "win" ? "win" : "door"]}</div><h2 class="q">Этот раздел в разработке</h2><p class="hint">Мы готовим удобный опросник и бланк заявки. Скоро он появится в приложении, обновление придёт само.</p><p class="hint">А пока можно оформить замер обрамлений.</p></div>`,
       `<button class="btn" data-a="home">На главный экран</button>`, { back: true, menu: false });
   }
   function wizardView() {
-    const list = buildList(); if (pos >= list.length) { view = order.kind === "dl" ? "review" : "hub"; save(); return render(); }
+    const list = buildList(); if (pos >= list.length) { view = isSimple() ? "review" : "hub"; save(); return render(); }
     const s = list[pos], val = getP(order, s.p), err = wizardView.err || "";
     let body = `<div class="card"><span class="chip">${esc(s.sec)} · вопрос ${pos + 1} из ${list.length}</span><h2 class="q">${esc(s.q)}</h2>${s.hint ? `<p class="hint">${esc(s.hint)}</p>` : ""}`;
     body += controlHtml(s, val) + `<p class="err" id="err">${esc(err)}</p></div>`;
     let foot = s.t === "choice" || s.t === "scheme" ? "" : `<button class="btn" data-a="next">Далее</button>`;
     if (s.t === "scheme") foot = `<button class="btn" data-a="next">Далее</button>`;
     if (order.kind === "dl" && !sameDL() && s.first && s.ent > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как в подъезде ${s.ent - 1}</button>`;
-    if (order.kind !== "dl" && !same() && s.first && s.floor > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как на этаже ${s.floor - 1}</button>`;
+    if (order.kind === "frame" && !same() && s.first && s.floor > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как на этаже ${s.floor - 1}</button>`;
     shell(s.sec, pos / list.length, body, foot);
     bindInput(s);
   }
   function controlHtml(s, val) {
     if (s.t === "casing") return casingHtml(val);
+    if (s.t === "choice" && s.sash) {
+      const kp = s.sash === "hinge" ? WK[getP(order, s.kindPath)] : null;
+      return `<div class="schemes wsch">${s.ch.map(c => `<button class="sch${val === c ? " on" : ""}" data-pick="${esc(c)}">${s.sash === "hinge" ? sashSvg(kp, c) : sashSvg(WK[c], "Слева")}<b>${esc(c)}</b></button>`).join("")}</div>`;
+    }
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
     if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}" aria-label="Схема ${k}">${schemeSvg(k)}<b>Схема ${k}</b><small>${k === "А" ? "Верхнее обрамление накрывает боковые" : "Верхнее обрамление между боковыми"}</small></button>`).join("")}</div>`;
     if (s.t === "color") {
@@ -357,6 +410,7 @@
 
   function summaryHtml() {
     if (order.kind === "dl") return dlSummaryHtml();
+    if (order.kind === "win") return winSummaryHtml();
     const c = order.common, rows = [
       ["Адрес", order.address], ["Контакт", order.contact], ["Схема", order.scheme], ["Остановок", order.stops],
       ["Ширина проёма / С", `${order.width} / ${order.C} мм`], ["Размеры", `${c.bend_mode}, загиб ${c.bend} мм`],
@@ -366,7 +420,7 @@
   }
   async function reviewView() {
     shell("Проверка заявки", 1, summaryHtml() + `<div class="card"><p class="hint" id="gen">Формирую бланк…</p><div class="pages" id="pages"></div></div>`,
-      `<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="${order.kind === "dl" ? "back" : "hub"}">${order.kind === "dl" ? "Изменить ответы" : "Назад к разделам"}</button>`);
+      `<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="${isSimple() ? "back" : "hub"}">${isSimple() ? "Изменить ответы" : "Назад к разделам"}</button>`);
     try {
       const full = exportOrder();
       const canv = await PDFGEN.buildPages(full);
@@ -379,6 +433,7 @@
   }
   function exportOrder() {
     const stamp = dateLong(new Date(), true);
+    if (order.kind === "win") return { kind: "win", stamp, address: order.address, contact: order.contact, worker: acc.name || "", items: winItems() };
     if (order.kind === "dl") return { kind: "dl", stamp, address: order.address, contact: order.contact, worker: acc.name || "", items: dlItems() };
     const o = { stamp, address: order.address, contact: order.contact, scheme: order.scheme, stops: order.stops, dsh_same: same(), common: order.common,
       thresholds: order.thresholds, nashchelnik: order.nashchelnik, cable: order.cable, openings: [] };
@@ -465,7 +520,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       if (view === "soon") { view = "home"; return render(); }
       if (sub) { if (sub.i > 0) sub.i--; else sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
-      else if (view === "review") { if (order.kind === "dl") { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
+      else if (view === "review") { if (isSimple()) { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
       else if (pos > 0) pos--; else view = "home";
       wizardView.err = ""; save(); return render();
     }
@@ -485,14 +540,15 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "finish") { order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
     if (a === "backrev") { view = "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
-    if (a === "sec_win") { soonView.what = "win"; view = "soon"; return render(); }
+    if (a === "sec_win") return newOrder("win");
+    if (a === "sec_claim") { soonView.what = "claim"; view = "soon"; return render(); }
     if (a === "sec_door") return newOrder("dl");
     if (a === "sec_frame") return newOrder("frame");
     if (a === "home") { view = "home"; return render(); }
     if (a === "back2") { view = "review"; return render(); }
     if (a === "logout") { if (!confirm("Выйти из аккаунта? Неотправленные замеры на телефоне будут возвращены на баланс при следующем входе.")) return; api("/api/release", { tickets: acc.tickets }).catch(() => {}); acc = { session: "", id: "", name: "", credits: null, tickets: [], redeem: acc.redeem }; saveAcc(); view = "home"; return render(); }
     if (a === "new") return newOrder(order.kind || "frame");
-    if (a === "resume") { view = "wizard"; const n = buildList().length; if (pos >= n) view = order.kind === "dl" ? "review" : (order.stops ? "hub" : "wizard"); return render(); }
+    if (a === "resume") { view = "wizard"; const n = buildList().length; if (pos >= n) view = isSimple() ? "review" : (order.stops ? "hub" : "wizard"); return render(); }
     if (a === "menu") { menuReturn = view; view = "menu"; return render(); }
     if (a === "close") { view = menuReturn === "menu" ? "home" : menuReturn; return render(); }
     if (a === "review") { view = "review"; save(); return render(); }
@@ -526,7 +582,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       if (s.t === "color") { setP(order, s.p, b.dataset.pick); const inp = document.getElementById("inp"); if (inp) inp.value = ""; return advance(s, b.dataset.pick); }
       setP(order, s.p, b.dataset.pick);
       if (s.t === "scheme") { document.querySelectorAll(".sch").forEach(x => x.classList.toggle("on", x === b)); save(); return; }
-      b.parentNode.querySelectorAll(".choice").forEach(x => x.classList.toggle("on", x === b));
+      b.parentNode.querySelectorAll(".choice,.sch").forEach(x => x.classList.toggle("on", x === b));
       save(); return setTimeout(() => advance(s, b.dataset.pick), 160);
     }
     if (b.dataset.add) { const d = SUB[b.dataset.add]; sub = { d, key: b.dataset.add, i: 0, vals: {}, err: "" }; return render(); }
