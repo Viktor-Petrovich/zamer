@@ -220,6 +220,51 @@ body::before{content:"";position:fixed;inset:-20% -20% auto -20%;height:60vh;z-i
 .confetti{position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden}.confetti i{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{top:105%;transform:translateX(30px) rotate(720deg);opacity:.8}}
 @media (prefers-reduced-motion:reduce){body::before,.prog i::after,.card{animation:none}}
+
+/* мерцание кнопок */
+.tile:not(.soon)::after,.tile.soon::after{content:"";position:absolute;top:0;bottom:0;left:-70%;width:45%;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--accent) 22%,rgba(255,255,255,.7)),transparent);transform:skewX(-20deg);pointer-events:none;animation:shine 5.5s infinite}
+.tiles .tile:nth-child(2)::after{animation-delay:.7s}.tiles .tile:nth-child(3)::after{animation-delay:1.4s}.tiles .tile:nth-child(4)::after{animation-delay:2.1s}.tiles .tile:nth-child(5)::after{animation-delay:2.8s}
+.tile.soon::after{opacity:.55}
+.tile:not(.soon) .ti{animation:tglow 3.2s ease-in-out infinite}
+@keyframes tglow{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 14%,transparent),0 0 18px color-mix(in srgb,var(--accent) 35%,transparent)}}
+.tile em{animation:blink 2.4s ease-in-out infinite}@keyframes blink{50%{opacity:.55}}
+.btn:not(.sec):not(.ghost){animation:bglow 3.6s ease-in-out infinite}
+@keyframes bglow{50%{box-shadow:0 12px 30px -8px var(--accent),inset 0 1px 0 rgba(255,255,255,.45)}}
+.btn:not(.sec):not(.ghost)::after{animation-duration:3.8s;animation-delay:.6s}
+.btn.sec::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:35%;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--accent) 16%,transparent),transparent);transform:skewX(-20deg);pointer-events:none;animation:shine 6.5s 1s infinite}
+@media (prefers-reduced-motion:reduce){.tile::after,.tile .ti,.tile em,.btn,.btn::after{animation:none!important}}
+.fbtext{width:100%;box-sizing:border-box;margin-top:6px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--soft);color:var(--ink);font:inherit;resize:vertical}.fbtext:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.hello .hmenu{margin-left:auto;flex:none}.hello>div{min-width:0}
+.suppseg{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}.suppseg button{padding:10px 16px;border-radius:99px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:600 15px system-ui;cursor:pointer;transition:all .2s}.suppseg button.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 8px 18px -10px var(--accent)}
+
+/* ===== стекло (Liquid Glass) ===== */
+:root{--gl:rgba(255,255,255,.7);--gl2:rgba(255,255,255,.55);--glbg:62%;--blob:.55}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gl:rgba(255,255,255,.16);--gl2:rgba(255,255,255,.08);--glbg:58%;--blob:.42}}
+:root[data-theme="dark"]{--gl:rgba(255,255,255,.16);--gl2:rgba(255,255,255,.08);--glbg:58%;--blob:.42}
+body::before{content:"";position:fixed;inset:-15%;height:auto;z-index:-1;pointer-events:none;opacity:var(--blob);filter:blur(40px) saturate(1.4);
+ background:radial-gradient(38% 30% at 18% 14%,#5cb3ff 0,transparent 70%),radial-gradient(34% 28% at 86% 22%,#b690ff 0,transparent 70%),radial-gradient(40% 32% at 70% 78%,#ffb27a 0,transparent 70%),radial-gradient(36% 30% at 12% 82%,#4fe0c4 0,transparent 70%);
+ animation:mesh 18s ease-in-out infinite alternate}
+@keyframes mesh{0%{transform:translate(0,0) scale(1) rotate(0)}50%{transform:translate(4%,-3%) scale(1.12) rotate(6deg)}100%{transform:translate(-4%,5%) scale(1.06) rotate(-5deg)}}
+header.top{background:color-mix(in srgb,var(--bg) 55%,transparent);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border-bottom:1px solid var(--gl2)}
+footer.act{background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--bg) 70%,transparent) 40%);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.card,.tile,.sheetbox{background:linear-gradient(160deg,var(--gl),transparent 60%),color-mix(in srgb,var(--surface) var(--glbg),transparent);-webkit-backdrop-filter:blur(24px) saturate(1.8);backdrop-filter:blur(24px) saturate(1.8);border:1px solid var(--gl);border-radius:24px;box-shadow:inset 0 1px 0 var(--gl),inset 0 -1px 0 rgba(0,0,0,.04),0 18px 40px -22px var(--shadow)}
+.tile{border-radius:24px}
+.choice,.sch,.field,.tgl,.chip{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.choice,.sch{background:color-mix(in srgb,var(--surface) 55%,transparent);border-color:var(--gl);border-radius:18px;box-shadow:inset 0 1px 0 var(--gl)}
+.field{background:color-mix(in srgb,var(--soft) 70%,transparent);border-radius:16px}
+.tile .ti{border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 24%,var(--surface)),color-mix(in srgb,var(--accent) 8%,var(--surface)));box-shadow:inset 0 1px 0 var(--gl),0 8px 18px -10px var(--accent)}
+/* блестящие кнопки */
+.btn{border-radius:18px;min-height:54px}
+.btn:not(.sec):not(.ghost){background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0) 52%),linear-gradient(135deg,color-mix(in srgb,var(--accent) 80%,#9fd4ff),var(--accent) 50%,color-mix(in srgb,var(--accent) 70%,#001a33));box-shadow:0 14px 28px -12px var(--accent),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -2px 6px rgba(0,0,0,.18);animation:bglow 2.6s ease-in-out infinite}
+.btn:not(.sec):not(.ghost)::after{width:55%;animation:shine 2.8s .3s infinite;background:linear-gradient(100deg,transparent,rgba(255,255,255,.75),transparent)}
+.btn.sec{background:color-mix(in srgb,var(--surface) 55%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--gl);box-shadow:inset 0 1px 0 var(--gl)}
+.btn.sec::after{animation-duration:4.2s}
+.tile:not(.soon)::after{animation-duration:3.6s;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent)}
+@keyframes shine{0%,55%,100%{left:-70%}80%{left:135%}}
+@keyframes bglow{50%{box-shadow:0 18px 38px -10px var(--accent),0 0 22px color-mix(in srgb,var(--accent) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.75),inset 0 -2px 6px rgba(0,0,0,.18)}}
+.sparkle{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 8px 2px rgba(255,255,255,.9);pointer-events:none;animation:spk 1.4s ease-out forwards}
+@keyframes spk{from{transform:scale(0);opacity:1}to{transform:scale(2.2) translateY(-10px);opacity:0}}
+@media (prefers-reduced-motion:reduce){body::before{animation:none}.sparkle{display:none}}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>

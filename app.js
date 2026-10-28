@@ -351,6 +351,7 @@
     frame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V6a1 1 0 011-1h12a1 1 0 011 1v15"/><path d="M9 21V9h6v12"/></svg>',
     door: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M14.5 12h.01M5 21h14"/></svg>',
     claim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 11v5"/><circle cx="12" cy="18.6" r=".6" fill="currentColor"/></svg>',
+    work: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 12l2 2 4-4M8.5 17h7"/></svg>',
     win: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M12 4v16M4 12h16"/></svg>'
   };
   function dateLong(d, withTime) {
@@ -369,7 +370,7 @@
   function homeView() {
     const tile = (a, ic, title, sub, soon) => `<button class="tile${soon ? " soon" : ""}" data-a="${a}"><span class="ti">${SECT_ICON[ic]}</span><span class="tt"><b>${title}</b><small>${sub}</small></span>${soon ? `<em>в разработке</em>` : `<span class="go">›</span>`}</button>`;
     $app.innerHTML = `<main style="padding-top:max(24px,env(safe-area-inset-top))">
-      <div class="hello"><button class="logob" data-a="theme" aria-label="Сменить тему"><img src="icon-192.png" alt=""></button><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div></div>
+      <div class="hello"><button class="logob" data-a="theme" aria-label="Сменить тему"><img src="icon-192.png" alt=""></button><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div><button class="ib hmenu" data-a="menu" aria-label="Меню">${ICON.menu}</button></div>
       <p class="hint" style="margin:-4px 0 0 2px">${esc(dateLong())}</p>
       ${LIM && acc.session ? `<div class="chip" style="justify-self:start">Осталось замеров: ${left()}</div>` : ""}
       ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${order.kind === "dl" ? "Двери и люки" : order.kind === "win" ? "Окна" : "Обрамления"} · ${esc((order.address || "").slice(0, 32))}</small></span><span class="go">›</span></button>` : ""}
@@ -377,15 +378,35 @@
         ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
         ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
         ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}
-        ${tile("sec_claim", "claim", "Составление рекламации", "Оформление претензии по заказу", true)}
+        ${tile("sec_work", "work", "% выполнения работ по замене лифта", "Тестовая функция · отчёт монтажника о проделанной работе", false)}
+        ${tile("sec_claim", "claim", "Составление рекламации", "Поломка, недопоставка, пропажа", false)}
       </div>
       <div class="card tips"><div class="sum"><span>✓ Работает без интернета</span><span>✓ Ответы сохраняются на телефоне</span><span>✓ Готовый бланк PDF в один клик</span></div></div>
       <p class="credit">Разработано отделом<br><b>информационных технологий</b><br><button class="co" data-a="mail">СтройЛифтКомплекс</button></p>
     </main>${LIM && !acc.session ? `<footer class="act"><button class="btn" data-a="login">Войти через Telegram</button></footer>` : ""}`;
   }
+  function workView() {
+    shell("% выполнения работ по замене лифта", null, `<div class="card"><span class="chip">Тестовая функция · начало работ</span><h2 class="q">Остановка лифта</h2><p class="hint">Лифт остановлен, питание снято, вывешена табличка «Не включать, работают люди»?</p><div class="tgls"><button class="btn" data-a="work_yes">Да, лифт остановлен</button><button class="btn sec" data-a="work_no">Ещё нет</button></div></div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+  }
+  const CLAIMS = { claim_electric: "Электронная поломка", claim_short: "Недопоставка", claim_stolen: "Что-то украли" };
+  const MSG = { WhatsApp: n => "https://wa.me/" + n, Telegram: n => "https://t.me/+" + n, Viber: n => "viber://chat?number=%2B" + n, Max: () => "https://max.ru", "SMS": n => "sms:+" + n };
+  let supply = (() => { try { return JSON.parse(localStorage.getItem("zamer_supply")) || {}; } catch (e) { return {}; } })();
+  const digits = v => { let d = String(v || "").replace(/\D/g, ""); if (d.length === 11 && d[0] === "8") d = "7" + d.slice(1); if (d.length === 10) d = "7" + d; return d; };
+  function supplyLink() { const d = digits(supply.phone); return supply.app && d.length >= 11 ? MSG[supply.app](d) : ""; }
+  function supplyView() {
+    const cur = supplyView.app || supply.app || "WhatsApp";
+    shell("Связь со снабжением", null, `<div class="card"><span class="chip">Настройки на этом телефоне</span><h2 class="q">Кому отправлять заявки</h2><p class="hint">Выберите мессенджер и укажите телефон снабжения. Настройки сохранятся на телефоне, и на экране заявки появится кнопка «Открыть чат».</p>
+      <label class="plab">Мессенджер</label><div class="suppseg" role="radiogroup">${Object.keys(MSG).map(k => `<button type="button" role="radio" aria-checked="${cur === k}" class="${cur === k ? "on" : ""}" data-supp="${k}">${k}</button>`).join("")}</div>
+      <label class="plab">Телефон снабжения</label><div class="field"><input id="sphone" inputmode="tel" placeholder="+7 900 123-45-67" value="${esc(supply.phone || "")}" autocomplete="tel"></div><p class="err" id="err">${esc(supplyView.err || "")}</p></div>`,
+      `<button class="btn" data-a="supply_save">Сохранить</button><button class="btn ghost" data-a="menu">Назад в меню</button>`, { menu: false });
+  }
+  function claimView() {
+    shell("Составление рекламации", null, `<div class="card"><span class="chip">Причина рекламации</span><h2 class="q">Что случилось?</h2><p class="hint">Выберите вид рекламации.</p><div class="tgls">${Object.entries(CLAIMS).map(([k, v], i) => `<button class="btn sec" data-a="${k}">${i + 1}. ${v}</button>`).join("")}</div></div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+  }
   function soonView() {
-    const w = soonView.what === "claim" ? "Составление рекламации" : soonView.what === "win" ? "Замер окон" : "Замер дверей и люков";
-    shell(w, null, `<div class="card" style="text-align:center;justify-items:center"><div class="soonico">${SECT_ICON[soonView.what === "claim" ? "claim" : soonView.what === "win" ? "win" : "door"]}</div><h2 class="q">Этот раздел в разработке</h2><p class="hint">Мы готовим удобный опросник и бланк заявки. Скоро он появится в приложении, обновление придёт само.</p><p class="hint">А пока можно оформить замер обрамлений.</p></div>`,
+    if (CLAIMS[soonView.what]) return shell(CLAIMS[soonView.what], null, `<div class="card"><span class="chip">Обратная связь</span><h2 class="q">${CLAIMS[soonView.what]}</h2><p class="hint">Бланк этой рекламации в разработке. Напишите, какие поля и данные добавить в следующей версии, и мы учтём.</p><textarea id="fb" class="fbtext" rows="6" placeholder="Например: номер заказа, фото повреждения, что именно не пришло…">${esc(soonView.fb || "")}</textarea></div>`, `<button class="btn" data-a="fb_send">Отправить предложение</button><button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+    const w = soonView.what === "work" ? "% выполнения работ по замене лифта" : soonView.what === "claim" ? "Составление рекламации" : soonView.what === "win" ? "Замер окон" : "Замер дверей и люков";
+    shell(w, null, `<div class="card" style="text-align:center;justify-items:center"><div class="soonico">${SECT_ICON[soonView.what === "work" ? "work" : soonView.what === "claim" ? "claim" : soonView.what === "win" ? "win" : "door"]}</div><h2 class="q">Этот раздел в разработке</h2><p class="hint">Мы готовим удобный опросник и бланк заявки. Скоро он появится в приложении, обновление придёт само.</p><p class="hint">А пока можно оформить замер обрамлений.</p></div>`,
       `<button class="btn" data-a="home">На главный экран</button>`, { back: true, menu: false });
   }
   function wizardView() {
@@ -570,7 +591,7 @@
   }
   async function reviewView() {
     shell("Проверка заявки", 1, summaryHtml() + `<div class="card"><p class="hint" id="gen">Формирую бланк…</p><div class="pages" id="pages"></div></div>`,
-      `<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="${isSimple() ? "back" : "hub"}">${isSimple() ? "Изменить ответы" : "Назад к разделам"}</button>`);
+      `${supplyLink() ? `<button class="btn sec" data-a="supply_open">Открыть чат: ${esc(supply.app)}</button>` : ""}<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="${isSimple() ? "back" : "hub"}">${isSimple() ? "Изменить ответы" : "Назад к разделам"}</button>`);
     try {
       const full = exportOrder();
       const canv = await PDFGEN.buildPages(full);
@@ -671,7 +692,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
   function menuView() {
-    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
+    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
   }
 
   /* ---------- диспетчер ---------- */
@@ -680,6 +701,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "menu") return menuView();
     if (view === "done") return doneView();
     if (view === "soon") return soonView();
+    if (view === "work") return workView();
+    if (view === "claim") return claimView();
+    if (view === "supply") return supplyView();
     if (view === "login") return loginView();
     if (view === "nocredits") return nocreditsView();
     if (view === "review") return reviewView();
@@ -692,7 +716,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (/^sec_(win|door|frame|claim)$/.test(a) || a === "download") goal(a);
     if (a === "next") { if (sub) return subNext(); const l = buildList(), s = l[pos]; return advance(s, readValue(s)); }
     if (a === "back") {
-      if (view === "soon") { view = "home"; return render(); }
+      if (view === "soon") { view = /^claim_/.test(soonView.what) ? "claim" : "home"; return render(); }
+      if (view === "work" || view === "claim") { view = "home"; return render(); }
       if (sub) { sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
       else if (view === "review") { if (isSimple()) { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
@@ -732,7 +757,19 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       document.body.appendChild(o); return;
     }
     if (a === "sec_win") return newOrder("win");
-    if (a === "sec_claim") { soonView.what = "claim"; view = "soon"; return render(); }
+    if (a === "sec_work") { view = "work"; return render(); }
+    if (a === "work_yes" || a === "work_no") {
+      try { localStorage.setItem("zamer_work", JSON.stringify({ stopped: a === "work_yes", at: new Date().toISOString() })); } catch (e) {}
+      flash = a === "work_yes" ? "Остановка лифта отмечена ✓" : "Отмечено: лифт ещё не остановлен"; view = "home"; return render();
+    }
+    if (a === "sec_claim") { view = "claim"; return render(); }
+    if (a === "fb_send") {
+      const t = (document.getElementById("fb") || {}).value || ""; soonView.fb = t;
+      if (!t.trim()) { flash = "Напишите пожелание"; return render(); }
+      location.href = "mailto:stroyliftkompleks@yandex.ru?subject=" + encodeURIComponent("Замер ДШ: рекламация — " + (CLAIMS[soonView.what] || "")) + "&body=" + encodeURIComponent(t);
+      flash = "Открываем письмо…"; return render();
+    }
+    if (/^claim_/.test(a)) { soonView.fb = ""; soonView.what = a; view = "soon"; return render(); }
     if (a === "sec_door") return newOrder("dl");
     if (a === "sec_frame") return newOrder("frame");
     if (a === "home") { view = "home"; return render(); }
@@ -753,6 +790,15 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     }
     if (a === "resume") { view = "wizard"; const n = buildList().length; if (pos >= n) view = isSimple() ? "review" : (order.stops ? "hub" : "wizard"); return render(); }
     if (a === "menu") { menuReturn = view; view = "menu"; return render(); }
+    if (a === "supply") { supplyView.app = ""; supplyView.err = ""; view = "supply"; return render(); }
+    if (a === "supply_save") {
+      const ph = document.getElementById("sphone").value, d = digits(ph);
+      if (d.length < 11) { supplyView.err = "Введите номер телефона полностью"; supplyView.app = supplyView.app || supply.app; return render(); }
+      supply = { app: supplyView.app || supply.app || "WhatsApp", phone: ph.trim() };
+      try { localStorage.setItem("zamer_supply", JSON.stringify(supply)); } catch (e) {}
+      flash = "Сохранено: " + supply.app + ", " + supply.phone; view = "menu"; return render();
+    }
+    if (a === "supply_open") { const u = supplyLink(); if (u) window.open(u, "_blank"); return; }
     if (a === "close") { view = menuReturn === "menu" ? "home" : menuReturn; return render(); }
     if (a === "review") { view = "review"; save(); return render(); }
     if (a === "hub") { view = "hub"; return render(); }
@@ -796,6 +842,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") { document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); document.querySelectorAll(".pic .hgL").forEach(g => { g.style.display = v === "Справа" ? "none" : ""; }); document.querySelectorAll(".pic .hgR").forEach(g => { g.style.display = v === "Справа" ? "" : "none"; }); } else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
     if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
+    if (b.dataset.supp) { supplyView.app = b.dataset.supp; document.querySelectorAll("[data-supp]").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); return; }
     if (b.dataset.a) return act(b.dataset.a);
     if (b.dataset.pick !== undefined) {
       const l = buildList(), s = l[pos];
