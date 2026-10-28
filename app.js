@@ -232,6 +232,17 @@
       ${dimA(46, 70, 46, 220, 36, 145, "Высота", 1)}${dimA(96, 28, 172, 28, 134, 19, "Ширина")}
       <text x="134" y="240" text-anchor="middle" class="flo">пол</text></svg>`;
   }
+  function sectionPic() {
+    return `<svg class="pic" viewBox="0 0 300 244" role="img" aria-label="Сечение I-I">${PDEF}
+      <text x="190" y="14" text-anchor="middle" class="dl" style="fill:currentColor;font-size:12px">I – I</text><line x1="174" y1="18" x2="206" y2="18" stroke="currentColor" stroke-width="1.2"/>
+      <rect x="150" y="62" width="122" height="66" fill="#e3eef7"/><rect x="150" y="62" width="122" height="66" fill="url(#hp2)"/><rect x="150" y="62" width="122" height="66" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M146 26 H130 V62 H150" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><text x="152" y="34" class="flo" style="font-size:12px">Рамка двери</text>
+      <path d="M112 26 H120 V182 H188 V134 H196 V190 H112 Z" class="prof"/>
+      <line x1="76" y1="26" x2="110" y2="26" stroke="var(--muted)" stroke-width=".8"/><line x1="76" y1="190" x2="110" y2="190" stroke="var(--muted)" stroke-width=".8"/>
+      ${dimA(88, 26, 88, 190, 76, 112, "Н", 1)}
+      <line x1="112" y1="194" x2="112" y2="222" stroke="var(--muted)" stroke-width=".8"/><line x1="196" y1="194" x2="196" y2="222" stroke="var(--muted)" stroke-width=".8"/>
+      ${dimA(112, 216, 196, 216, 154, 236, "В")}</svg>`;
+  }
   function hatchPic() {
     const g = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" class="cf"/>`;
     return `<svg class="pic" viewBox="0 0 260 230" role="img" aria-label="Люк">${PDEF}
@@ -305,7 +316,7 @@
     const floors = same() ? [1] : Array.from({ length: order.stops || 0 }, (_, i) => i + 1);
     floors.forEach(f => {
       const sec = same() ? "Обрамление, все этажи" : `Этаж ${f} из ${order.stops}`;
-      OPEN.forEach(([k, q, h, pr], i) => l.push({ p: `ops.${f}.${k}.pair`, t: "pair", min: 1, unit: mm, sec, q, hint: h + " В миллиметрах.", floor: f, first: i === 0, pair: pr.map(([key, lab]) => [`ops.${f}.${key}`, lab]) }));
+      OPEN.forEach(([k, q, h, pr], i) => l.push({ p: `ops.${f}.${k}.pair`, t: "pair", min: 1, unit: mm, sec, q, hint: h + " В миллиметрах.", pic: k === "top" ? "" : "section", floor: f, first: i === 0, pair: pr.map(([key, lab]) => [`ops.${f}.${key}`, lab]) }));
     });
     return l;
   }
@@ -389,6 +400,7 @@
     let h = "";
     if (s.pic === "door") h += doorPic(getP(order, s.casP), getP(order, s.hingeP));
     else if (s.pic === "hatch") h += hatchPic();
+    else if (s.pic === "section") h += `<button type="button" class="btn sec hintbtn" data-a="hint">💡 Подсказка: сечение I – I</button>`;
     else if (s.pic === "win") h += winPic(WK[getP(order, s.pk + ".kind")], getP(order, s.pk + ".hinge"));
     if (s.pic && s.tg) h += `<div class="tgls">${s.tg.map(tglHtml).join("")}</div>`;
     h += controlBase(s, val);
@@ -669,6 +681,12 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "finish") { order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
     if (a === "backrev") { view = "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
+    if (a === "hint") {
+      const o = document.createElement("div"); o.className = "sheet";
+      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Сечение I – I</h3>${sectionPic()}<p>Н — глубина, В — ширина бокового обрамления.</p><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+      o.addEventListener("click", ev => { if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove(); });
+      document.body.appendChild(o); return;
+    }
     if (a === "mail") {
       const E = "stroyliftkompleks@yandex.ru", o = document.createElement("div"); o.className = "sheet";
       o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;

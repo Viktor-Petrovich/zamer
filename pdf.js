@@ -421,6 +421,29 @@
     arrowV(x, X0(182), PH - Y0(170), PH - Y0(56)); T(x, "C", X0(194), PH - Y0(116), { size: 11, bold: true, color: ACC, align: "center" });
     x.strokeStyle = MUT; x.lineWidth = .8; x.setLineDash([5, 3]); lineT(x, X0(30), Y0(170), X0(170), Y0(170)); x.setLineDash([]);
   }
+  function sectionCanvas(x, ox, oy, f) {   // область 300×244
+    const X0 = v => ox + v * f, Y0 = v => oy + v * f;
+    const poly = (pts, fill, stroke, lw) => { x.beginPath(); pts.forEach(([a, b], i) => { const px = X0(a), py = PH - Y0(b); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.closePath(); if (fill) { x.fillStyle = fill; x.fill(); } if (stroke) { x.strokeStyle = stroke; x.lineWidth = lw; x.lineJoin = "round"; x.stroke(); } };
+    T(x, "I – I", X0(190), PH - Y0(14), { size: 11, bold: true, align: "center", color: INKC });
+    x.strokeStyle = INKC; x.lineWidth = 1; lineT(x, X0(174), Y0(18), X0(206), Y0(18));
+    // стена
+    boxT(x, X0(150), Y0(62), 122 * f, 66 * f, TINTC, null);
+    x.save(); x.beginPath(); x.rect(X0(150), PH - Y0(128), 122 * f, 66 * f); x.clip(); x.strokeStyle = "#a9c4da"; x.lineWidth = .7;
+    for (let k = -70; k < 130; k += 11) lineT(x, X0(150 + k), Y0(128), X0(150 + k + 66), Y0(62));
+    x.restore(); boxT(x, X0(150), Y0(62), 122 * f, 66 * f, null, INKC, 1.4);
+    // рамка двери
+    x.beginPath(); [[146, 26], [130, 26], [130, 62], [150, 62]].forEach(([a, b], i) => { const px = X0(a), py = PH - Y0(b); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.strokeStyle = INKC; x.lineWidth = 1.8; x.stroke();
+    T(x, "Рамка двери", X0(152), PH - Y0(33), { size: 8, color: MUT });
+    // профиль обрамления
+    poly([[112, 26], [120, 26], [120, 182], [188, 182], [188, 134], [196, 134], [196, 190], [112, 190]], "#9fc3e0", INKC, 1.4);
+    x.strokeStyle = MUT; x.lineWidth = .6;
+    lineT(x, X0(76), Y0(26), X0(110), Y0(26)); lineT(x, X0(76), Y0(190), X0(110), Y0(190));
+    lineT(x, X0(112), Y0(194), X0(112), Y0(222)); lineT(x, X0(196), Y0(194), X0(196), Y0(222));
+    x.strokeStyle = ACC; x.fillStyle = ACC; x.lineWidth = 1;
+    arrowV(x, X0(88), PH - Y0(190), PH - Y0(26)); arrowH(x, X0(112), X0(196), PH - Y0(216));
+    T(x, "Н", X0(76), PH - Y0(112), { size: 11, bold: true, align: "center", color: ACC });
+    T(x, "В", X0(154), PH - Y0(236), { size: 11, bold: true, align: "center", color: ACC });
+  }
   function kvCell(x, px, yt, w, h, label, val) {
     rr(x, px, yt, w, h, 6, SOFTC, LN, .8);
     T(x, label, px + 10, PH - (yt + 12), { size: 8, color: MUT });
@@ -471,27 +494,28 @@
     x.strokeStyle = LN; x.lineWidth = .6; xs.forEach((px, i) => { if (i) lineT(x, px, ytop + hh * 2, px, ytop + hh * 2 + maxRows * rh); });
   }
   function framePages(order) {
-    const rows = order.openings || [], cm = order.common || {}, M = 30, FIRST = 13, NEXT = 28;
+    const rows = order.openings || [], cm = order.common || {}, M = 30, FIRST = 12, NEXT = 28;
     const pc = rows.length <= FIRST ? 1 : 1 + Math.ceil((rows.length - FIRST) / NEXT), pages = [];
     for (let pn = 1; pn <= pc; pn++) {
       const { c, x } = newPage(); frameHead(x, order, pn, pc);
       let top = 150, part, maxRows;
       if (pn === 1) {
         part = rows.slice(0, FIRST); maxRows = FIRST;
-        const ch = 160; rr(x, M, top, 250, ch, 10, "#fff", LN, 1);
+        const ch = 180, w1 = 250; rr(x, M, top, w1, ch, 10, "#fff", LN, 1);
         T(x, "Схема обрамления " + (order.scheme || ""), M + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
-        schemeCanvas(x, M + 58, top + 32, order.scheme === "В" ? "В" : "А");
-        const cx0 = M + 264, cw2 = PW - M - cx0;
+        schemeCanvas(x, M + (w1 - 132) / 2, top + 36, order.scheme === "В" ? "В" : "А");
+        const cx0 = M + w1 + 12, cw2 = PW - M - cx0;
         rr(x, cx0, top, cw2, ch, 10, "#fff", LN, 1);
-        T(x, "Общие параметры", cx0 + 16, PH - (top + 24), { size: 12, bold: true, color: INKC });
+        T(x, "Общие параметры", cx0 + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
         const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло";
         const btn = [cm.btn_all === "Не на всех этажах" ? "этажи " + cm.btn_floors : "на всех этажах", cm.btn_side && cm.btn_side.toLowerCase(), cm.btn_height ? cm.btn_height + " мм от пола" : "", cm.btn_size ? "отв. " + cm.btn_size : ""].filter(Boolean).join(", ");
-        const cells = [["Табло индикации", noInd ? "нет табло" : `${cm.ind_floor || ""}${cm.ind_size ? ", отв. " + cm.ind_size + " мм" : ""}`],
-          ["Размеры обрамлений указаны", `${cm.bend_mode || ""}${cm.bend !== undefined && cm.bend !== "" ? ", загиб " + fmt(cm.bend) + " мм" : ""}`],
+        const cells = [["Табло", noInd ? "нет табло" : `${cm.ind_floor || ""}${cm.ind_size ? ", отв. " + cm.ind_size + " мм" : ""}`],
+          ["Размеры", `${cm.bend_mode || ""}${cm.bend !== undefined && cm.bend !== "" ? ", загиб " + fmt(cm.bend) + " мм" : ""}`],
           ["Кнопка вызова", btn], ["Цвет окраски", cm.color],
-          ["Количество остановок", order.stops ? order.stops + " эт." : ""], ["Размеры по этажам", order.dsh_same ? "одинаковые на всех этажах" : "подписать поэтажно"]];
-        const w = (cw2 - 16 * 2 - 10) / 2, h = 34;
-        cells.forEach(([l, v], i) => kvCell(x, cx0 + 16 + (i % 2) * (w + 10), top + 38 + Math.floor(i / 2) * (h + 8), w, h, l, v));
+          ["Остановок", order.stops ? order.stops + " эт." : ""], ["По этажам", order.dsh_same ? "одинаковые на всех этажах" : "подписать поэтажно"]];
+        cells.forEach(([l, v], i) => { const yt = top + 36 + i * 23; rr(x, cx0 + 12, yt, cw2 - 24, 21, 5, SOFTC, LN, .7);
+          T(x, l, cx0 + 20, PH - (yt + 14), { size: 8, color: MUT });
+          fitT(x, v || "—", cx0 + 20 + 70, yt + 15, cw2 - 24 - 70 - 14, 10.5, { bold: true, color: INKC }); });
         top += ch + 10;
       } else { part = rows.slice(FIRST + (pn - 2) * NEXT, FIRST + (pn - 1) * NEXT); maxRows = NEXT; }
       frameTable(x, order, part, top, maxRows);
