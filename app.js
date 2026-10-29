@@ -745,12 +745,35 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   }
   /* ---------- жуткие звуки и эффекты ---------- */
   let sndOn = (() => { try { return localStorage.getItem("zamer_snd") !== "0"; } catch (e) { return true; } })(), AC = null, lastSnd = 0;
+  let BUS = null;
+  function dest() {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (BUS && BUS.ctx === AC) return BUS.in;
+    const inp = AC.createGain(), dry = AC.createGain(), wet = AC.createGain(), cv = AC.createConvolver(), len = AC.sampleRate * 2.8, buf = AC.createBuffer(2, len, AC.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+    cv.buffer = buf; dry.gain.value = 0.8; wet.gain.value = 0.65;
+    inp.connect(dry); dry.connect(AC.destination); inp.connect(cv); cv.connect(wet); wet.connect(AC.destination);
+    BUS = { ctx: AC, in: inp }; return inp;
+  }
+  function creak() {
+    if (!sndOn) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
+      const t = AC.currentTime, dur = 0.3 + Math.random() * 0.45, f0 = 130 + Math.random() * 200;
+      const o = AC.createOscillator(), j = AC.createOscillator(), jg = AC.createGain(), f = AC.createBiquadFilter(), g = AC.createGain();
+      o.type = "sawtooth"; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * (1.5 + Math.random() * 0.8), t + dur * 0.6); o.frequency.linearRampToValueAtTime(f0 * 0.9, t + dur);
+      j.type = "square"; j.frequency.value = 28 + Math.random() * 30; jg.gain.value = 55; j.connect(jg); jg.connect(o.frequency);
+      f.type = "bandpass"; f.frequency.setValueAtTime(600 + Math.random() * 500, t); f.frequency.linearRampToValueAtTime(1400, t + dur); f.Q.value = 7;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(f); f.connect(g); g.connect(dest()); o.start(t); j.start(t); o.stop(t + dur + .05); j.stop(t + dur + .05);
+    } catch (e) {}
+  }
   function moan() {
     if (!sndOn) return;
     const now = Date.now(); if (now - lastSnd < 250) return; lastSnd = now;
     try {
       AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
-      const t = AC.currentTime, f0 = 200 + Math.random() * 130, dur = 0.9 + Math.random() * 0.5;
+      const t = AC.currentTime, f0 = 105 + Math.random() * 70, dur = 1.3 + Math.random() * 0.7;
       const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(), lfo = AC.createOscillator(), lg = AC.createGain();
       o.type = "sawtooth"; o2.type = "triangle";
       o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 0.62, t + dur);
@@ -758,24 +781,25 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       lfo.frequency.value = 5.5; lg.gain.value = 9; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
       fl.type = "lowpass"; fl.frequency.setValueAtTime(380, t); fl.frequency.linearRampToValueAtTime(900, t + dur * 0.35); fl.frequency.linearRampToValueAtTime(260, t + dur); fl.Q.value = 6;
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.18); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(AC.destination);
-      o.start(t); o2.start(t); lfo.start(t); o.stop(t + dur + .05); o2.stop(t + dur + .05); lfo.stop(t + dur + .05);
+      const o3 = AC.createOscillator(); o3.type = "sawtooth"; o3.frequency.setValueAtTime(f0 * 1.414, t); o3.frequency.exponentialRampToValueAtTime(f0 * 0.88, t + dur); lg.connect(o3.frequency); o3.connect(fl);
+      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(dest());
+      o.start(t); o2.start(t); o3.start(t); lfo.start(t); o.stop(t + dur + .05); o2.stop(t + dur + .05); o3.stop(t + dur + .05); lfo.stop(t + dur + .05);
     } catch (e) {}
   }
   function wail() {
     if (!sndOn) return;
     try {
       AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
-      const t = AC.currentTime, dur = 1.9;
+      const t = AC.currentTime, dur = 2.6;
       const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(), lfo = AC.createOscillator(), lg = AC.createGain(), d = AC.createDelay(), fb = AC.createGain(), out = AC.createGain();
       o.type = "sine"; o2.type = "triangle";
-      o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(720, t + dur * 0.45); o.frequency.exponentialRampToValueAtTime(210, t + dur);
-      o2.frequency.setValueAtTime(392, t); o2.frequency.exponentialRampToValueAtTime(1080, t + dur * 0.45); o2.frequency.exponentialRampToValueAtTime(315, t + dur);
+      o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(520, t + dur * 0.45); o.frequency.exponentialRampToValueAtTime(130, t + dur);
+      o2.frequency.setValueAtTime(240, t); o2.frequency.exponentialRampToValueAtTime(735, t + dur * 0.45); o2.frequency.exponentialRampToValueAtTime(184, t + dur);
       lfo.frequency.value = 6.5; lg.gain.value = 14; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
       fl.type = "bandpass"; fl.frequency.value = 900; fl.Q.value = 1.2;
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       d.delayTime.value = 0.23; fb.gain.value = 0.45; out.gain.value = 1;
-      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(out); g.connect(d); d.connect(fb); fb.connect(d); d.connect(out); out.connect(AC.destination);
+      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(out); g.connect(d); d.connect(fb); fb.connect(d); d.connect(out); out.connect(dest());
       o.start(t); o2.start(t); lfo.start(t); o.stop(t + dur + .1); o2.stop(t + dur + .1); lfo.stop(t + dur + .1);
       setTimeout(() => { try { out.disconnect(); } catch (e) {} }, (dur + 2) * 1000);
     } catch (e) {}
@@ -785,7 +809,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (!sndOn) return;
     try {
       AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
-      const t = AC.currentTime, out = AC.createGain(); out.gain.value = 1; out.connect(AC.destination);
+      const t = AC.currentTime, out = AC.createGain(); out.gain.value = 1; out.connect(dest());
       const env = (g, a, pk, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(pk, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + d); };
       const k = kind || ["toll", "creak", "heart", "drone", "whisper", "bat", "cackle"][Math.floor(Math.random() * 7)];
       if (k === "toll") { [1, 2.76, 5.4, 8.9].forEach((m, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.value = 110 * m; env(g, 0.01, 0.16 / (i + 1), 4.2 - i * 0.6); o.connect(g); g.connect(out); o.start(t); o.stop(t + 4.4); }); }
@@ -815,7 +839,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       document.body.appendChild(p); setTimeout(() => p.remove(), 1000);
     }
   }
-  document.addEventListener("pointerdown", e => { if (e.target.closest("button,a.btn")) { moan(); if (sndOn) setTimeout(() => ominous("bloop"), 120); if (Math.random() < 0.22) setTimeout(() => ominous(), 700); spook(e.clientX, e.clientY); } }, true);
+  document.addEventListener("pointerdown", e => { if (e.target.closest("button,a.btn")) { creak(); setTimeout(moan, 90); if (Math.random() < 0.25) setTimeout(() => ominous(), 800); spook(e.clientX, e.clientY); } }, true);
   /* слизь стекает со значков вниз экрана */
   function slimeFlow() {
     document.querySelectorAll(".slimeflow,.slimepool").forEach(x => x.remove());
