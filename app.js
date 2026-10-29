@@ -111,7 +111,7 @@
       return { v: s.replace(/[;\s]+/g, " ").replace(/\s*,\s*/g, ", ").replace(/–/g, "-").trim() };
     }
     if (t.t === "color") {
-      if (s.length < 2 || s.length > 40) return { e: "Введите цвет, например RAL 7035" };
+      if (s.length < 2 || s.length > 40) return { e: "Выберите цвет: RAL 7035 или RAL 7038" };
       const m = s.match(/^(?:ral)?\s*(\d{4})$/i);
       return { v: m ? "RAL " + m[1] : s };
     }
@@ -135,7 +135,7 @@
         { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева" },
         { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
         { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] },
-    { p: "common.color", t: "color", sec: "Общие параметры", q: "Цвет окраски", hint: "Выберите или введите номер RAL" },
+    { p: "common.color", t: "color", sec: "Общие параметры", q: "Цвет окраски", hint: "RAL 7035 применяется стандартно." },
     { p: "form.shaft", t: "form", sec: "Обрамление ДШ", q: "Лифт и обрамления", hint: "Остановки, общие размеры и как вводить обрамления: одинаковые на всех этажах или по каждому отдельно.", finish: o => { o.ops = o.ops || {}; },
       fields: [{ k: "int", p: "stops", label: "Количество остановок (этажей)", unit: "шт.", min: 1, max: 100 }, { k: "num", p: "width", label: "Ширина проёма", unit: mm }, { k: "num", p: "C", label: "Размер С (высота вертикального обрамления)", unit: mm },
         { k: "seg", p: "dsh_same", label: "Размеры на этажах", opts: [["Одинаковые", "Одинаковые на всех этажах"], ["По этажам", "Индивидуально по этажам"]], def: "Одинаковые на всех этажах" }] }
@@ -525,8 +525,8 @@
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
     if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}" aria-label="Схема ${k}">${schemeSvg(k)}<b>Схема ${k}</b><small>${k === "А" ? "Верхнее обрамление накрывает боковые" : "Верхнее обрамление между боковыми"}</small></button>`).join("")}</div>`;
     if (s.t === "color") {
-      const sw = [["7035", "#cbd0cc"], ["7040", "#9da3a6"], ["7016", "#383e42"], ["9003", "#f4f4f4"], ["9010", "#f1ede1"], ["9005", "#0e0e10"], ["9006", "#a5a5a5"], ["3020", "#cc0605"]];
-      return `<div class="sw">${sw.map(([n, h]) => `<button data-pick="RAL ${n}" class="${val === "RAL " + n ? "on" : ""}"><i style="background:${h}"></i>RAL ${n}</button>`).join("")}</div><div class="field"><input id="inp" value="${esc(val && !sw.some(x => "RAL " + x[0] === val) ? val : "")}" placeholder="Другой цвет" autocomplete="off"></div>`;
+      const sw = [["7035", "#cbd0cc"], ["7038", "#b4b8b0"]];
+      return `<div class="sw">${sw.map(([n, h]) => `<button data-pick="RAL ${n}" class="${val === "RAL " + n ? "on" : ""}"><i style="background:${h}"></i>RAL ${n}${n === "7035" ? `<small class="std">применяется стандартно</small>` : ""}</button>`).join("")}</div>`;
     }
     const mode = s.t === "int" ? "numeric" : s.t === "num" ? "decimal" : s.t === "floors" ? "text" : "text";
     const inner = s.area ? `<textarea id="inp" rows="3" placeholder="${esc(s.ph || "")}">${esc(val || "")}</textarea>` : `<input id="inp" inputmode="${mode}" enterkeyhint="next" value="${esc(val == null ? "" : String(val).replace(".", ","))}" placeholder="${esc(s.ph || "")}" autocomplete="off">`;
@@ -622,7 +622,9 @@
     try {
       const full = exportOrder();
       const canv = await PDFGEN.buildPages(full);
-      pdfCache = { blob: PDFGEN.makePdf(canv, full.address), name: fileName() };
+      const cityOf = ad => { const f = String(ad || "").split(",")[0].trim().replace(/^(г\.?|гор\.?|город)\s*/i, "").trim(); return String(ad || "").includes(",") ? f : ""; };
+      const data = { app: "zamer-dsh", version: 1, kind: order.kind, city: cityOf(full.address), address: full.address, contact: full.contact, stamp: full.stamp, order: full };
+      pdfCache = { blob: PDFGEN.makePdf(canv, full.address, data), name: fileName() };
       const box = document.getElementById("pages"); if (!box) return;
       box.innerHTML = canv.map(c => `<img alt="Страница бланка" src="${c.toDataURL("image/jpeg", 0.6)}">`).join("");
       document.getElementById("gen").textContent = `Страниц: ${canv.length}. Проверьте и отправьте.`;

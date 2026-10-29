@@ -541,13 +541,15 @@
 
   /* --- минимальный писатель PDF: каждая страница — JPEG --- */
   function dataUrlToBytes(u) { const b = atob(u.split(",")[1]); const a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
-  function makePdf(canvases, title) {
+  function makePdf(canvases, title, data) {
     const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
     const add = d => { const u = typeof d === "string" ? enc.encode(d) : d; parts.push(u); len += u.length; };
     const obj = (n, body) => { offs[n] = len; add(`${n} 0 obj\n`); add(body); add("\nendobj\n"); };
     const N = canvases.length, W = PW.toFixed(2), H = PH.toFixed(2);
     add("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
-    obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+    const infoN = 3 + N * 3, hex16 = str => "FEFF" + Array.from(str || "").map(ch => { const c = ch.codePointAt(0); if (c > 0xFFFF) { const h = 0xD800 + ((c - 0x10000) >> 10), l = 0xDC00 + ((c - 0x10000) & 0x3FF); return h.toString(16).padStart(4, "0") + l.toString(16).padStart(4, "0"); } return c.toString(16).padStart(4, "0"); }).join("").toUpperCase();
+    const json = data ? JSON.stringify(data) : "", jb = enc.encode(json), efN = infoN + 1, fsN = infoN + 2;
+    obj(1, data ? `<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(zamer.json) ${fsN} 0 R] >> >> /AF [${fsN} 0 R] >>` : "<< /Type /Catalog /Pages 2 0 R >>");
     obj(2, `<< /Type /Pages /Count ${N} /Kids [${canvases.map((_, i) => `${3 + i * 3} 0 R`).join(" ")}] >>`);
     canvases.forEach((cv, i) => {
       const p = 3 + i * 3, jpg = dataUrlToBytes(cv.toDataURL("image/jpeg", 0.92));
@@ -557,12 +559,17 @@
       const cs = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
       obj(p + 2, `<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
     });
-    const tt = Array.from(enc.encode(title || "")).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
-    const infoN = 3 + N * 3;
-    obj(infoN, `<< /Title <FEFF${Array.from(title || "").map(ch => ch.charCodeAt(0).toString(16).padStart(4, "0")).join("").toUpperCase()}> >>`);
-    const xref = len; add(`xref\n0 ${infoN + 1}\n0000000000 65535 f \n`);
-    for (let i = 1; i <= infoN; i++) add(String(offs[i]).padStart(10, "0") + " 00000 n \n");
-    add(`trailer\n<< /Size ${infoN + 1} /Root 1 0 R /Info ${infoN} 0 R >>\nstartxref\n${xref}\n%%EOF`);
+    const meta = data ? ` /Keywords <${hex16((data.city || "") + "; " + (data.kind || ""))}> /ZamerData <${hex16(json)}>` : "";
+    obj(infoN, `<< /Title <${hex16(title || "")}>${meta} >>`);
+    let last = infoN;
+    if (data) {
+      offs[efN] = len; add(`${efN} 0 obj\n<< /Type /EmbeddedFile /Subtype /application#2Fjson /Length ${jb.length} >>\nstream\n`); add(jb); add("\nendstream\nendobj\n");
+      obj(fsN, `<< /Type /Filespec /F (zamer.json) /UF (zamer.json) /AFRelationship /Data /EF << /F ${efN} 0 R >> >>`);
+      last = fsN;
+    }
+    const xref = len; add(`xref\n0 ${last + 1}\n0000000000 65535 f \n`);
+    for (let i = 1; i <= last; i++) add(String(offs[i]).padStart(10, "0") + " 00000 n \n");
+    add(`trailer\n<< /Size ${last + 1} /Root 1 0 R /Info ${infoN} 0 R >>\nstartxref\n${xref}\n%%EOF`);
     return new Blob(parts, { type: "application/pdf" });
   }
 
