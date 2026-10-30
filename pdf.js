@@ -530,55 +530,7 @@
   }
   const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 
-  function axisTable(x, order, rows, ytop, maxRows, rh) {
-    const M = 30, W = PW - 2 * M, base = [86, 84, 84, 100, 84, 84, 92, 70, 97], sum = base.reduce((a, b) => a + b, 0);
-    const cols = [["Этаж"], ["Проём, мм"], ["Б, мм"], ["Глубина, мм"], ["Полка Д"], ["Загиб"], ["C, мм"], ["Кол-во"], ["Цвет"]].map((c, i) => [c[0], base[i] * W / sum]);
-    const xs = []; let ax = M; cols.forEach(c => { xs.push(ax); ax += c[1]; });
-    const hh = 24;
-    boxT(x, M, ytop, W, hh, ACC, null);
-    cols.forEach(([t, w], i) => { T(x, t, xs[i] + w / 2, PH - (ytop + 15.5), { size: 9.5, bold: true, color: "#fff", align: "center" }); if (i) { x.strokeStyle = "rgba(255,255,255,.35)"; lineT(x, xs[i], ytop, xs[i], ytop + hh); } });
-    for (let r = 0; r < maxRows; r++) {
-      const o = rows[r], yt = ytop + hh + r * rh;
-      boxT(x, M, yt, W, rh, r % 2 ? "#f6f9fb" : "#ffffff", null);
-      x.strokeStyle = LN; x.lineWidth = .6; lineT(x, M, yt + rh, ax, yt + rh);
-      if (!o) continue;
-      boxT(x, xs[3], yt, cols[3][1], rh, AMB, null);
-      const vals = ["Этаж " + o.floor, o.w, o.B, o.depth, o.D, o.Z, o.h, 1, o.color];
-      vals.forEach((v, i) => { if (v === undefined || v === "" || v === null) v = "—"; const s = fmt(v); fitT(x, s, xs[i] + cols[i][1] / 2 - tw(x, s, 10.5, i === 0 || i === 3) / 2, yt + rh - 4.5, cols[i][1] - 6, 10.5, { bold: i === 0 || i === 3, color: i === 3 ? "#8a4b00" : INKC }); });
-    }
-    x.strokeStyle = LN; x.lineWidth = 1; x.strokeRect(M, PH - (ytop + hh + maxRows * rh), W, hh + maxRows * rh);
-    x.lineWidth = .6; xs.forEach((px, i) => { if (i) lineT(x, px, ytop + hh, px, ytop + hh + maxRows * rh); });
-    return ytop + hh + maxRows * rh;
-  }
-  function axisPages(order) {
-    const rows = order.rows || [], M = 30, FIRST = 12, NEXT = 22;
-    const pc = rows.length <= FIRST ? 1 : 1 + Math.ceil((rows.length - FIRST) / NEXT), pages = [];
-    for (let p = 0; p < pc; p++) {
-      const { c, x } = newPage();
-      frameHead(x, order, p + 1, pc, "Бланк замера обрамлений по осям", "Шахта лифта: обрамление по осям (тестовая функция)");
-      let top = 150, part, maxRows, rh = 17;
-      if (p === 0) {
-        part = rows.slice(0, FIRST); maxRows = FIRST; rh = 15.5;
-        const ch = 166, cw = (PW - 2 * M - 14) / 2;
-        [[M, "Исходные размеры", order.left || []], [M + cw + 14, "Портал и оснащение", order.right || []]].forEach(([cx0, title, cells]) => {
-          rr(x, cx0, top, cw, ch, 10, "#fff", LN, 1);
-          T(x, title, cx0 + 14, PH - (top + 22), { size: 12, bold: true, color: INKC });
-          cells.forEach(([l, v], i) => { const yt = top + 32 + i * 21; rr(x, cx0 + 12, yt, cw - 24, 19, 5, SOFTC, LN, .7);
-            T(x, l, cx0 + 20, PH - (yt + 13), { size: 8, color: MUT });
-            fitT(x, v || "—", cx0 + 20 + 92, yt + 13.5, cw - 24 - 92 - 14, 10.5, { bold: true, color: INKC }); });
-        });
-        top += ch + 8;
-      } else { part = rows.slice(FIRST + (p - 1) * NEXT, FIRST + p * NEXT); maxRows = NEXT; }
-      axisTable(x, order, part, top, maxRows, rh);
-      if (p === pc - 1) {
-        T(x, "Глубина обрамления = Б + А − В − 115 (голова 75 + ½ рамки 40): обрамление доходит до центра рамки. Проём и C — строительный проём. Все размеры в миллиметрах.", M, 20, { size: 7.5, color: MUT });
-      }
-      pages.push(c);
-    }
-    return pages;
-  }
   async function buildPages(order) {
-    if (order.kind === "axis") return axisPages(order);
     if (order.kind === "dl") return order.items.map(it => dlPage(order, it));
     if (order.kind === "win") { const pc = Math.max(1, Math.ceil(order.items.length / 2)); return Array.from({ length: pc }, (_, i) => winPage(order, order.items.slice(i * 2, i * 2 + 2), i + 1, pc)); }
     const pages = [], ops = order.openings || [];
