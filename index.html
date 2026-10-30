@@ -413,6 +413,36 @@ header.top{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:n
 @keyframes titlew{to{background-position:260% 0}}
 .tile[data-a=job_cv]{border-style:dashed}
 .sw{grid-template-columns:1fr 1fr}.sw button{font-size:15px;padding:10px 8px 12px}.sw button i{height:44px;border-radius:12px}.sw .std{font-size:11.5px;font-weight:700;color:var(--accent);margin-top:-2px}
+
+/* тестовый замер по осям */
+.axrow{display:flex;align-items:center;justify-content:space-between;gap:12px}.axrow b{display:block;font-size:16px}.axrow small{color:var(--muted);font-size:13px}
+.axstep{display:flex;align-items:center;gap:6px;flex:none}.axstep button{width:46px;height:46px;border-radius:15px;border:1px solid var(--gl);background:color-mix(in srgb,var(--surface) 55%,transparent);color:var(--ink);font-size:24px;font-weight:600;cursor:pointer}
+.axstep input{width:70px;height:46px;border-radius:15px;border:1.5px solid var(--line);background:var(--soft);color:var(--ink);text-align:center;font:700 22px system-ui}
+.axstep input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
+.axlist{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;cursor:pointer;color:var(--ink);font:inherit;border:1.5px solid var(--accent);border-radius:18px;padding:12px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.axlist[hidden]{display:none}.axlist b{display:block;font-size:15px}.axlist small{color:var(--muted);font-size:12px}.axlist i{font-style:normal;font-size:26px;color:var(--accent);line-height:1}
+.axst{position:relative;aspect-ratio:720/600;width:100%;overflow:hidden;border-radius:22px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--gl)}
+.axst svg{position:absolute;inset:0;width:100%;height:100%}.axst .dm{stroke:var(--ink);stroke-width:1.4;fill:none}.axst .lb{font:700 13px system-ui;fill:var(--muted)}
+.axp{position:absolute;transform:translate(-50%,-50%);font:700 clamp(11px,3vw,14px) system-ui;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface));border:1.5px solid var(--accent);border-radius:99px;padding:5px 10px;cursor:pointer;white-space:nowrap;min-height:0;animation:axpulse 2.4s infinite}
+.axp.done{animation:none;color:var(--ink);border-color:var(--ink);background:var(--surface)}
+@keyframes axpulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 50%,transparent)}70%,100%{box-shadow:0 0 0 10px transparent}}
+.axbadge{position:absolute;left:52%;top:74%;font-size:13px;font-weight:700;color:var(--muted);border:1px dashed var(--line);border-radius:12px;padding:6px 11px}
+.axbig{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.axbig b{font-size:42px;letter-spacing:-.02em;line-height:1}.axbig span{color:var(--muted);font-size:14px}
+.axfm{font:600 13px ui-monospace,Menlo,Consolas,monospace;color:var(--muted)}
+.axmsg{font-size:13px;font-weight:600;padding:10px 12px;border-radius:14px;margin-top:8px}.axmsg.w{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}.axmsg.n{background:var(--soft);color:var(--muted);margin-top:0}
+.axtbl{display:grid;gap:4px;max-height:230px;overflow:auto}.axtbl div{display:grid;grid-template-columns:60px 1fr 1fr;gap:8px;font-size:14px;padding:7px 10px;border-radius:10px;background:var(--soft)}
+.axtbl .hd{background:none;color:var(--muted);font-size:12px;font-weight:700}.axtbl .dim{color:var(--muted)}
+.sheetbox .axl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:2px 0 4px}.sheetbox p{margin:0;color:var(--muted);font-size:14px}
+.axsec{display:grid;gap:8px;padding:12px;border-radius:18px;border:1px solid var(--gl);background:color-mix(in srgb,var(--surface) 55%,transparent)}.axsec>b{font-size:15px}
+.axtwo{display:grid;grid-template-columns:1fr 1fr;gap:10px}.axtwo>*{min-width:0}.axu{color:var(--muted);font-weight:600;font-size:14px;padding-right:2px}
+.axseg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:14px;background:var(--soft)}
+.axseg button{border:0;background:transparent;color:var(--ink);font:600 14px system-ui;padding:10px 4px;border-radius:11px;cursor:pointer;min-height:0}.axseg small{font-weight:500;opacity:.85}
+.axseg button.on{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 70%,#000));color:var(--accent-ink)}
+.axsel{width:100%;font:600 16px system-ui;padding:11px 12px;border-radius:14px;border:1.5px solid var(--line);background:var(--soft);color:var(--ink)}
+.axprog{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.axprog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--hw2,#7b3fe4));transition:width .3s}
+.axfl{display:grid;gap:8px}.axfr{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:10px}.axfr label{font-weight:700;font-size:14px}
+.axmiss{display:grid;gap:6px;margin:0;padding:0;list-style:none}.axmiss li{padding:9px 12px;border-radius:12px;background:color-mix(in srgb,var(--bad) 13%,transparent);color:var(--bad);font-size:14px;font-weight:600}
+.sheetbox.scroll{max-height:90vh;overflow:auto}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
@@ -420,6 +450,7 @@ header.top{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:n
 <div id="app" class="pre"></div>
 <div id="lift" aria-hidden="true"><div class="head"><i>▲</i><b id="lfl">1</b></div><div class="door l"><i class="pk"></i></div><div class="door r"><i class="pk"></i></div><div class="tag">Замер ДШ</div></div>
 <script src="config.js"></script>
+<script src="sheet.js"></script>
 <script src="pdf.js"></script>
 <script src="app.js"></script>
 <script>

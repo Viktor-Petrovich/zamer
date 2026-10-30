@@ -274,11 +274,12 @@
       T(x, lab, cx + 18, PH - (yt + rh / 2 + 4), { size: 10, color: INKC });
     });
   }
+  let BLANK = false;
   const RED = "#c0392b";
   function resRow(x, bx, yt, bw, rh, label, text, hint) {
     rr(x, bx, yt, bw, rh, 6, "#fdecea", RED, 1.4);
     T(x, label, bx + 12, PH - (yt + rh / 2 + 4), { size: 10.5, bold: true, color: RED });
-    T(x, text, bx + 118, PH - (yt + rh / 2 + 4.5), { size: 13, bold: true, color: RED });
+    T(x, BLANK ? "_____ × _____ мм" : text, bx + 118, PH - (yt + rh / 2 + 4.5), { size: 13, bold: true, color: RED });
     if (hint) T(x, hint, bx + bw - 12, PH - (yt + rh / 2 + 3.5), { size: 8, align: "right", color: MUT });
   }
   function dlCard(x, cx0, top, w, h, num, title, hatch, d, mult) {
@@ -292,7 +293,7 @@
       return;
     }
     const dw = hatch ? 76 : 54, dh = hatch ? 76 : 84;
-    const cas = hatch ? { l: 1, t: 1, r: 1, b: 1 } : { l: d.cas.l, t: d.cas.t, r: d.cas.r };
+    const cas = hatch ? { l: 1, t: 1, r: 1, b: 1 } : (BLANK ? { l: 1, t: 1, r: 1 } : { l: d.cas.l, t: d.cas.t, r: d.cas.r });
     openingDL(x, cx0 + (w - dw) / 2 + 12, top + 58, dw, dh, hatch, cas, { h: d.h, w: d.w, hinge: d.hinge });
     const bx = cx0 + 18, bw = w - 36, rh = 24, gap = 4;
     let yt = top + 58 + dh + 38 + (hatch ? 7 : 0);
@@ -303,9 +304,9 @@
     yt += rh + gap;
     if (!hatch) { checks(x, bx, yt, bw, rh, "Петли", [["l", "слева"], ["r", "справа"]], { l: d.hinge === "Слева", r: d.hinge === "Справа" }, 118, 82); yt += rh + gap; }
     if (hatch) row(x, bx, yt, bw, rh, "Наличник", "", "", "всегда, со всех четырёх сторон");
-    else checks(x, bx, yt, bw, rh, "Наличник", [["l", "слева"], ["t", "сверху"], ["r", "справа"]], d.cas, 118, 82);
+    else checks(x, bx, yt, bw, rh, "Наличник", [["l", "слева"], ["t", "сверху"], ["r", "справа"]], BLANK ? {} : d.cas, 118, 82);
     yt += rh + gap;
-    row(x, bx, yt, bw, rh, "Количество", d.qty * mult, "шт.");
+    row(x, bx, yt, bw, rh, "Количество", BLANK ? "" : d.qty * mult, "шт.");
     if (mult > 1) T(x, `по ${d.qty} в каждом из ${mult} подъездов`, bx + 12, PH - (yt + rh + 11), { size: 8, color: MUT });
   }
   function dlPage(order, item) {
@@ -323,7 +324,7 @@
     const cw = (PW - 2 * M - 40) / 3;
     f(M, 98, PW - 2 * M, "Адрес объекта", order.address);
     f(M, 128, cw + 60, "Контактное лицо на объекте, телефон", order.contact);
-    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", order.stamp || new Date().toLocaleDateString("ru-RU"));
+    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", BLANK ? "" : (order.stamp || new Date().toLocaleDateString("ru-RU")));
     f(M + 2 * cw + 80, 128, PW - M - (M + 2 * cw + 80), "Замерщик", order.worker);
     const top = 150, ch = 356, cwid = (PW - 2 * M - 18) / 2;
     dlCard(x, M, top, cwid, ch, 1, "Проём двери", false, item.door, item.mult);
@@ -362,10 +363,11 @@
     row(x, bx, yt, bw, rh, "Ширина оконного проёма", cell(it.w), "мм"); yt += rh + gap;
     resRow(x, bx, yt, bw, rh, "Окно (В × Ш)", `${fmt(it.h - 20)} × ${fmt(it.w - 40)} мм`, "В − 20, Ш − 40"); yt += rh + gap;
     row(x, bx, yt, bw, rh, "Отлив (длина × ширина)", "", "", "\u200b");
-    if (it.ebb) T(x, `${fmt(it.ebb.l)} × ${fmt(it.ebb.w)} мм`, bx + 168, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
+    if (BLANK) T(x, "_____ × _____ мм", bx + 168, PH - (yt + rh / 2 + 4), { size: 11.5, color: MUT });
+    else if (it.ebb) T(x, `${fmt(it.ebb.l)} × ${fmt(it.ebb.w)} мм`, bx + 168, PH - (yt + rh / 2 + 4), { size: 11.5, bold: true, color: ACC });
     else T(x, "не требуется", bx + 168, PH - (yt + rh / 2 + 4), { size: 10.5, color: MUT });
     yt += rh + gap;
-    checks(x, bx, yt, bw, rh, "Створка", [["gl", "глухая"], ["tr", "повор."], ["tl", "откидн."], ["tt", "пов.-отк."]], { [it.kind]: true }, 70, 72); yt += rh + gap;
+    checks(x, bx, yt, bw, rh, "Створка", [["gl", "глухая"], ["tr", "повор."], ["tl", "откидн."], ["tt", "пов.-отк."]], BLANK ? {} : { [it.kind]: true }, 70, 72); yt += rh + gap;
     checks(x, bx, yt, bw, rh, "Петли", [["l", "слева"], ["r", "справа"]], { l: it.hinge === "Слева", r: it.hinge === "Справа" }, 118, 82); yt += rh + gap;
     row(x, bx, yt, bw, rh, "Количество", it.qty, "шт.");
   }
@@ -383,7 +385,7 @@
     const cw = (PW - 2 * M - 40) / 3;
     f(M, 98, PW - 2 * M, "Адрес объекта", order.address);
     f(M, 128, cw + 60, "Контактное лицо на объекте, телефон", order.contact);
-    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", order.stamp || new Date().toLocaleDateString("ru-RU"));
+    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", BLANK ? "" : (order.stamp || new Date().toLocaleDateString("ru-RU")));
     f(M + 2 * cw + 80, 128, PW - M - (M + 2 * cw + 80), "Замерщик", order.worker);
     const top = 150, ch = 410, cwid = (PW - 2 * M - 18) / 2;
     items.forEach((it, i) => winCard(x, M + i * (cwid + 18), top, cwid, ch, it.n, it, 1));
@@ -447,7 +449,7 @@
   function kvCell(x, px, yt, w, h, label, val) {
     rr(x, px, yt, w, h, 6, SOFTC, LN, .8);
     T(x, label, px + 10, PH - (yt + 12), { size: 8, color: MUT });
-    fitT(x, val || "—", px + 10, yt + 27, w - 20, 11.5, { bold: true, color: INKC });
+    fitT(x, BLANK ? "" : (val || "—"), px + 10, yt + 27, w - 20, 11.5, { bold: true, color: INKC });
   }
   function frameHead(x, order, pn, pc, title, sub) {
     const M = 30;
@@ -463,7 +465,7 @@
     const cw = (PW - 2 * M - 40) / 3;
     f(M, 98, PW - 2 * M, "Адрес объекта", order.address);
     f(M, 128, cw + 60, "Контактное лицо на объекте, телефон", order.contact);
-    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", order.stamp || new Date().toLocaleDateString("ru-RU"));
+    f(M + cw + 80, 128, cw - 20, "Дата и время заявки", BLANK ? "" : (order.stamp || new Date().toLocaleDateString("ru-RU")));
     f(M + 2 * cw + 80, 128, PW - M - (M + 2 * cw + 80), "Замерщик", order.worker);
   }
   function frameTable(x, order, rows, ytop, maxRows) {
@@ -494,16 +496,17 @@
     x.strokeStyle = LN; x.lineWidth = .6; xs.forEach((px, i) => { if (i) lineT(x, px, ytop + hh * 2, px, ytop + hh * 2 + maxRows * rh); });
   }
   function framePages(order) {
-    const rows = order.openings || [], cm = order.common || {}, M = 30, FIRST = 12, NEXT = 28;
+    const rows = order.openings || [], cm = order.common || {}, M = 30, FIRST = 12, NEXT = 22;
     const pc = rows.length <= FIRST ? 1 : 1 + Math.ceil((rows.length - FIRST) / NEXT), pages = [];
     for (let pn = 1; pn <= pc; pn++) {
       const { c, x } = newPage(); frameHead(x, order, pn, pc);
       let top = 150, part, maxRows;
       if (pn === 1) {
         part = rows.slice(0, FIRST); maxRows = FIRST;
-        const ch = 180, w1 = 250; rr(x, M, top, w1, ch, 10, "#fff", LN, 1);
-        T(x, "Схема обрамления " + (order.scheme || ""), M + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
-        schemeCanvas(x, M + (w1 - 132) / 2, top + 36, order.scheme === "В" ? "В" : "А");
+        const ch = 180, w1 = BLANK ? 330 : 250; rr(x, M, top, w1, ch, 10, "#fff", LN, 1);
+        T(x, BLANK ? "Схема обрамления (отметьте А или В)" : "Схема обрамления " + (order.scheme || ""), M + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
+        if (BLANK) ["А", "В"].forEach((k, i) => { const sx = M + 14 + i * 158; schemeCanvas(x, sx, top + 36, k); x.strokeStyle = INKC; x.lineWidth = 1.2; x.strokeRect(sx + 4, PH - (top + 168), 12, 12); T(x, "Схема " + k, sx + 22, PH - (top + 167), { size: 10, bold: true, color: INKC }); });
+        else schemeCanvas(x, M + (w1 - 132) / 2, top + 36, order.scheme === "В" ? "В" : "А");
         const cx0 = M + w1 + 12, cw2 = PW - M - cx0;
         rr(x, cx0, top, cw2, ch, 10, "#fff", LN, 1);
         T(x, "Общие параметры", cx0 + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
@@ -512,10 +515,10 @@
         const cells = [["Табло", noInd ? "нет табло" : `${cm.ind_floor || ""}${cm.ind_size ? ", отв. " + cm.ind_size + " мм" : ""}`],
           ["Размеры", `${cm.bend_mode || ""}${cm.bend !== undefined && cm.bend !== "" ? ", загиб " + fmt(cm.bend) + " мм" : ""}`],
           ["Кнопка вызова", btn], ["Цвет окраски", cm.color],
-          ["Остановок", order.stops ? order.stops + " эт." : ""], ["По этажам", order.dsh_same ? "одинаковые на всех этажах" : "подписать поэтажно"]];
+          ["Остановок", order.stops ? order.stops + " эт." : ""], ["По этажам", BLANK ? "" : (order.dsh_same ? "одинаковые на всех этажах" : "подписать поэтажно")]];
         cells.forEach(([l, v], i) => { const yt = top + 36 + i * 23; rr(x, cx0 + 12, yt, cw2 - 24, 21, 5, SOFTC, LN, .7);
           T(x, l, cx0 + 20, PH - (yt + 14), { size: 8, color: MUT });
-          fitT(x, v || "—", cx0 + 20 + 70, yt + 15, cw2 - 24 - 70 - 14, 10.5, { bold: true, color: INKC }); });
+          if (BLANK) { x.strokeStyle = LN; x.lineWidth = .9; line(x, cx0 + 92, PH - (yt + 17), cx0 + cw2 - 20, PH - (yt + 17)); } else fitT(x, v || "—", cx0 + 20 + 70, yt + 15, cw2 - 24 - 70 - 14, 10.5, { bold: true, color: INKC }); });
         top += ch + 10;
       } else { part = rows.slice(FIRST + (pn - 2) * NEXT, FIRST + (pn - 1) * NEXT); maxRows = NEXT; }
       frameTable(x, order, part, top, maxRows);
@@ -527,7 +530,55 @@
   }
   const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 
+  function axisTable(x, order, rows, ytop, maxRows, rh) {
+    const M = 30, W = PW - 2 * M, base = [86, 84, 84, 100, 84, 84, 92, 70, 97], sum = base.reduce((a, b) => a + b, 0);
+    const cols = [["Этаж"], ["Проём, мм"], ["Б, мм"], ["Глубина, мм"], ["Полка Д"], ["Загиб"], ["C, мм"], ["Кол-во"], ["Цвет"]].map((c, i) => [c[0], base[i] * W / sum]);
+    const xs = []; let ax = M; cols.forEach(c => { xs.push(ax); ax += c[1]; });
+    const hh = 24;
+    boxT(x, M, ytop, W, hh, ACC, null);
+    cols.forEach(([t, w], i) => { T(x, t, xs[i] + w / 2, PH - (ytop + 15.5), { size: 9.5, bold: true, color: "#fff", align: "center" }); if (i) { x.strokeStyle = "rgba(255,255,255,.35)"; lineT(x, xs[i], ytop, xs[i], ytop + hh); } });
+    for (let r = 0; r < maxRows; r++) {
+      const o = rows[r], yt = ytop + hh + r * rh;
+      boxT(x, M, yt, W, rh, r % 2 ? "#f6f9fb" : "#ffffff", null);
+      x.strokeStyle = LN; x.lineWidth = .6; lineT(x, M, yt + rh, ax, yt + rh);
+      if (!o) continue;
+      boxT(x, xs[3], yt, cols[3][1], rh, AMB, null);
+      const vals = ["Этаж " + o.floor, o.w, o.B, o.depth, o.D, o.Z, o.h, 1, o.color];
+      vals.forEach((v, i) => { if (v === undefined || v === "" || v === null) v = "—"; const s = fmt(v); fitT(x, s, xs[i] + cols[i][1] / 2 - tw(x, s, 10.5, i === 0 || i === 3) / 2, yt + rh - 4.5, cols[i][1] - 6, 10.5, { bold: i === 0 || i === 3, color: i === 3 ? "#8a4b00" : INKC }); });
+    }
+    x.strokeStyle = LN; x.lineWidth = 1; x.strokeRect(M, PH - (ytop + hh + maxRows * rh), W, hh + maxRows * rh);
+    x.lineWidth = .6; xs.forEach((px, i) => { if (i) lineT(x, px, ytop + hh, px, ytop + hh + maxRows * rh); });
+    return ytop + hh + maxRows * rh;
+  }
+  function axisPages(order) {
+    const rows = order.rows || [], M = 30, FIRST = 12, NEXT = 22;
+    const pc = rows.length <= FIRST ? 1 : 1 + Math.ceil((rows.length - FIRST) / NEXT), pages = [];
+    for (let p = 0; p < pc; p++) {
+      const { c, x } = newPage();
+      frameHead(x, order, p + 1, pc, "Бланк замера обрамлений по осям", "Шахта лифта: обрамление по осям (тестовая функция)");
+      let top = 150, part, maxRows, rh = 17;
+      if (p === 0) {
+        part = rows.slice(0, FIRST); maxRows = FIRST; rh = 15.5;
+        const ch = 166, cw = (PW - 2 * M - 14) / 2;
+        [[M, "Исходные размеры", order.left || []], [M + cw + 14, "Портал и оснащение", order.right || []]].forEach(([cx0, title, cells]) => {
+          rr(x, cx0, top, cw, ch, 10, "#fff", LN, 1);
+          T(x, title, cx0 + 14, PH - (top + 22), { size: 12, bold: true, color: INKC });
+          cells.forEach(([l, v], i) => { const yt = top + 32 + i * 21; rr(x, cx0 + 12, yt, cw - 24, 19, 5, SOFTC, LN, .7);
+            T(x, l, cx0 + 20, PH - (yt + 13), { size: 8, color: MUT });
+            fitT(x, v || "—", cx0 + 20 + 92, yt + 13.5, cw - 24 - 92 - 14, 10.5, { bold: true, color: INKC }); });
+        });
+        top += ch + 8;
+      } else { part = rows.slice(FIRST + (p - 1) * NEXT, FIRST + p * NEXT); maxRows = NEXT; }
+      axisTable(x, order, part, top, maxRows, rh);
+      if (p === pc - 1) {
+        T(x, "Глубина обрамления = Б + А − В − 115 (голова 75 + ½ рамки 40): обрамление доходит до центра рамки. Проём и C — строительный проём. Все размеры в миллиметрах.", M, 20, { size: 7.5, color: MUT });
+      }
+      pages.push(c);
+    }
+    return pages;
+  }
   async function buildPages(order) {
+    if (order.kind === "axis") return axisPages(order);
     if (order.kind === "dl") return order.items.map(it => dlPage(order, it));
     if (order.kind === "win") { const pc = Math.max(1, Math.ceil(order.items.length / 2)); return Array.from({ length: pc }, (_, i) => winPage(order, order.items.slice(i * 2, i * 2 + 2), i + 1, pc)); }
     const pages = [], ops = order.openings || [];
@@ -573,5 +624,5 @@
     return new Blob(parts, { type: "application/pdf" });
   }
 
-  window.PDFGEN = { buildPages, makePdf };
+  window.PDFGEN = { buildPages, makePdf, setBlank: v => { BLANK = !!v; } };
 })();

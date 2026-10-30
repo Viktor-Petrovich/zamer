@@ -391,7 +391,8 @@
     shell("Замеры", null, `<div class="tiles">
         ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
         ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
-        ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}</div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+        ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}
+        ${tile("sec_axis", "frame", "Тестовый замер", "Обрамление по осям · тестовая функция", false)}</div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
   }
   function jobsView() {
     shell("Работа", null, `<div class="tiles">
@@ -624,7 +625,7 @@
       const canv = await PDFGEN.buildPages(full);
       const cityOf = ad => { const f = String(ad || "").split(",")[0].trim().replace(/^(г\.?|гор\.?|город)\s*/i, "").trim(); return String(ad || "").includes(",") ? f : ""; };
       const data = { app: "zamer-dsh", version: 1, kind: order.kind, city: cityOf(full.address), address: full.address, contact: full.contact, stamp: full.stamp, order: full };
-      pdfCache = { blob: PDFGEN.makePdf(canv, full.address, data), name: fileName() };
+      pdfCache = { blob: PDFGEN.makePdf(canv, full.address, data), name: fileName(), data };
       const box = document.getElementById("pages"); if (!box) return;
       box.innerHTML = canv.map(c => `<img alt="Страница бланка" src="${c.toDataURL("image/jpeg", 0.6)}">`).join("");
       document.getElementById("gen").textContent = `Страниц: ${canv.length}. Проверьте и отправьте.`;
@@ -655,7 +656,7 @@
     const file = new File([pdfCache.blob], pdfCache.name, { type: "application/pdf" });
     try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: order.address, text: "Заявка: " + order.address });
+        await navigator.share({ files: [file], title: pdfCache.title || order.address, text: "Заявка: " + (pdfCache.title || order.address) });
         return showDone("sent");
       }
     } catch (e) { if (e && e.name === "AbortError") return; }
@@ -689,9 +690,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       ${A ? `<line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/>` : ""}<line x1="164" y1="56" x2="190" y2="56" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
       <line x1="30" y1="${bottom}" x2="170" y2="${bottom}" class="floor"/></svg>`;
   }
-  function showDone(kind) { ominous("toll"); goal(kind === "sent" ? "sent" : "saved"); doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
+  function showDone(kind) { sheetPush(); ominous("toll"); goal(kind === "sent" ? "sent" : "saved"); doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
   function liftClose() {
-    const n = order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 0), unit = order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
+    const axm = pdfCache && pdfCache.axis, n = axm ? ax.n : order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 0), unit = axm ? "этажей" : order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return confetti();
     const L = document.createElement("div"); L.id = "lift"; L.className = "open";
     L.innerHTML = `<div class="head"><i>▲</i><b>1</b></div><div class="door l"><i class="pk"></i></div><div class="door r"><i class="pk"></i></div><div class="tag"><span>заказано ${unit}: ${n}</span></div>`;
@@ -724,6 +725,228 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Жуткие звуки: включены" : "🔇 Жуткие звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
   }
 
+  /* ---------- тестовый замер по осям ---------- */
+  const AX_HD = 75, AX_FR = 80, AX_OFF = AX_HD + AX_FR / 2, AX_DSTD = 130, AX_ZSTD = 20;
+  const axFresh = () => ({ n: 0, diff: false, B: "", V: "", A: "", Dm: "std", D: "", Zm: "std", Z: "", F: {}, W: {}, address: "", contact: "",
+    P: { w: "", h: "", sw: "", sh: "", sdiff: false, ral: "7035", tab: true, tabFloor: "all", tabH: "", tabW: "", bm: "std", by: "", bh: "", bw: "" } });
+  let ax = (() => { try { const s = JSON.parse(localStorage.getItem("zamer_axis")); return s ? Object.assign(axFresh(), s, { P: Object.assign(axFresh().P, s.P || {}) }) : axFresh(); } catch (e) { return axFresh(); } })();
+  const axSave = () => { try { localStorage.setItem("zamer_axis", JSON.stringify(ax)); } catch (e) {} };
+  const nm = v => { const x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isFinite(x) ? x : NaN; };
+  const axD = () => ax.Dm === "std" ? AX_DSTD : nm(ax.D), axZ = () => ax.Zm === "std" ? AX_ZSTD : nm(ax.Z);
+  const axBf = i => ax.diff ? nm(ax.F[i]) : nm(ax.B);
+  const axWf = i => ax.P.sdiff ? { w: nm((ax.W[i] || {}).w), h: nm((ax.W[i] || {}).h) } : { w: nm(ax.P.sw), h: nm(ax.P.sh) };
+  const axDepth = b => Math.round((b + nm(ax.A) - nm(ax.V) - AX_OFF) * 10) / 10;
+  const axBcnt = () => { let c = 0; for (let i = 1; i <= ax.n; i++) if (nm(ax.F[i]) > 0) c++; return c; };
+  const axWcnt = () => { let c = 0; for (let i = 1; i <= ax.n; i++) { const w = axWf(i); if (w.w > 0 && w.h > 0) c++; } return c; };
+  const axRal = () => "RAL " + ax.P.ral;
+  function axMissing() {
+    const m = [], P = ax.P;
+    if (!ax.address.trim()) m.push("Адрес объекта"); if (!ax.contact.trim()) m.push("Контактное лицо и телефон");
+    if (!(ax.n > 0)) m.push("Количество этажей");
+    if (!ax.diff && !(nm(ax.B) > 0)) m.push("Б — от оси до стены"); if (ax.diff && ax.n > 0 && axBcnt() < ax.n) m.push("Б по этажам: введено " + axBcnt() + " из " + ax.n);
+    if (!(nm(ax.V) > 0)) m.push("В — от оси до головы"); if (!(nm(ax.A) > 0)) m.push("А — толщина стены");
+    if (!(axD() > 0)) m.push("Ширина обрамления (полка)"); if (!(axZ() >= 0)) m.push("Загиб");
+    if (!(nm(P.w) > 0 && nm(P.h) > 0)) m.push("Портал: ширина и высота");
+    if (!P.sdiff && !(nm(P.sw) > 0 && nm(P.sh) > 0)) m.push("Строительный проём: ширина и высота"); if (P.sdiff && ax.n > 0 && axWcnt() < ax.n) m.push("Проём по этажам: введено " + axWcnt() + " из " + ax.n);
+    if (P.tab && !(nm(P.tabH) > 0 && nm(P.tabW) > 0)) m.push("Отверстие под табло: высота и ширина");
+    if (P.bm === "own" && !(nm(P.by) > 0)) m.push("Кнопка: высота от пола");
+    if (!(nm(P.bh) > 0 && nm(P.bw) > 0)) m.push("Отверстие под кнопку: высота и ширина");
+    return m;
+  }
+  function axWarn() {
+    const w = [], V = nm(ax.V), A = nm(ax.A), P = ax.P; let bad = 0;
+    for (let i = 1; i <= ax.n; i++) { const b = axBf(i); if (!(b > 0 && V > 0 && A > 0)) continue; const d = axDepth(b); if (d <= 0 || d < A || V + AX_HD + AX_FR < b) bad++; }
+    if (bad) w.push(ax.diff ? "На " + bad + " эт. размеры не сходятся: проверьте Б, В и А." : "Размеры не сходятся: проверьте Б, В и А.");
+    for (let i = 1; i <= Math.max(1, ax.n); i++) { const s = axWf(i); if (nm(P.w) > 0 && s.w > 0 && nm(P.w) > s.w) { w.push("Портал шире строительного проёма."); break; } }
+    return w;
+  }
+  function axPlan() {
+    const AXY = 450, B = (ax.diff ? nm(ax.F[1]) : nm(ax.B)) || 900, V = nm(ax.V) || 760, A = nm(ax.A) || 200, P = ax.P;
+    const W1 = (P.sdiff ? axWf(1).w : nm(P.sw)) || 1000, PW0 = nm(P.w) || 900, D = axD() || 130, Zk = Math.max(6, (axZ() || 20) * .36);
+    const k = Math.min(.36, 354 / (B + A)), inY = AXY - B * k, outY = Math.min(inY - 26, AXY - (B + A) * k), fr = AXY - V * k, hd = fr - AX_HD * k,
+      ctr = AXY - (V + AX_HD + AX_FR - AX_FR / 2) * k, tip = AXY - (V + AX_HD + AX_FR) * k;
+    const hw = Math.max(70, Math.min(W1 * k / 2, 235)), x1 = 360 - hw, x2 = 360 + hw, pw = Math.min(PW0 * k / 2, hw - 4), p1 = 360 - pw, p2 = 360 + pw, dk = D * k;
+    const hx1 = Math.max(115, p1 - 40), hx2 = Math.min(605, p2 + 40), bx = Math.min(hx2 + 22, 598), axx = x1 - dk - 20;
+    const arr = (x, y1, y2) => `<path d="M${x} ${y1}V${y2}M${x - 4} ${y1 - 9}l4 9 4-9M${x - 4} ${y2 + 9}l4-9 4 9" class="dm"/>`;
+    const svg =
+      `<rect x="60" y="${outY}" width="600" height="${560 - outY}" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.4"/><rect x="60" y="${outY}" width="600" height="${560 - outY}" fill="url(#axh)"/>` +
+      `<rect x="110" y="${inY}" width="500" height="${520 - inY}" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.4"/>` +
+      `<rect x="${x1 + 1}" y="${outY - 3}" width="${x2 - x1 - 2}" height="${inY - outY + 5}" fill="var(--surface)"/><path d="M${x1} ${outY}V${inY}M${x2} ${outY}V${inY}" stroke="var(--ink)" stroke-width="2.4"/>` +
+      `<path d="M${x1 - dk} ${outY - 6 + Zk}V${outY - 6}H${p1}V${ctr}M${x2 + dk} ${outY - 6 + Zk}V${outY - 6}H${p2}V${ctr}" stroke="var(--accent)" stroke-width="3.4" fill="none"/>` +
+      `<rect x="${p1 - 4}" y="${tip}" width="8" height="${hd - tip}" fill="var(--accent)" opacity=".55" stroke="var(--ink)" stroke-width="1.4"/><rect x="${p2 - 4}" y="${tip}" width="8" height="${hd - tip}" fill="var(--accent)" opacity=".55" stroke="var(--ink)" stroke-width="1.4"/>` +
+      `<rect x="${hx1}" y="${hd}" width="${hx2 - hx1}" height="${AX_HD * k}" rx="5" fill="var(--soft)" stroke="var(--ink)" stroke-width="2.2"/><text x="360" y="${hd + AX_HD * k / 2 + 5}" text-anchor="middle" class="lb" letter-spacing="2">ГОЛОВА ДШ 75</text>` +
+      `<line x1="95" y1="${AXY}" x2="625" y2="${AXY}" stroke="var(--ink)" stroke-width="1.4" stroke-dasharray="14 5 3 5"/><circle cx="150" cy="${AXY}" r="8" class="dm"/><circle cx="570" cy="${AXY}" r="8" class="dm"/>` +
+      `<text x="360" y="${AXY - 8}" text-anchor="middle" class="lb">ось направляющих</text>` + arr(130, AXY, inY) + arr(205, AXY, fr) + arr(axx, outY, inY) +
+      `<path d="M${x1 - dk} 40H${x1}M${x1 - dk + 8} 36l-9 4 9 4M${x1 - 8} 36l9 4-9 4" class="dm"/>` +
+      `<path d="M${bx} ${fr}V${hd}M${bx - 4} ${fr - 8}l4 8 4-8M${bx - 4} ${hd + 8}l4-8 4 8" class="dm"/><path d="M${bx} ${hd}V${tip}M${bx - 4} ${hd - 8}l4 8 4-8M${bx - 4} ${tip + 8}l4-8 4 8" class="dm" style="stroke:var(--accent)"/>` +
+      `<text x="${bx + 6}" y="${fr - AX_HD * k / 2 + 4}" class="lb">75</text><text x="${bx + 6}" y="${hd - AX_FR / 2 * k + 4}" class="lb" style="fill:var(--accent)">80</text>` +
+      `<text x="${x2 + 4}" y="${outY + (inY - outY) / 2 + 4}" class="lb" style="font-size:11px">проём ${W1}</text>`;
+    const pos = { B: [94, (AXY + inY) / 2 - 10], V: [238, (AXY + fr) / 2 + 22], A: [Math.max(axx, 92), (outY + inY) / 2], P: [360, (outY + inY) / 2 + 4], D: [x1 - dk / 2, 40], Z: [x2 + dk / 2, 40] };
+    return { svg, pos };
+  }
+  const axFmtN = n => { const m = n % 10, h = n % 100; return n + " " + (m === 1 && h !== 11 ? "этаж" : m >= 2 && m <= 4 && (h < 12 || h > 14) ? "этажа" : "этажей"); };
+  const axSet = (id, v) => { const e = document.getElementById(id); if (e) e.innerHTML = v; };
+  function axRows() {
+    const rows = [], V = nm(ax.V), A = nm(ax.A);
+    for (let i = 1; i <= ax.n; i++) { const b = axBf(i), w = axWf(i);
+      rows.push({ floor: i, w: w.w > 0 ? w.w : "", h: w.h > 0 ? w.h : "", B: b > 0 ? b : "", depth: b > 0 && V > 0 && A > 0 ? axDepth(b) : "", D: axD(), Z: axZ(), qty: 1, color: axRal() }); }
+    return rows;
+  }
+  function axUpdate() {
+    const g = document.getElementById("axplan"); if (!g) return;
+    const pl = axPlan(); g.innerHTML = pl.svg;
+    Object.entries(pl.pos).forEach(([k, [x, y]]) => { const e = document.getElementById("axp_" + k); if (e) { e.style.left = (x / 7.2).toFixed(1) + "%"; e.style.top = (y / 6).toFixed(1) + "%"; } });
+    const P = ax.P, setP = (k, t, done) => { const e = document.getElementById("axp_" + k); if (e) { e.textContent = t; e.classList.toggle("done", !!done); } };
+    setP("B", ax.diff ? "Б " + axBcnt() + "/" + (ax.n || "?") : "Б " + (ax.B || "?"), ax.diff ? ax.n > 0 && axBcnt() === ax.n : !!ax.B);
+    setP("V", "В " + (ax.V || "?"), !!ax.V); setP("A", "А " + (ax.A || "?"), !!ax.A);
+    setP("D", "Д " + (axD() || "?"), ax.Dm !== "std"); setP("Z", "загиб " + (axZ() >= 0 ? axZ() : "?"), ax.Zm !== "std");
+    setP("P", "Портал", nm(P.w) > 0 && nm(P.h) > 0);
+    const bd = document.getElementById("axbadge"); if (bd) bd.textContent = ax.n > 0 ? axFmtN(ax.n) : "этажей: ?";
+    const ni = document.getElementById("ax_n"); if (ni && document.activeElement !== ni) ni.value = ax.n || "";
+    const dt = document.getElementById("ax_difft"); if (dt) { dt.classList.toggle("on", ax.diff); dt.setAttribute("aria-checked", ax.diff); }
+    const fl = document.getElementById("ax_fl"); if (fl) { fl.hidden = !ax.diff; fl.querySelector("small").textContent = "Введено " + axBcnt() + " из " + (ax.n || "?"); }
+    // результат
+    const V = nm(ax.V), A = nm(ax.A), r = document.getElementById("axres"); if (!r) return;
+    const warn = axWarn().map(t => `<div class="axmsg w">${esc(t)}</div>`).join("");
+    if (!(V > 0 && A > 0) || !(ax.n > 0)) { r.innerHTML = `<div class="axmsg n">Введите количество этажей, Б, В и А. Глубина посчитается сама.</div>`; return; }
+    let h = "";
+    if (!ax.diff) {
+      const b = nm(ax.B);
+      h = b > 0 ? `<div class="axbig"><b>${axDepth(b)}</b><span>мм, на всех этажах</span></div><div class="axfm">Б + А − В − ${AX_OFF} = ${b} + ${A} − ${V} − ${AX_OFF}</div><div class="axfm">(голова ${AX_HD} + ½ рамки ${AX_FR / 2})</div>` : `<div class="axmsg n">Введите Б.</div>`;
+    } else {
+      let rows = "";
+      for (let i = 1; i <= ax.n; i++) { const b = nm(ax.F[i]); rows += b > 0 ? `<div><span>${i}</span><span>${b}</span><b>${axDepth(b)}</b></div>` : `<div><span>${i}</span><span>—</span><span class="dim">не введено</span></div>`; }
+      h = `<div class="axtbl"><div class="hd"><span>Этаж</span><span>Б, мм</span><span>Глубина</span></div>${rows}</div>`;
+    }
+    r.innerHTML = h + warn;
+  }
+  function axisView() {
+    if (!ax.address && order.address) ax.address = order.address; if (!ax.contact && order.contact) ax.contact = order.contact;
+    const pill = (k, a) => `<button class="axp" id="axp_${k}" data-a="${a}"></button>`;
+    shell("Тестовый замер", null, `<div class="card"><span class="chip">Тестовая функция · обрамление по осям</span>
+      <label class="plab">Адрес объекта</label><div class="field"><input id="ax_addr" value="${esc(ax.address)}" autocomplete="off" placeholder="Город, улица, дом"></div>
+      <label class="plab">Контактное лицо и телефон</label><div class="field"><input id="ax_cont" value="${esc(ax.contact)}" autocomplete="off" placeholder="Имя, телефон"></div>
+      <div class="axrow"><div><b>Сколько этажей?</b><small>Число остановок лифта</small></div><div class="axstep"><button type="button" data-a="ax_nm" aria-label="Меньше">−</button><input id="ax_n" inputmode="numeric" value="${ax.n || ""}" placeholder="0" aria-label="Количество этажей"><button type="button" data-a="ax_np" aria-label="Больше">+</button></div></div>
+      <button type="button" class="tgl" id="ax_difft" role="switch" data-a="ax_diff"><span>Расстояние Б разное по этажам</span><i class="sw2"><b></b></i></button>
+      <button type="button" class="axlist" id="ax_fl" data-a="ax_FL" hidden><span><b>Б по этажам</b><small></small></span><i>›</i></button></div>
+    <div class="card"><h2 class="q" style="font-size:18px">Нажмите на размер на плане</h2><p class="hint">План перестраивается по вашим размерам. Табло, кнопка и цвет вводятся в окне «Портал».</p>
+      <div class="axst"><svg viewBox="0 0 720 600" aria-hidden="true"><defs><pattern id="axh" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9" stroke="var(--line)" stroke-width="2.5"/></pattern></defs><g id="axplan"></g></svg>
+      ${pill("B", "ax_B")}${pill("V", "ax_V")}${pill("A", "ax_A")}${pill("D", "ax_D")}${pill("Z", "ax_Z")}${pill("P", "ax_P")}<div class="axbadge" id="axbadge"></div></div></div>
+    <div class="card"><h2 class="q" style="font-size:18px">Глубина обрамления до центра рамки</h2><div id="axres"></div></div>`,
+      `<button class="btn" data-a="ax_go">Проверить и сформировать бланк</button><button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
+    const bind = (id, f) => { const e = document.getElementById(id); if (e) e.oninput = () => { f(e.value); axSave(); }; };
+    bind("ax_addr", v => ax.address = v); bind("ax_cont", v => ax.contact = v);
+    bind("ax_n", v => { const x = parseInt(v.replace(/\D/g, ""), 10); ax.n = isFinite(x) ? Math.min(60, x) : 0; axUpdate(); });
+    axUpdate();
+  }
+  let axOv = null, axKey = "";
+  function axClose() { if (axOv) { axOv.remove(); axOv = null; } axKey = ""; axUpdate(); }
+  const axFld = (path, label, val, ph) => `<div><label class="axl">${label}</label><div class="field"><input data-ax="${path}" inputmode="decimal" placeholder="${ph || "0"}" value="${esc(val == null ? "" : val)}" autocomplete="off"><span class="axu">мм</span></div></div>`;
+  const axSeg = (path, cur, items) => `<div class="axseg">${items.map(([v, t]) => `<button type="button" data-axs="${path}|${v}" class="${String(cur) === String(v) ? "on" : ""}">${t}</button>`).join("")}</div>`;
+  function axSetPath(path, v) {
+    const p = path.split("."); let o = ax;
+    for (let i = 0; i < p.length - 1; i++) { if (o[p[i]] == null) o[p[i]] = {}; o = o[p[i]]; }
+    o[p[p.length - 1]] = v;
+  }
+  function axOpen(key) {
+    const P = ax.P; let h = "";
+    const T = { B: ["Б — от оси до стены", "Расстояние от оси направляющих до внутренней грани стены, одинаковое на всех этажах.", "B"],
+      V: ["В — от оси до головы", "От оси направляющих до лицевой стороны головы ДШ.", "V"], A: ["А — толщина стены", "Толщина стены в месте проёма.", "A"] };
+    if (key === "B" && ax.diff) return axOpen("FL");
+    if (T[key]) h = `<h3>${T[key][0]}</h3><p>${T[key][1]}</p>${axFld(T[key][2], "Размер", ax[T[key][2]])}`;
+    else if (key === "D" || key === "Z") {
+      const isD = key === "D", m = isD ? ax.Dm : ax.Zm;
+      h = `<h3>${isD ? "Ширина обрамления (полка по стене)" : "Загиб обрамления"}</h3>${axSeg(isD ? "Dm" : "Zm", m, [["std", "Стандарт " + (isD ? AX_DSTD : AX_ZSTD) + " мм"], ["own", "Свой размер"]])}` +
+        (m === "own" ? axFld(isD ? "D" : "Z", "Свой размер", isD ? ax.D : ax.Z) : `<p>Стандарт для всех этажей.</p>`);
+    } else if (key === "FL" || key === "WL") {
+      const W = key === "WL", cnt = W ? axWcnt() : axBcnt();
+      h = `<h3>${W ? "Строительный проём по этажам" : "Б по этажам"}</h3><p>${W ? "Ширина и высота строительного проёма, мм." : "Расстояние от оси направляющих до стены, мм."}</p><div class="axprog"><i style="width:${ax.n ? 100 * cnt / ax.n : 0}%"></i></div><div class="axfl">`;
+      for (let i = 1; i <= ax.n; i++) {
+        const ok = W ? (axWf(i).w > 0 && axWf(i).h > 0) : nm(ax.F[i]) > 0;
+        h += W ? `<div class="axfr"><label>Этаж ${i}${ok ? " ✓" : ""}</label><div class="axtwo"><div class="field"><input data-ax="W.${i}.w" inputmode="decimal" placeholder="Ширина" value="${esc((ax.W[i] || {}).w || "")}"></div><div class="field"><input data-ax="W.${i}.h" inputmode="decimal" placeholder="Высота" value="${esc((ax.W[i] || {}).h || "")}"></div></div></div>`
+          : `<div class="axfr"><label>Этаж ${i}${ok ? " ✓" : ""}</label><div class="field"><input data-ax="F.${i}" inputmode="decimal" placeholder="0" value="${esc(ax.F[i] || "")}"><span class="axu">мм</span></div></div>`;
+      }
+      h += `</div><button class="btn sec" type="button" data-axsame="${key}">Всем как у 1-го</button>`;
+    } else if (key === "P") {
+      let fo = `<option value="all">На всех этажах</option>`; for (let i = 1; i <= ax.n; i++) fo += `<option value="${i}"${String(P.tabFloor) === String(i) ? " selected" : ""}>Этаж ${i}</option>`;
+      h = `<h3>Портал и оснащение</h3>
+        <div class="axsec"><b>Портал</b><div class="axtwo">${axFld("P.w", "Ширина портала", P.w)}${axFld("P.h", "Высота портала", P.h)}</div></div>
+        <div class="axsec"><b>Строительный проём</b><button type="button" class="tgl${P.sdiff ? "" : " on"}" role="switch" aria-checked="${!P.sdiff}" data-axt="P.sdiff"><span>Одинаковый на всех этажах</span><i class="sw2"><b></b></i></button>` +
+        (P.sdiff ? `<button type="button" class="axlist" data-axo="WL"><span><b>Проём по этажам</b><small>Введено ${axWcnt()} из ${ax.n || "?"}</small></span><i>›</i></button>` : `<div class="axtwo">${axFld("P.sw", "Ширина проёма", P.sw)}${axFld("P.sh", "Высота проёма", P.sh)}</div>`) + `</div>
+        <div class="axsec"><b>Цвет окраски</b>${axSeg("P.ral", P.ral, [["7035", "RAL 7035<br><small>стандартно</small>"], ["7038", "RAL 7038"]])}</div>
+        <div class="axsec"><b>Табло</b>${axSeg("P.tab", String(P.tab), [["true", "Есть"], ["false", "Нет"]])}` +
+        (P.tab ? `<label class="axl">На каком этаже</label><select class="axsel" data-axsel="P.tabFloor">${fo}</select><div class="axtwo">${axFld("P.tabH", "Высота отверстия под табло", P.tabH)}${axFld("P.tabW", "Ширина отверстия под табло", P.tabW)}</div>` : `<p>Табло не заказывается.</p>`) + `</div>
+        <div class="axsec"><b>Кнопка вызова</b><label class="axl">Размер от пола</label>${axSeg("P.bm", P.bm, [["std", "ГОСТ 1000 мм"], ["own", "Свой размер"]])}` +
+        (P.bm === "own" ? axFld("P.by", "Высота от пола", P.by) : "") + `<div class="axtwo">${axFld("P.bh", "Высота отверстия под кнопку", P.bh)}${axFld("P.bw", "Ширина отверстия под кнопку", P.bw)}</div></div>`;
+    }
+    const keep = axOv ? axOv.querySelector(".sheetbox").scrollTop : 0;
+    if (!axOv) { axOv = document.createElement("div"); axOv.className = "sheet"; document.body.appendChild(axOv);
+      axOv.addEventListener("click", ev => {
+        if (ev.target === axOv || ev.target.closest("[data-axclose]")) return axClose();
+        const s = ev.target.closest("[data-axs]"), t = ev.target.closest("[data-axt]"), o = ev.target.closest("[data-axo]"), sm = ev.target.closest("[data-axsame]");
+        if (s) { const i = s.dataset.axs.lastIndexOf("|"), v = s.dataset.axs.slice(i + 1); axSetPath(s.dataset.axs.slice(0, i), v === "true" ? true : v === "false" ? false : v); axSave(); return axOpen(axKey); }
+        if (t) { const p = t.dataset.axt.split("."); axSetPath(t.dataset.axt, !ax[p[0]][p[1]]); axSave(); axOpen(axKey); if (ax.P.sdiff && !axWcnt() && ax.n) axOpen("WL"); return; }
+        if (o) return axOpen(o.dataset.axo);
+        if (sm) { if (sm.dataset.axsame === "WL") { const f = ax.W[1]; if (!f || !(nm(f.w) > 0)) return; for (let i = 2; i <= ax.n; i++) ax.W[i] = { w: f.w, h: f.h }; } else { const f = ax.F[1]; if (!(nm(f) > 0)) return; for (let i = 2; i <= ax.n; i++) ax.F[i] = f; } axSave(); axOpen(axKey); }
+      });
+      axOv.addEventListener("input", ev => { const e = ev.target; if (!e.dataset.ax) return; const v = e.value.replace(/[^\d.,]/g, ""); if (v !== e.value) e.value = v; axSetPath(e.dataset.ax, v); axSave(); axUpdate();
+        const pr = axOv.querySelector(".axprog i"); if (pr && ax.n) pr.style.width = (100 * (axKey === "WL" ? axWcnt() : axBcnt()) / ax.n) + "%";
+        const row = e.closest(".axfr"); if (row) { const lb = row.querySelector("label"), ok = axKey === "WL" ? (() => { const p = e.dataset.ax.split("."), w = axWf(+p[1]); return w.w > 0 && w.h > 0; })() : nm(e.value) > 0; lb.textContent = lb.textContent.replace(" ✓", "") + (ok ? " ✓" : ""); }
+        const sm = axOv.querySelector(".axlist small"); if (sm) sm.textContent = "Введено " + axWcnt() + " из " + (ax.n || "?"); });
+      axOv.addEventListener("change", ev => { const e = ev.target; if (e.dataset.axsel) { axSetPath(e.dataset.axsel, e.value); axSave(); axUpdate(); } });
+      axOv.addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.ax) { const ins = [...axOv.querySelectorAll("input[data-ax]")], k = ins.indexOf(ev.target); ev.preventDefault(); if (ins[k + 1]) ins[k + 1].focus(); else if (axKey === "WL") axOpen("P"); else axClose(); } });
+    }
+    axKey = key;
+    const back = key === "WL" ? "P" : "";
+    axOv.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true">${h}<button class="btn" type="button" ${back ? `data-axo="${back}"` : "data-axclose"}>Готово</button></div>`;
+    axOv.querySelector(".sheetbox").scrollTop = keep;
+    if (T[key] || key === "D" || key === "Z") { const i = axOv.querySelector("input[data-ax]"); if (i) i.focus(); }
+    axUpdate();
+  }
+  function axExport() {
+    const P = ax.P, rows = axRows(), stamp = dateLong(new Date(), true);
+    const tab = P.tab ? (P.tabFloor === "all" ? "на всех этажах" : "этаж " + P.tabFloor) + ", отв. " + P.tabH + "×" + P.tabW + " мм" : "нет табло";
+    const left = [["Толщина стены А", nm(ax.A) + " мм"], ["От оси до головы В", nm(ax.V) + " мм"], ["Б (ось → стена)", ax.diff ? "по этажам" : nm(ax.B) + " мм"], ["Голова / рамка", AX_HD + " / " + AX_FR + " мм"],
+      ["Полка Д / загиб", axD() + " / " + axZ() + " мм"], ["Цвет окраски", axRal() + (P.ral === "7035" ? " (стандартно)" : "")]];
+    const right = [["Портал (Ш×В)", nm(P.w) + "×" + nm(P.h) + " мм"], ["Стр. проём", P.sdiff ? "по этажам" : nm(P.sw) + "×" + nm(P.sh) + " мм"], ["Табло", tab],
+      ["Кнопка от пола", (P.bm === "std" ? 1000 : nm(P.by)) + " мм"], ["Отв. под кнопку", nm(P.bh) + "×" + nm(P.bw) + " мм"], ["Остановок", String(ax.n)]];
+    return { kind: "axis", stamp, address: ax.address.trim(), contact: ax.contact.trim(), worker: acc.name || "", n: ax.n, A: nm(ax.A), V: nm(ax.V), head: AX_HD, frame: AX_FR, depth_offset: AX_OFF,
+      shelf: axD(), bend: axZ(), ral: P.ral, portal: { w: nm(P.w), h: nm(P.h) }, indicator: P.tab ? { floor: P.tabFloor, h: nm(P.tabH), w: nm(P.tabW) } : null,
+      button: { from_floor: P.bm === "std" ? 1000 : nm(P.by), h: nm(P.bh), w: nm(P.bw) }, rows, left, right };
+  }
+  async function axrevView() {
+    const full = axExport();
+    shell("Проверка заявки", 1, `<div class="card"><div class="sum"><span><b>Адрес:</b> ${esc(full.address)}</span><span><b>Контакт:</b> ${esc(full.contact)}</span><span><b>Этажей:</b> ${full.n}</span><span><b>Глубина:</b> ${ax.diff ? "по этажам, " + full.rows.map(r => r.depth).join(", ") : full.rows[0] ? full.rows[0].depth + " мм на всех этажах" : "—"}</span><span><b>Цвет:</b> ${esc(axRal())}</span></div></div><div class="card"><p class="hint" id="gen">Формирую бланк…</p><div class="pages" id="pages"></div></div>`,
+      `${supplyLink() ? `<button class="btn sec" data-a="supply_open">Открыть чат: ${esc(supply.app)}</button>` : ""}<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="back">Изменить размеры</button>`, { menu: false });
+    try {
+      const canv = await PDFGEN.buildPages(full);
+      const f = String(full.address).split(",")[0].trim().replace(/^(г\.?|гор\.?|город)\s*/i, "").trim(), city = full.address.includes(",") ? f : "";
+      const data = { app: "zamer-dsh", version: 1, kind: "axis", city, address: full.address, contact: full.contact, stamp: full.stamp, order: full };
+      const nameAddr = full.address.replace(/[\\/:*?"<>|\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "Заявка";
+      pdfCache = { blob: PDFGEN.makePdf(canv, full.address, data), name: "Обрамление по осям - " + nameAddr + ".pdf", data, axis: true, title: full.address };
+      const box = document.getElementById("pages"); if (!box) return;
+      box.innerHTML = canv.map(c => `<img alt="Страница бланка" src="${c.toDataURL("image/jpeg", 0.6)}">`).join("");
+      document.getElementById("gen").textContent = `Страниц: ${canv.length}. Проверьте и отправьте.`;
+      document.getElementById("sendBtn").disabled = false;
+    } catch (e) { const g = document.getElementById("gen"); if (g) g.textContent = "Не удалось сформировать бланк: " + e.message; }
+  }
+  function axAct(a) {
+    if (a === "ax_nm") { ax.n = Math.max(0, (ax.n || 0) - 1); axSave(); return axUpdate(); }
+    if (a === "ax_np") { ax.n = Math.min(60, (ax.n || 0) + 1); axSave(); return axUpdate(); }
+    if (a === "ax_diff") { ax.diff = !ax.diff; axSave(); axUpdate(); if (ax.diff && ax.n > 0 && !axBcnt()) axOpen("FL"); return; }
+    if (a === "ax_go") {
+      const m = axMissing();
+      if (m.length) {
+        axOv = document.createElement("div"); axOv.className = "sheet"; document.body.appendChild(axOv);
+        axOv.addEventListener("click", ev => { if (ev.target === axOv || ev.target.closest("[data-axclose]")) axClose(); });
+        axOv.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>Не всё заполнено</h3><p>Чтобы собрать бланк, добавьте:</p><ul class="axmiss">${m.map(t => `<li>${esc(t)}</li>`).join("")}</ul><button class="btn" type="button" data-axclose>Вернуться к размерам</button></div>`;
+        return;
+      }
+      view = "axrev"; return render();
+    }
+    if (/^ax_[BVADZP]$/.test(a) || a === "ax_FL") return axOpen(a.slice(3));
+  }
+
   /* ---------- диспетчер ---------- */
   function render() {
     if (view === "home") return homeView();
@@ -733,6 +956,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "work") return workView();
     if (view === "claim") return claimView();
     if (view === "meas") return measView();
+    if (view === "axis") return axisView();
+    if (view === "axrev") return axrevView();
     if (view === "cv") return cvView();
     if (view === "jobs") return jobsView();
     if (view === "supply") return supplyView();
@@ -858,11 +1083,43 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   let slT = null;
   new MutationObserver(() => { clearTimeout(slT); slT = setTimeout(slimeFlow, 250); }).observe($app, { childList: true });
   addEventListener("resize", () => { clearTimeout(slT); slT = setTimeout(slimeFlow, 250); });
+  /* ---------- автоматическая таблица (Google Apps Script) ---------- */
+  function sheetFlags(d) {
+    const o = d.order || {}, f = { "Двери": false, "Люки": false, "Окна": false, "Обрамления": false, "Нащельники": false, "Рифлёнки": false, "Бортики": false };
+    if (d.kind === "dl") (o.items || []).forEach(it => { if (it.door && it.door.need === "Да") f["Двери"] = true; if (it.hatch && it.hatch.need === "Да") f["Люки"] = true; });
+    else if (d.kind === "win") f["Окна"] = !!(o.items && o.items.length);
+    else if (d.kind === "axis") f["Обрамления"] = true;
+    else { f["Обрамления"] = !!((o.openings && o.openings.length) || o.stops); f["Нащельники"] = !!(o.nashchelnik && o.nashchelnik.length); f["Рифлёнки"] = !!(o.thresholds && o.thresholds.length); f["Бортики"] = !!(o.cable && Object.keys(o.cable).length); }
+    return f;
+  }
+  function sheetQueue() { try { return JSON.parse(localStorage.getItem("zamer_queue")) || []; } catch (e) { return []; } }
+  function sheetSave(q) { try { localStorage.setItem("zamer_queue", JSON.stringify(q.slice(-200))); } catch (e) {} }
+  async function sheetFlush() {
+    if (!window.ZAMER_SHEET) return;
+    let q = sheetQueue(); if (!q.length) return;
+    const left = [];
+    for (const p of q) {
+      try { await fetch(window.ZAMER_SHEET, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(Object.assign({ token: window.ZAMER_TOKEN || "" }, p)) }); }
+      catch (e) { left.push(p); }
+    }
+    sheetSave(left);
+  }
+  function sheetPush() {
+    if (!window.ZAMER_SHEET || !pdfCache || !pdfCache.data) return;
+    const d = pdfCache.data, p = { id: d.kind + "|" + d.address + "|" + d.stamp, kind: d.kind, city: d.city, address: d.address, stamp: d.stamp, flags: sheetFlags(d) };
+    const q = sheetQueue(); if (!q.some(x => x.id === p.id)) { q.push(p); sheetSave(q); }
+    sheetFlush();
+  }
+  addEventListener("online", sheetFlush); setTimeout(sheetFlush, 3000);
   function goal(n) { try { if (window.ym) ym(113845787, "reachGoal", n); } catch (e) {} }
   function act(a) {
     if (/^sec_(win|door|frame|claim)$/.test(a) || a === "download") goal(a);
+    if (/^ax_/.test(a)) return axAct(a);
+    if (a === "sec_axis") { wail(); view = "axis"; return render(); }
     if (a === "next") { if (sub) return subNext(); const l = buildList(), s = l[pos]; return advance(s, readValue(s)); }
     if (a === "back") {
+      if (view === "axis") { view = "meas"; return render(); }
+      if (view === "axrev") { view = "axis"; return render(); }
       if (view === "soon") { view = /^claim_/.test(soonView.what) ? "claim" : "home"; return render(); }
       if (view === "meas" || view === "jobs" || view === "cv") { view = "home"; return render(); }
     if (view === "work" || view === "claim") { view = "jobs"; return render(); }
@@ -885,8 +1142,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       try { localStorage.setItem("zamer_theme", t); } catch (e) {}
       return toast(t === "dark" ? "Тёмная тема" : "Светлая тема");
     }
-    if (a === "finish") { order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
-    if (a === "backrev") { view = "review"; save(); return render(); }
+    if (a === "finish") { if (pdfCache && pdfCache.axis) { ax = axFresh(); axSave(); } order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
+    if (a === "backrev") { view = pdfCache && pdfCache.axis ? "axrev" : "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
     if (a === "hint") {
       const o = document.createElement("div"); o.className = "sheet";
