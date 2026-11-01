@@ -443,6 +443,21 @@ header.top{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:n
 .axfl{display:grid;gap:8px}.axfr{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:10px}.axfr label{font-weight:700;font-size:14px}
 .axmiss{display:grid;gap:6px;margin:0;padding:0;list-style:none}.axmiss li{padding:9px 12px;border-radius:12px;background:color-mix(in srgb,var(--bad) 13%,transparent);color:var(--bad);font-size:14px;font-weight:600}
 .sheetbox.scroll{max-height:90vh;overflow:auto}
+
+/* ===== Деловой стиль: синяя палитра, без тематического декора ===== */
+:root{--accent:#1b6fa8;--accent-ink:#fff;--hw2:#3b8fd4}
+:root:not([data-theme="dark"]){--bg:#edf1f5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent:#5caae8;--accent-ink:#0b1620;--bg:#0e151c;--surface:#17212b;--soft:#1f2b37;--line:#2e3c4a;--hw2:#7fb8ee}}
+:root[data-theme="dark"]{--accent:#5caae8;--accent-ink:#0b1620;--bg:#0e151c;--surface:#17212b;--soft:#1f2b37;--line:#2e3c4a;--hw2:#7fb8ee}
+:root[data-theme="light"]{--bg:#edf1f5}
+body::before{opacity:.38;background:radial-gradient(38% 30% at 16% 12%,#7db9ea 0,transparent 70%),radial-gradient(34% 28% at 88% 20%,#a9c4f5 0,transparent 70%),radial-gradient(40% 32% at 74% 80%,#9fd6e8 0,transparent 70%),radial-gradient(36% 30% at 10% 84%,#b9d3ee 0,transparent 70%)}
+body::after,.hw,#lift .pk,.spk2,.btn::after,.tile::after,.tile.soon::after{display:none!important}
+.btn:not(.sec):not(.ghost){background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 52%),linear-gradient(135deg,color-mix(in srgb,var(--accent) 86%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 78%,#000));animation:none;filter:none}
+.logob,.credit .co,.tile .ti,.tile:not(.soon) .ti{animation:none}
+.hello h2{background:none;-webkit-text-fill-color:currentColor;color:var(--ink);animation:none;font-weight:700;letter-spacing:-.02em}
+.tgl.on .sw2,.suppseg button.on{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));box-shadow:inset 0 2px 5px rgba(0,0,0,.2),0 0 12px color-mix(in srgb,var(--accent) 40%,transparent)}
+.prog i,.axprog i{background:var(--accent);box-shadow:none}
+.donebox .ring{filter:none}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
@@ -459,6 +474,5 @@ var done=false;function fin(){if(done)return;done=true;A.classList.remove("pre")
 if(matchMedia("(prefers-reduced-motion: reduce)").matches){L.remove();A.classList.remove("pre");return}
 L.addEventListener("click",fin);setTimeout(fin,1200)})();
 </script>
-<div class="hw" aria-hidden="true"><span class="s">🕸️</span><span class="b1">🦇</span><span class="b2">🦇</span><span class="g">👻</span><span class="p">🎃</span><span class="sp">🕷️</span><span class="sk">💀</span><span class="m">🌕</span><span class="g2">👻</span><span class="b3">🦇</span><i class="em" style="left:8%;animation-delay:0s;animation-duration:7s"></i><i class="em" style="left:22%;animation-delay:2s;animation-duration:8s"></i><i class="em" style="left:38%;animation-delay:4s;animation-duration:6.5s"></i><i class="em" style="left:55%;animation-delay:1s;animation-duration:9s"></i><i class="em" style="left:70%;animation-delay:3s;animation-duration:7.5s"></i><i class="em" style="left:85%;animation-delay:5s;animation-duration:8.5s"></i><i class="em" style="left:95%;animation-delay:0.5s;animation-duration:7s"></i></div>
 </body>
 </html>

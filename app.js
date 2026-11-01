@@ -722,7 +722,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
   function menuView() {
-    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Жуткие звуки: включены" : "🔇 Жуткие звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
+    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
   }
 
   /* ---------- тестовый замер по осям ---------- */
@@ -969,7 +969,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "hub") return hubView();
     return wizardView();
   }
-  /* ---------- жуткие звуки и эффекты ---------- */
+  /* ---------- звуки ---------- */
   let sndOn = (() => { try { return localStorage.getItem("zamer_snd") !== "0"; } catch (e) { return true; } })(), AC = null, lastSnd = 0;
   let BUS = null;
   function dest() {
@@ -981,91 +981,22 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     inp.connect(dry); dry.connect(AC.destination); inp.connect(cv); cv.connect(wet); wet.connect(AC.destination);
     BUS = { ctx: AC, in: inp }; return inp;
   }
-  function creak() {
-    if (!sndOn) return;
-    try {
-      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
-      const t = AC.currentTime, dur = 0.3 + Math.random() * 0.45, f0 = 130 + Math.random() * 200;
-      const o = AC.createOscillator(), j = AC.createOscillator(), jg = AC.createGain(), f = AC.createBiquadFilter(), g = AC.createGain();
-      o.type = "sawtooth"; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * (1.5 + Math.random() * 0.8), t + dur * 0.6); o.frequency.linearRampToValueAtTime(f0 * 0.9, t + dur);
-      j.type = "square"; j.frequency.value = 28 + Math.random() * 30; jg.gain.value = 55; j.connect(jg); jg.connect(o.frequency);
-      f.type = "bandpass"; f.frequency.setValueAtTime(600 + Math.random() * 500, t); f.frequency.linearRampToValueAtTime(1400, t + dur); f.Q.value = 7;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(f); f.connect(g); g.connect(dest()); o.start(t); j.start(t); o.stop(t + dur + .05); j.stop(t + dur + .05);
-    } catch (e) {}
+  /* мягкие деловые звуки: стеклянный тик, мелодичные колокольчики */
+  function acNow() { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC.currentTime; }
+  function note(f, t0, dur, vol, wet) {
+    const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), g2 = AC.createGain();
+    o.type = "sine"; o.frequency.value = f; o2.type = "sine"; o2.frequency.value = f * 2.005; g2.gain.value = 0.18;
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(wet ? dest() : AC.destination);
+    o.start(t0); o2.start(t0); o.stop(t0 + dur + 0.05); o2.stop(t0 + dur + 0.05);
   }
-  function moan() {
-    if (!sndOn) return;
-    const now = Date.now(); if (now - lastSnd < 250) return; lastSnd = now;
-    try {
-      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
-      const t = AC.currentTime, f0 = 105 + Math.random() * 70, dur = 1.3 + Math.random() * 0.7;
-      const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(), lfo = AC.createOscillator(), lg = AC.createGain();
-      o.type = "sawtooth"; o2.type = "triangle";
-      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 0.62, t + dur);
-      o2.frequency.setValueAtTime(f0 * 1.5, t); o2.frequency.exponentialRampToValueAtTime(f0 * 0.93, t + dur);
-      lfo.frequency.value = 5.5; lg.gain.value = 9; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
-      fl.type = "lowpass"; fl.frequency.setValueAtTime(380, t); fl.frequency.linearRampToValueAtTime(900, t + dur * 0.35); fl.frequency.linearRampToValueAtTime(260, t + dur); fl.Q.value = 6;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.18); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      const o3 = AC.createOscillator(); o3.type = "sawtooth"; o3.frequency.setValueAtTime(f0 * 1.414, t); o3.frequency.exponentialRampToValueAtTime(f0 * 0.88, t + dur); lg.connect(o3.frequency); o3.connect(fl);
-      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(dest());
-      o.start(t); o2.start(t); o3.start(t); lfo.start(t); o.stop(t + dur + .05); o2.stop(t + dur + .05); o3.stop(t + dur + .05); lfo.stop(t + dur + .05);
-    } catch (e) {}
-  }
-  function wail() {
-    if (!sndOn) return;
-    try {
-      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
-      const t = AC.currentTime, dur = 2.6;
-      const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain(), fl = AC.createBiquadFilter(), lfo = AC.createOscillator(), lg = AC.createGain(), d = AC.createDelay(), fb = AC.createGain(), out = AC.createGain();
-      o.type = "sine"; o2.type = "triangle";
-      o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(520, t + dur * 0.45); o.frequency.exponentialRampToValueAtTime(130, t + dur);
-      o2.frequency.setValueAtTime(240, t); o2.frequency.exponentialRampToValueAtTime(735, t + dur * 0.45); o2.frequency.exponentialRampToValueAtTime(184, t + dur);
-      lfo.frequency.value = 6.5; lg.gain.value = 14; lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
-      fl.type = "bandpass"; fl.frequency.value = 900; fl.Q.value = 1.2;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      d.delayTime.value = 0.23; fb.gain.value = 0.45; out.gain.value = 1;
-      o.connect(fl); o2.connect(fl); fl.connect(g); g.connect(out); g.connect(d); d.connect(fb); fb.connect(d); d.connect(out); out.connect(dest());
-      o.start(t); o2.start(t); lfo.start(t); o.stop(t + dur + .1); o2.stop(t + dur + .1); lfo.stop(t + dur + .1);
-      setTimeout(() => { try { out.disconnect(); } catch (e) {} }, (dur + 2) * 1000);
-    } catch (e) {}
-  }
-  /* зловещие звуки: колокол, скрип, сердцебиение, гул */
-  function ominous(kind) {
-    if (!sndOn) return;
-    try {
-      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
-      const t = AC.currentTime, out = AC.createGain(); out.gain.value = 1; out.connect(dest());
-      const env = (g, a, pk, d) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(pk, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + d); };
-      const k = kind || ["toll", "creak", "heart", "drone", "whisper", "bat", "cackle"][Math.floor(Math.random() * 7)];
-      if (k === "toll") { [1, 2.76, 5.4, 8.9].forEach((m, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.value = 110 * m; env(g, 0.01, 0.16 / (i + 1), 4.2 - i * 0.6); o.connect(g); g.connect(out); o.start(t); o.stop(t + 4.4); }); }
-      else if (k === "creak") { const o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(), l = AC.createOscillator(), lg = AC.createGain(); o.type = "sawtooth"; o.frequency.setValueAtTime(90, t); o.frequency.linearRampToValueAtTime(240, t + 0.9); o.frequency.linearRampToValueAtTime(130, t + 1.7); l.frequency.value = 23; lg.gain.value = 40; l.connect(lg); lg.connect(o.frequency); f.type = "bandpass"; f.frequency.value = 700; f.Q.value = 5; env(g, 0.25, 0.09, 1.8); o.connect(f); f.connect(g); g.connect(out); o.start(t); l.start(t); o.stop(t + 1.9); l.stop(t + 1.9); }
-      else if (k === "heart") { [0, 0.42, 1.3, 1.72].forEach(dt => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.setValueAtTime(70, t + dt); o.frequency.exponentialRampToValueAtTime(38, t + dt + 0.22); g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.35, t + dt + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.28); o.connect(g); g.connect(out); o.start(t + dt); o.stop(t + dt + 0.3); }); }
-      else if (k === "whisper") { const n = AC.sampleRate * 2.2, buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; const sr = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(), lf = AC.createOscillator(), lg = AC.createGain(); sr.buffer = buf; f.type = "bandpass"; f.frequency.value = 2600; f.Q.value = 3; lf.frequency.value = 3.2; lg.gain.value = 0.05; lf.connect(lg); lg.connect(g.gain); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.1); sr.connect(f); f.connect(g); g.connect(out); sr.start(t); lf.start(t); lf.stop(t + 2.2); }
-      else if (k === "bat") { [0, 0.14, 0.3].forEach(dt => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.setValueAtTime(5200, t + dt); o.frequency.exponentialRampToValueAtTime(2400, t + dt + 0.09); g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.05, t + dt + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.1); o.connect(g); g.connect(out); o.start(t + dt); o.stop(t + dt + 0.12); }); }
-      else if (k === "cackle") { for (let i = 0; i < 7; i++) { const dt = i * 0.13, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter(); o.type = "sawtooth"; o.frequency.setValueAtTime(420 - i * 18, t + dt); o.frequency.exponentialRampToValueAtTime(260 - i * 12, t + dt + 0.11); f.type = "bandpass"; f.frequency.value = 1100; f.Q.value = 4; g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.07, t + dt + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.12); o.connect(f); f.connect(g); g.connect(out); o.start(t + dt); o.stop(t + dt + 0.14); } }
-      else if (k === "bloop") { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sine"; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(520, t + 0.09); o.frequency.exponentialRampToValueAtTime(260, t + 0.2); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.26); }
-      else { [55, 55.7, 82.4].forEach(fq => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "sawtooth"; o.frequency.value = fq; const f = AC.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 220; env(g, 1.6, 0.07, 4.5); o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + 4.6); }); }
-    } catch (e) {}
-  }
-  document.addEventListener("focusin", e => { if (e.target.matches && e.target.matches("input,textarea") && Math.random() < 0.5) ominous("whisper"); });
-  let ambT = null;
-  function ambient() {
-    clearTimeout(ambT);
-    ambT = setTimeout(() => { if (!document.hidden) ominous(); ambient(); }, 8000 + Math.random() * 12000);
-  }
-  document.addEventListener("pointerdown", function once() { document.removeEventListener("pointerdown", once, true); setTimeout(() => ominous("drone"), 600); ambient(); }, true);
-  function spook(x, y) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const E = ["🦇", "💀", "🎃", "👻", "🕷️", "🦴"];
-    for (let i = 0; i < 6; i++) {
-      const p = document.createElement("span"); p.className = "spk2"; p.textContent = E[Math.floor(Math.random() * E.length)];
-      const a = Math.random() * Math.PI * 2, d = 40 + Math.random() * 60;
-      p.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d - 30}px;--r:${(Math.random() - .5) * 120}deg`;
-      document.body.appendChild(p); setTimeout(() => p.remove(), 1000);
-    }
-  }
-  document.addEventListener("pointerdown", e => { if (e.target.closest("button,a.btn")) { creak(); setTimeout(moan, 90); if (Math.random() < 0.25) setTimeout(() => ominous(), 800); spook(e.clientX, e.clientY); } }, true);
+  function chime(freqs, step, dur, vol) { try { const t = acNow(); freqs.forEach((f, k) => note(f, t + k * step, dur, vol, true)); } catch (e) {} }
+  function creak() { if (!sndOn) return; try { const t = acNow(); note(1760, t, 0.08, 0.05, false); note(2637, t + 0.008, 0.06, 0.022, false); } catch (e) {} }   // мягкий тик при нажатии
+  function moan() { if (!sndOn) return; chime([784, 1175], 0.07, 0.5, 0.07); }                                  // подтверждение
+  function wail() { if (!sndOn) return; chime([523, 659, 784], 0.06, 0.55, 0.06); }                              // открытие раздела
+  function ominous(kind) { if (!sndOn || kind !== "toll") return; chime([523, 659, 784, 1047, 1319], 0.11, 0.9, 0.075); }   // успех: восходящий перезвон
+  function spook() {}
+  document.addEventListener("pointerdown", e => { if (e.target.closest("button,a.btn")) creak(); }, true);
   /* слизь стекает со значков вниз экрана */
   function slimeFlow() {
     document.querySelectorAll(".slimeflow,.slimepool").forEach(x => x.remove());
