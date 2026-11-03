@@ -445,7 +445,9 @@
   function wizardView() {
     const list = buildList(); if (pos >= list.length) { view = isSimple() ? "review" : "hub"; save(); return render(); }
     const s = list[pos], val = getP(order, s.p), err = wizardView.err || "";
-    let body = `<div class="card"><span class="chip">${esc(s.sec)} · вопрос ${pos + 1} из ${list.length}</span><h2 class="q">${esc(s.q)}</h2>${s.hint ? `<p class="hint">${esc(s.hint)}</p>` : ""}`;
+    const secC = ({ "Объект": "#1b6fa8", "Общие параметры": "#0f8a8a", "Кнопка вызова": "#d9822b", "Обрамление ДШ": "#243b6b" })[s.sec] || "#1b6fa8";
+    const dir = wizardView.last === undefined ? "" : pos > wizardView.last ? " sl-f" : pos < wizardView.last ? " sl-b" : ""; wizardView.last = pos;
+    let body = `<div class="card wz${dir}" style="--sc:${secC}"><b class="stepn" aria-hidden="true">${pos + 1}<small>/${list.length}</small></b><span class="chip">${esc(s.sec)} · вопрос ${pos + 1} из ${list.length}</span><h2 class="q">${esc(s.q)}</h2>${s.hint ? `<p class="hint">${esc(s.hint)}</p>` : ""}`;
     body += controlHtml(s, val) + `<p class="err" id="err">${esc(err)}</p></div>`;
     let foot = s.t === "choice" || s.t === "scheme" ? "" : `<button class="btn" data-a="next">Далее</button>`;
     if (s.sash === "type") foot = `<button class="btn" data-a="next">Далее</button>`;
@@ -501,7 +503,24 @@
       ${gbtn("c", 66, 116, 68, 48, "Размер С", order.c_mode === "Свой размер" && order.C ? order.C + " мм" : "2000 мм", true)}
       <line x1="30" y1="170" x2="170" y2="170" class="floor"/></svg>`;
     const sum = OPEN.map(([k, q, h, pr]) => `<button type="button" class="fchip${ok(k) ? " on" : ""}" data-fpart="${k}"><b>${{ top: "Верхнее", left: "Левое", right: "Правое" }[k]}</b><span>${ok(k) ? (same() ? pr.map(([key]) => o[key]).join(" × ") + " мм" : "все " + flist().length + " эт. внесены") : same() ? "нажмите, чтобы внести" : (flist().filter(x => OPEN.find(y => y[0] === k)[3].every(([key]) => ((order.ops && order.ops[x]) || {})[key] > 0)).length + " из " + flist().length + " эт.")}</span></button>`).join("");
-    return `<div class="fscr">${svg}<div class="fchips">${sum}</div></div>`;
+    return `<div class="fscr"><div class="ledfl" aria-label="Остановок">▲ <b data-n="${order.stops || 0}">${order.stops || "–"}</b> эт.</div>${svg}<div class="fchips">${sum}</div>${!same() && order.stops > 1 ? `<button type="button" class="btn sec" data-a="opencopy" style="margin-top:12px">Копировать размеры между этажами</button>` : ""}</div>`;
+  }
+  function openCopy() {
+    const n = order.stops || 1, o = document.createElement("div"); o.className = "sheet";
+    const opts = sel => Array.from({ length: n }, (_, i) => `<option value="${i + 1}"${sel === i + 1 ? " selected" : ""}>Этаж ${i + 1}</option>`).join("");
+    o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Копировать размеры этажа</h3><p class="hint">Все три части (верх, лево, право) с одного этажа на другие.</p><label class="plab">Откуда</label><select id="cp_from" class="bigsel">${opts(1)}</select><label class="plab">Куда</label><div class="cpto">${Array.from({ length: n }, (_, i) => `<label class="cpchk"><input type="checkbox" value="${i + 1}"${i === 1 ? " checked" : ""}><span>${i + 1}</span></label>`).join("")}</div><div class="cpq"><button type="button" class="btn sec" data-a="cpall">Все остальные</button></div><p class="err" id="cperr"></p><button class="btn" data-a="copysave">Скопировать</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+    o.addEventListener("click", ev => {
+      if (ev.target === o || ev.target.closest("[data-a=mailclose]")) return o.remove();
+      if (ev.target.closest("[data-a=cpall]")) { const f = o.querySelector("#cp_from").value; o.querySelectorAll(".cpto input").forEach(c => { c.checked = c.value !== f; }); return; }
+      if (!ev.target.closest("[data-a=copysave]")) return;
+      const from = o.querySelector("#cp_from").value, to = [...o.querySelectorAll(".cpto input:checked")].map(c => c.value).filter(v => v !== from);
+      const src = (order.ops && order.ops[from]) || {};
+      if (!OPEN.every(x => x[3].every(([key]) => src[key] > 0))) { o.querySelector("#cperr").textContent = "На этаже " + from + " не все размеры внесены"; return; }
+      if (!to.length) { o.querySelector("#cperr").textContent = "Отметьте этажи, куда копировать"; return; }
+      to.forEach(t => { order.ops[t] = Object.assign({}, src); });
+      o.remove(); save(); toast("Скопировано на этажи: " + to.join(", "));
+    });
+    document.body.appendChild(o);
   }
   function bendToggle() {
     const cur = (order.common && order.common.bend_mode) || "С учётом загиба";
@@ -516,7 +535,7 @@
     const cols = d[3];
     const body = same()
       ? cols.map(([key, lab], i) => `<label class="plab">${esc(lab)}</label><div class="field"><input id="p1_${i}" inputmode="decimal" value="${((order.ops && order.ops[1]) || {})[key] || ""}"><span class="u">мм</span></div>`).join("")
-      : `<div class="ftab"><table><tr><th>Эт.</th>${cols.map(([key, lab]) => `<th>${esc(lab.replace(/^Размер /, "").replace(/ \(.*\)/, ""))}</th>`).join("")}</tr>${fl.map(n => `<tr><td><b>${n}</b></td>${cols.map(([key], i) => `<td><input id="p${n}_${i}" inputmode="decimal" value="${((order.ops && order.ops[n]) || {})[key] || ""}"></td>`).join("")}</tr>`).join("")}</table></div><button class="btn sec" data-a="pfill">Как на этаже 1 для всех</button>`;
+      : `<div class="ftab"><table><tr><th>Эт.</th>${cols.map(([key, lab]) => `<th>${esc(lab.replace(/^Размер /, "").replace(/ \(.*\)/, ""))}</th>`).join("")}<th>Как</th></tr>${fl.map(n => `<tr><td><b>${n}</b></td>${cols.map(([key], i) => `<td><input id="p${n}_${i}" inputmode="decimal" value="${((order.ops && order.ops[n]) || {})[key] || ""}"></td>`).join("")}<td>${n > 1 || fl.length > 1 ? `<select class="cpsel" data-row="${n}" aria-label="Как на этаже"><option value="">эт.</option>${fl.filter(m => m !== n).map(m => `<option value="${m}">${m}</option>`).join("")}</select>` : ""}</td></tr>`).join("")}</table></div><button class="btn sec" data-a="pfill">Как на этаже 1 для всех</button>`;
     o.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>${d[1]}${same() ? "" : ": все этажи"}</h3><p class="hint">${d[2]} В миллиметрах.</p>${pic ? `<div class="secpic">${pic}</div>` : ""}${body}<p class="err" id="perr"></p><button class="btn" data-a="partsave">Сохранить</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
     const save1 = () => {
       const out = [];
@@ -533,6 +552,12 @@
       if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove();
       else if (ev.target.closest("[data-a=partsave]")) save1();
       else if (ev.target.closest("[data-a=pfill]")) { cols.forEach((c, i) => { const v = o.querySelector(`#p1_${i}`).value; fl.forEach(n => { o.querySelector(`#p${n}_${i}`).value = v; }); }); }
+    });
+    o.addEventListener("change", ev => {
+      const sel = ev.target.closest(".cpsel"); if (!sel || !sel.value) return;
+      const n = sel.dataset.row, src = sel.value;
+      cols.forEach((c, i) => { o.querySelector(`#p${n}_${i}`).value = o.querySelector(`#p${src}_${i}`).value; });
+      sel.value = "";
     });
     o.addEventListener("keydown", ev => {
       if (ev.key !== "Enter" || !ev.target.matches("input")) return; ev.preventDefault();
@@ -1198,6 +1223,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "finish") { if (pdfCache && pdfCache.axis) { ax = axFresh(); axSave(); } order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
     if (a === "backrev") { view = pdfCache && pdfCache.axis ? "axrev" : "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
+    if (a === "opencopy") return openCopy();
     if (a === "floors") {
       const n = order.stops || 0, cols = OPEN.flatMap(x => x[3]);
       const o = document.createElement("div"); o.className = "sheet";

@@ -407,9 +407,9 @@
     const A = k === "А", f = 0.66, X0 = v => ox + v * f, Y0 = v => oy + v * f;
     const R = (xx, yy, w, h, fill) => boxT(x, X0(xx), Y0(yy), w * f, h * f, fill, INKC, 1.3);
     boxT(x, X0(62), Y0(30), 76 * f, 140 * f, "#f1f5f8", null);
-    const sideFill = "#cfe2f1", topFill = "#9fc3e0";
-    if (A) { R(40, 56, 22, 114, sideFill); R(138, 56, 22, 114, sideFill); R(40, 30, 120, 26, topFill); }
-    else { R(40, 30, 22, 140, sideFill); R(138, 30, 22, 140, sideFill); R(62, 30, 76, 26, topFill); }
+    const sideFill = "#cfe2f1", topFill = "#9fc3e0", leftFill = "#c6ecd5", rightFill = "#f6dcb9";
+    if (A) { R(40, 56, 22, 114, leftFill); R(138, 56, 22, 114, rightFill); R(40, 30, 120, 26, topFill); }
+    else { R(40, 30, 22, 140, leftFill); R(138, 30, 22, 140, rightFill); R(62, 30, 76, 26, topFill); }
     cm = cm || {};
     const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло";
     if (cm.ind_floor && !noInd) {
@@ -469,6 +469,14 @@
     x.fillStyle = ACC; x.fillRect(0, PH - 6, PW, 6);
     T(x, title || "Бланк замера обрамлений ДШ", M, PH - 50, { size: 22, bold: true, color: INKC });
     T(x, sub || "Шахта лифта: обрамления дверных проёмов", M, PH - 66, { size: 10, color: MUT });
+    {   // логотип
+      const lx = PW - M - (pc > 1 ? 120 + 190 : 190), ly = 34;
+      rr(x, lx, ly, 22, 26, 3, "#d7e4ee", "#10314d", 1.2); boxT(x, lx + 3, ly + 4, 7, 19, "#8fb7d4", null); boxT(x, lx + 12, ly + 4, 7, 19, "#8fb7d4", null);
+      x.strokeStyle = "#10314d"; x.lineWidth = 1; lineT(x, lx + 11, ly + 1, lx + 11, ly + 25);
+      boxT(x, lx, ly - 4, 22, 3, "#c8102e", null);
+      T(x, "СтройЛифтКомплекс", lx + 30, PH - (ly + 14), { size: 13.5, bold: true, color: "#10314d" });
+      T(x, "замер обрамлений шахты лифта", lx + 30, PH - (ly + 26), { size: 7.5, color: MUT });
+    }
     if (pc > 1) { rr(x, PW - M - 120, 32, 120, 26, 13, "#e3eef7", ACC, 1); T(x, `Лист ${pn} из ${pc}`, PW - M - 60, PH - 49, { size: 11, bold: true, align: "center", color: ACC }); }
     const f = (px, yt, w, label, val) => {
       x.strokeStyle = LN; x.lineWidth = .9; line(x, px, PH - yt, px + w, PH - yt);
@@ -489,7 +497,8 @@
     // шапка
     boxT(x, M, ytop, ax - M, hh * 2, ACC, null);
     x.strokeStyle = "rgba(255,255,255,.55)"; x.lineWidth = .8;
-    groups.forEach(([i, n, t]) => { T(x, t, xs[i] + (cols[i][1] * n) / 2, PH - (ytop + 12), { size: 9, bold: true, color: "#fff", align: "center" }); lineT(x, xs[i], ytop, xs[i], ytop + hh * 2); lineT(x, xs[i], ytop + hh, xs[i] + cols[i][1] * n, ytop + hh); });
+    const gcol = ["#6fb0e3", "#5cc08a", "#f0a24a"];
+    groups.forEach(([i, n, t], gi) => { boxT(x, xs[i], ytop, cols[i][1] * n, 3.2, gcol[gi], null); T(x, t, xs[i] + (cols[i][1] * n) / 2, PH - (ytop + 12), { size: 9, bold: true, color: "#fff", align: "center" }); lineT(x, xs[i], ytop, xs[i], ytop + hh * 2); lineT(x, xs[i], ytop + hh, xs[i] + cols[i][1] * n, ytop + hh); });
     cols.forEach(([t, w], i) => {
       const g = groups.some(([gi, n]) => i >= gi && i < gi + n);
       const lab = g ? t : t;

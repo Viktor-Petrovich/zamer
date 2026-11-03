@@ -564,6 +564,83 @@ body::after,.hw,#lift .pk,.spk2,.btn::after,.tile::after,.tile.soon::after{displ
 .top::after{content:"";position:absolute;left:14px;right:14px;bottom:-5px;height:8px;pointer-events:none;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='8' viewBox='0 0 20 8'><path d='M10 .8 L16 4 L10 7.2 L4 4Z' fill='none' stroke='%23c8102e' stroke-width='1.2'/><path d='M10 2.6 L12.6 4 L10 5.4 L7.4 4Z' fill='%23c8102e'/><path d='M0 4H4M16 4H20' stroke='%23c8102e' stroke-width='1.2'/></svg>") repeat-x 0 0/20px 8px;opacity:.8;-webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
 main::after{content:"";display:block;height:8px;margin:22px auto 6px;width:min(220px,60%);background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='8' viewBox='0 0 20 8'><path d='M10 .8 L16 4 L10 7.2 L4 4Z' fill='none' stroke='%23c8102e' stroke-width='1.2'/><path d='M10 2.6 L12.6 4 L10 5.4 L7.4 4Z' fill='%23c8102e'/><path d='M0 4H4M16 4H20' stroke='%23c8102e' stroke-width='1.2'/></svg>") repeat-x center/20px 8px;opacity:.75;-webkit-mask:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent);mask:linear-gradient(90deg,transparent,#000 20%,#000 80%,transparent)}
 .card.sec-card h3::after,.card .q::after{content:"";display:block;width:54px;height:8px;margin-top:8px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='8' viewBox='0 0 20 8'><path d='M10 .8 L16 4 L10 7.2 L4 4Z' fill='none' stroke='%23c8102e' stroke-width='1.2'/><path d='M10 2.6 L12.6 4 L10 5.4 L7.4 4Z' fill='%23c8102e'/><path d='M0 4H4M16 4H20' stroke='%23c8102e' stroke-width='1.2'/></svg>") repeat-x 0 0/18px 8px;opacity:.85}
+
+/* ---- удобство ввода ---- */
+#kbar{position:fixed;left:0;right:0;bottom:0;z-index:400;display:flex;align-items:center;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px)*0);background:rgba(240,246,251,.96);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid #c9d6e2;box-shadow:0 -4px 14px rgba(20,60,100,.12)}
+#kbar[hidden]{display:none}
+#kbar button{min-width:52px;height:46px;border-radius:14px;border:1px solid #b9cadb;background:#fff;font:700 22px system-ui;color:#1b6fa8;touch-action:manipulation}
+#kbar button:disabled{opacity:.35}
+#kbar button:active{transform:scale(.94)}
+#kbar .go{margin-left:auto;white-space:nowrap;padding:0 22px;background:linear-gradient(180deg,#2f86c0,#1b6fa8);color:#fff;border-color:#155a88;font-size:17px}
+#kbar .kst{font:600 12px system-ui;color:#4a6275;max-width:34vw;line-height:1.2}
+#kbar.rec [data-k=mic]{background:#e5484d;color:#fff;border-color:#c0272d;animation:recp 1s infinite}
+@keyframes recp{50%{box-shadow:0 0 0 7px rgba(229,72,77,.25)}}
+html.kb main{padding-bottom:90px}
+.field input{font-size:24px!important;min-height:56px}
+.btn{min-height:56px}
+.ftab input{font-size:19px!important;min-height:48px!important}
+.cpsel,.bigsel{width:100%;min-height:46px;border-radius:12px;border:1.5px solid #cfd8e0;background:#fff;font:600 16px system-ui;padding:0 6px}
+.cpsel{width:54px;min-height:44px;font-size:14px}
+.cpto{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}.cpchk{position:relative}.cpchk input{position:absolute;opacity:0}
+.cpchk span{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;border:2px solid #cfd8e0;font:700 17px system-ui;background:#fff}
+.cpchk input:checked+span{background:#1b6fa8;color:#fff;border-color:#155a88}
+/* стекло темнее */
+#lift .door::before{background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.03) 30%,rgba(255,255,255,.03) 60%,rgba(255,255,255,.12) 100%),rgba(20,50,74,.42)!important;-webkit-backdrop-filter:blur(1.5px) saturate(1.15) brightness(.78)!important;backdrop-filter:blur(1.5px) saturate(1.15) brightness(.78)!important}
+
+/* ======== Фирменный стиль v2 ======== */
+@font-face{font-family:"InterZ";src:url(fonts/Inter-Regular.woff) format("woff");font-weight:400;font-display:swap}
+@font-face{font-family:"InterZ";src:url(fonts/Inter-SemiBold.woff) format("woff");font-weight:600 700;font-display:swap}
+@font-face{font-family:"InterZ";src:url(fonts/Inter-ExtraBold.woff) format("woff");font-weight:800 900;font-display:swap}
+:root{--navy:#10314d;--steel:#8c97a1;--red:#b5232f;--warn:#e8912d;--accent:#1b6fa8;--sc:#1b6fa8}
+body,button,input,textarea,select{font-family:"InterZ",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.q,.bar h1,h2,h3{letter-spacing:-.01em}
+.q{font-weight:800}
+input,textarea,.fchip span,.ftab input,.gv,.stepn,.led,.ledfl{font-variant-numeric:tabular-nums}
+/* карточки: чище, меньше размытия, цветная полоса раздела и большой номер шага */
+.card{-webkit-backdrop-filter:blur(6px)!important;backdrop-filter:blur(6px)!important;background:color-mix(in srgb,var(--surface) 94%,transparent)!important;border-radius:20px;position:relative;overflow:hidden}
+.card.wz{padding-left:24px}
+.card.wz::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,var(--sc),color-mix(in srgb,var(--sc) 55%,#fff))}
+.stepn{position:absolute;right:14px;top:6px;font:800 54px/1 "InterZ",system-ui;color:color-mix(in srgb,var(--sc) 16%,transparent);pointer-events:none;letter-spacing:-.04em}
+.stepn small{font-size:20px;font-weight:700;margin-left:2px}
+.card.wz .chip{background:color-mix(in srgb,var(--sc) 12%,var(--surface));color:var(--sc);font-weight:700}
+.card.wz .q{padding-right:60px}
+/* плавная смена вопросов вперёд/назад */
+.card.sl-f{animation:slf .32s cubic-bezier(.2,.8,.25,1) both}
+.card.sl-b{animation:slb .32s cubic-bezier(.2,.8,.25,1) both}
+@keyframes slf{from{opacity:0;transform:translateX(34px)}to{opacity:1;transform:none}}
+@keyframes slb{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
+/* кнопки: основная — сталь/синий; важные — красные */
+.btn:not(.sec):not(.ghost){background:linear-gradient(180deg,#2a7fb8 0%,#16578a 100%);box-shadow:0 8px 18px -8px rgba(16,49,77,.6),inset 0 1px 0 rgba(255,255,255,.28)}
+.btn[data-a=review],.btn[data-a=send],.btn[data-a=share],.btn[data-a=finish]{background:linear-gradient(180deg,#cc3340 0%,#9b1d29 100%)!important;box-shadow:0 8px 18px -8px rgba(155,29,41,.65),inset 0 1px 0 rgba(255,255,255,.25)!important}
+.warn,.err{color:#b4540a}
+/* главный экран: плитки как двери лифта (сталь, стекло, орнамент) */
+.tiles .tile{border:0;border-radius:18px;padding:24px 16px 16px;background:linear-gradient(135deg,rgba(255,255,255,.55),rgba(255,255,255,.1)),linear-gradient(180deg,#e4e9ee,#c5ced6);box-shadow:inset 0 0 0 2px #9aa6b0,inset 0 0 0 4px rgba(255,255,255,.7),0 12px 24px -14px rgba(16,49,77,.55);overflow:hidden}
+.tiles .tile::before{content:""!important;animation:none!important;position:absolute;left:0;right:0;top:0;height:9px;background:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='9' viewBox='0 0 20 9'%3E%3Crect width='20' height='9' fill='%23f3efe6'/%3E%3Cpath d='M10 1 L16 4.5 L10 8 L4 4.5Z' fill='none' stroke='%23c8102e' stroke-width='1.3'/%3E%3Cpath d='M10 3 L12.6 4.5 L10 6 L7.4 4.5Z' fill='%23c8102e'/%3E%3Cpath d='M0 4.5H4M16 4.5H20' stroke='%23c8102e' stroke-width='1.3'/%3E%3C/svg%3E") repeat-x 0 0/20px 9px;display:block!important}
+.tiles .tile .ti{background:linear-gradient(160deg,#cfe4f4,#a9cbe6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);color:#10314d}
+.tiles .tile .tt b{font-weight:800;color:#10314d}
+.tiles .tile .go{color:#9b1d29}
+.tiles .tile::after{content:""!important;animation:none!important;position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);display:block!important;opacity:0;transition:left .6s,opacity .3s}
+.tiles .tile:hover::after,.tiles .tile:active::after{left:120%;opacity:1}
+/* экран проёма: схема — главный элемент */
+.fbig{max-width:100%;filter:drop-shadow(0 10px 16px rgba(16,49,77,.18))}
+.ledfl{display:inline-flex;align-items:center;gap:6px;margin:0 auto 6px;padding:6px 14px;border-radius:12px;background:#0d1114;color:#ffb347;font:800 16px "InterZ",monospace;box-shadow:inset 0 0 0 2px #39434b,0 0 12px rgba(255,150,40,.25);text-shadow:0 0 8px rgba(255,150,40,.8)}
+.ledfl b{font-size:22px;display:inline-block;animation:ledtick .5s ease-out}
+@keyframes ledtick{from{transform:translateY(-70%);opacity:0}to{transform:none;opacity:1}}
+.fscr{text-align:center}.fscr .fchips,.fscr .btn{text-align:left}
+/* тёмная тема для шахты: контраст, без размытия, крупные числа */
+:root[data-theme="dark"]{--bg:#070c11;--surface:#101922;--soft:#17232f;--line:#33475a;--ink:#f1f6fa;--muted:#aebccb;--accent:#6cb8f2;--accent-ink:#06121c;--sc:#6cb8f2}
+:root[data-theme="dark"] *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+:root[data-theme="dark"] .card{background:var(--surface)!important}
+:root[data-theme="dark"] .field input{font-size:26px!important}
+:root[data-theme="dark"] .tiles .tile{background:linear-gradient(180deg,#26333f,#17212b);box-shadow:inset 0 0 0 2px #4a5b6a,0 12px 24px -14px #000}
+:root[data-theme="dark"] .tiles .tile .tt b{color:#f1f6fa}
+:root[data-theme="dark"] .tiles .tile .ti{background:#223344;color:#9fd0f6}
+:root[data-theme="dark"] .fpart rect{fill:#1d3347}:root[data-theme="dark"] .fpart text{fill:#cfe6f9}
+:root[data-theme="dark"] .fpart.done rect{fill:#17402c}:root[data-theme="dark"] .fpart.done text{fill:#8be0b0}
+:root[data-theme="dark"] #kbar{background:rgba(16,25,34,.98)}
+:root[data-theme="dark"] #kbar button{background:#1b2a37;color:#9fd0f6;border-color:#33475a}
+@media (prefers-reduced-motion:reduce){.card.sl-f,.card.sl-b{animation:none}}
+:root[data-theme="dark"] .card.wz .chip{color:#cfe6f9;background:#1d3347}:root[data-theme="dark"] .stepn{color:rgba(150,200,240,.16)}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
@@ -573,6 +650,7 @@ main::after{content:"";display:block;height:8px;margin:22px auto 6px;width:min(2
 <script src="config.js"></script>
 <script src="sheet.js"></script>
 <script src="pdf.js"></script>
+<script src="field.js"></script>
 <script src="app.js"></script>
 <script>
 (function(){var L=document.getElementById("lift"),A=document.getElementById("app");if(!L)return;
