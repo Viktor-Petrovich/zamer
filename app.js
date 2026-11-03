@@ -123,7 +123,7 @@
   const SETUP = [
     { p: "form.obj", t: "form", sec: "Объект", q: "Адрес и контактное лицо", hint: "Город, улица, дом: файл заявки будет назван этим адресом. Контакт: имя и телефон.",
       fields: [{ k: "text", p: "address", label: "Адрес объекта", ph: "г. Казань, ул. Мира, 3", area: 1 }, { k: "text", p: "contact", label: "Контактное лицо на объекте", ph: "Иван, +7 900 123-45-67" }] },
-    { p: "form.sch", t: "form", sch: 1, sec: "Объект", q: "Схема, цвет, табло, загиб и кнопка", hint: "Выберите схему и цвет окраски, затем укажите табло, загиб и кнопку вызова. Выбор действует на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
+    { p: "form.sch", t: "form", sch: 1, fscr: 1, floor: 1, sec: "Обрамление ДШ", q: "Параметры обрамления и проём", hint: "Схема и цвет, табло, загиб, кнопка вызова, затем проём и размеры обрамлений. Выбор действует на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
       fields: [{ k: "h", label: "Табло индикации" }, { k: "tgl", p: "common.ind_on", label: "Есть табло", def: "Да" }, { k: "seg", p: "common.ind_where", label: "Где", opts: [["Только 1 этаж", "Только на 1 этаже"], ["Все этажи", "На всех этажах"]], def: "На всех этажах", when: o => o.common.ind_on !== "Нет" },
         { k: "dims2", p: "common.ind_size", label: "Размер отверстия под табло", ph: ["80", "120"], when: o => o.common.ind_on !== "Нет" },
         { k: "h", label: "Загиб" }, { k: "seg", p: "common.bend_mode", label: "Размеры", opts: [["С учётом загиба", "С учётом загиба"], ["Без учёта загиба", "Без учёта загиба"]], def: "С учётом загиба" }, { k: "num", p: "common.bend", label: "Размер загиба", unit: mm, max: 500, min: 0 },
@@ -321,11 +321,6 @@
     if (order.kind === "win") return buildListWin();
     ensureForms();
     const l = SETUP.filter(s => !s.when || s.when(order));
-    const floors = [1];
-    floors.forEach(f => {
-      const sec = "Обрамление ДШ";
-      l.push({ p: `ops.${f}.frame`, t: "fscreen", sec, q: "Проём и обрамление", hint: "Внутри проёма: «Этажность и ширина проёма» и «Размер С». Нажмите на часть обрамления, чтобы внести размеры" + (same() ? "." : " сразу для всех этажей."), floor: f, first: true });
-    });
     return l;
   }
   const SUB = {
@@ -438,6 +433,7 @@
   function wizardView() {
     const list = buildList(); if (pos >= list.length) { view = isSimple() ? "review" : "hub"; save(); return render(); }
     const s = list[pos], val = getP(order, s.p), err = wizardView.err || "";
+    if (s.t === "form" && wizardView.last === pos) snapForm(s);
     const secC = ({ "Объект": "#1b6fa8", "Общие параметры": "#0f8a8a", "Кнопка вызова": "#d9822b", "Обрамление ДШ": "#243b6b" })[s.sec] || "#1b6fa8";
     const dir = wizardView.last === undefined ? "" : pos > wizardView.last ? " sl-f" : pos < wizardView.last ? " sl-b" : ""; wizardView.last = pos;
     let body = `<div class="card wz${dir}" style="--sc:${secC}"><b class="stepn" aria-hidden="true">${pos + 1}<small>/${list.length}</small></b><span class="chip">${esc(s.sec)} · вопрос ${pos + 1} из ${list.length}</span><h2 class="q">${esc(s.q)}</h2>${s.hint ? `<p class="hint">${esc(s.hint)}</p>` : ""}`;
@@ -561,6 +557,7 @@
   }
   function controlHtml(s, val) {
     let h = "";
+    if (s.fscr) return controlBase(s, val) + `<h3 class="fh">Проём и обрамление</h3><p class="hint">Внутри проёма: «Этажность и ширина проёма» и «Размер С». Нажмите на часть обрамления, чтобы внести размеры.</p>` + dshToggle() + frameBig(1);
     if (s.t === "fscreen") return (s.floor === 1 ? dshToggle() : "") + bendToggle() + frameBig(s.floor);
     if (s.pic === "door") h += doorPic(getP(order, s.casP), getP(order, s.hingeP));
     else if (s.pic === "hatch") h += hatchPic();
@@ -614,6 +611,14 @@
       if (f.k === "int") { const r = parse({ t: "int", min: f.min, max: f.max }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
       if (f.k === "floors") { const r = parse({ t: "floors" }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
       if (f.k === "dims2") { const d = formDraft[f.p] || ["", ""]; const r = parse({ t: "dims" }, d[0] + "*" + d[1]); if (r.e) return fail(f.label + ": введите высоту и ширину числами", "f" + i + "a"); out.push([f.p, r.v]); }
+    }
+    if (s.fscr) {
+      if (!(out.length >= 0)) return;
+      const bad = m => fail(m, "");
+      out.forEach(([p, v]) => setP(order, p, v));
+      if (!(order.stops > 0) || !(order.width > 0)) return bad("Нажмите «Этажность и ширина проёма» и внесите количество остановок и ширину проёма");
+      const miss = OPEN.filter(x => !partOk(x[0])).map(x => ({ top: "верхнее", left: "левое", right: "правое" }[x[0]]));
+      if (miss.length) return bad("Внесите размеры обрамления: " + miss.join(", "));
     }
     out.forEach(([p, v]) => setP(order, p, v));
     wizardView.err = ""; if (s.finish) s.finish(order);
@@ -859,8 +864,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
+  const APP_VERSION = "V.1-93";
   function menuView() {
-    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div>`, "", { menu: false });
+    shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
 
   /* ---------- тестовый замер по осям ---------- */
@@ -1352,7 +1358,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   let menuReturn = "home";
   $app.addEventListener("click", e => {
     const fp = e.target.closest("[data-fpart],[data-gap]");
-    if (fp) { const s = buildList()[pos]; if (s && s.t === "fscreen") { if (fp.dataset.gap) openGap(fp.dataset.gap); else openPart(s.floor, fp.dataset.fpart); } return; }
+    if (fp) { const s = buildList()[pos]; if (s && (s.t === "fscreen" || s.fscr)) { snapForm(s); if (fp.dataset.gap) openGap(fp.dataset.gap); else openPart(s.floor || 1, fp.dataset.fpart); } return; }
     const cs = e.target.closest("[data-cas]");
     if (cs) {
       const s = buildList()[pos]; if (!s || (s.t !== "casing" && !s.casP)) return;
