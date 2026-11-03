@@ -458,6 +458,50 @@ body::after,.hw,#lift .pk,.spk2,.btn::after,.tile::after,.tile.soon::after{displ
 .tgl.on .sw2,.suppseg button.on{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));box-shadow:inset 0 2px 5px rgba(0,0,0,.2),0 0 12px color-mix(in srgb,var(--accent) 40%,transparent)}
 .prog i,.axprog i{background:var(--accent);box-shadow:none}
 .donebox .ring{filter:none}
+
+/* ---- реалистичные двери лифта ---- */
+#lift{background:#0d1114}
+#lift .door{background:
+ linear-gradient(90deg,rgba(0,0,0,.55),transparent 6%,transparent 94%,rgba(0,0,0,.5)),
+ linear-gradient(100deg,transparent 8%,rgba(255,255,255,.34) 24%,transparent 38%,transparent 60%,rgba(255,255,255,.22) 74%,transparent 90%),
+ repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,rgba(0,0,0,.06) 1px 2px,transparent 2px 4px),
+ linear-gradient(180deg,#8d979f 0%,#c9d1d7 18%,#9aa4ac 45%,#cdd4d9 72%,#7b858d 100%);
+ background-blend-mode:normal;box-shadow:inset 0 0 60px rgba(0,0,0,.45),inset 0 -40px 40px -30px rgba(0,0,0,.5)}
+#lift .door::before{left:12%;right:12%;top:9%;bottom:30%;border-radius:2px;
+ background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(0,0,0,.2) 70%);
+ box-shadow:inset 0 0 0 2px rgba(255,255,255,.4),inset 0 0 0 4px rgba(0,0,0,.28),inset 6px 8px 16px rgba(0,0,0,.38),0 0 0 1px rgba(0,0,0,.4),0 2px 0 rgba(255,255,255,.35)}
+#lift .door .pk{display:block!important;position:absolute;left:12%;right:12%;top:auto;bottom:6%;width:auto;height:18%;border-radius:2px;
+ background:linear-gradient(160deg,rgba(255,255,255,.2),rgba(0,0,0,.2) 70%);
+ box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),inset 0 0 0 4px rgba(0,0,0,.26),inset 5px 6px 12px rgba(0,0,0,.35),0 0 0 1px rgba(0,0,0,.4),0 2px 0 rgba(255,255,255,.3)}
+#lift .door.l .pk,#lift .door.r .pk{left:12%;right:12%}
+#lift .door::after{width:14px;background:linear-gradient(90deg,#0b0e10,#59626a 25%,#e3e8ec 50%,#59626a 75%,#0b0e10);box-shadow:0 0 8px rgba(0,0,0,.6)}
+#lift::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;box-shadow:inset 0 0 0 10px #2a3238,inset 0 0 0 12px #6b757d,inset 0 0 40px 14px rgba(0,0,0,.55)}
+#lift.open::before{opacity:0;transition:opacity 1s .6s}
+
+/* ---- эффекты наведения ---- */
+.tile,.btn,.seg button,.sw button,.row,.menuitem,.tgl,.chip{transition:transform .25s cubic-bezier(.3,1.5,.5,1),box-shadow .25s,filter .25s}
+@media (hover:hover){
+ .tile:hover{transform:translateY(-4px) scale(1.015);box-shadow:0 12px 26px rgba(27,111,168,.25)}
+ .tile .ic,.tile svg,.tile i,.tile .ico{transition:transform .35s cubic-bezier(.3,1.7,.5,1)}
+ .tile:hover .ic,.tile:hover svg,.tile:hover i,.tile:hover .ico{transform:translateX(5px) rotate(-8deg) scale(1.15)}
+ .btn:hover{transform:translateY(-2px);filter:brightness(1.07)}
+ .btn:hover svg,.btn:hover i{transform:translateX(4px)}
+ .seg button:hover,.sw button:hover{transform:translateY(-2px)}
+ .row:hover,.menuitem:hover{transform:translateX(4px)}
+ .btn::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%);transform:translateX(-120%);transition:transform .6s}
+ .btn:hover::before{transform:translateX(120%)}
+}
+.btn,.tile{position:relative;overflow:hidden}
+.btn:active,.tile:active,.seg button:active,.sw button:active{transform:scale(.96)}
+.tile .ic,.tile svg,.tile i,.tile .ico{display:inline-block}
+.colsw{display:flex;gap:10px}.colsw button{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--line,#cfd8e0);border-radius:14px;background:#fff;font:700 15px system-ui;color:inherit}
+.colsw button i{width:44px;height:44px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.15)}
+.colsw button.on{border-color:var(--accent,#1b6fa8);box-shadow:0 0 0 3px rgba(27,111,168,.2)}
+.colsw .std{font:600 11px system-ui;color:var(--muted,#6b7a86)}
+@keyframes popin{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.card{animation:popin .35s ease both}
+@media (prefers-reduced-motion:reduce){.card{animation:none}*{transition:none!important}}
+.ftab{overflow:auto;margin:8px 0}.ftab table{border-collapse:collapse;width:100%}.ftab th{font:700 11px system-ui;color:var(--muted,#6b7a86);padding:4px 2px}.ftab td{padding:2px}.ftab input{width:100%;min-width:0;padding:9px 2px;text-align:center;border:1.5px solid #cfd8e0;border-radius:8px;font:600 15px system-ui}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>

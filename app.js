@@ -121,9 +121,9 @@
   /* ---------- вопросы ---------- */
   const mm = "мм";
   const SETUP = [
-    { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
-    { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
-    { p: "scheme", t: "scheme", sec: "Объект", q: "Схема обрамления", hint: "Выбор действует на всю заявку." },
+    { p: "form.obj", t: "form", sec: "Объект", q: "Адрес и контактное лицо", hint: "Город, улица, дом: файл заявки будет назван этим адресом. Контакт: имя и телефон.",
+      fields: [{ k: "text", p: "address", label: "Адрес объекта", ph: "г. Казань, ул. Мира, 3", area: 1 }, { k: "text", p: "contact", label: "Контактное лицо на объекте", ph: "Иван, +7 900 123-45-67" }] },
+    { p: "scheme", t: "scheme", sec: "Объект", q: "Схема обрамления и цвет окраски", hint: "Выберите схему и цвет. Выбор действует на всю заявку." },
     { p: "form.tablo", t: "form", sec: "Общие параметры", q: "Табло индикации", hint: "Спрашиваем один раз на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
       fields: [{ k: "tgl", p: "common.ind_on", label: "Есть табло", def: "Да" }, { k: "seg", p: "common.ind_where", label: "Где", opts: [["Только 1 этаж", "Только на 1 этаже"], ["Все этажи", "На всех этажах"]], def: "На всех этажах", when: o => o.common.ind_on !== "Нет" },
         { k: "dims2", p: "common.ind_size", label: "Размер отверстия под табло", ph: ["80", "120"], when: o => o.common.ind_on !== "Нет" }] },
@@ -135,9 +135,8 @@
         { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева" },
         { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
         { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] },
-    { p: "common.color", t: "color", sec: "Общие параметры", q: "Цвет окраски", hint: "RAL 7035 применяется стандартно." },
-    { p: "form.shaft", t: "form", sec: "Обрамление ДШ", q: "Лифт и обрамления", hint: "Остановки, общие размеры и как вводить обрамления: одинаковые на всех этажах или по каждому отдельно.", finish: o => { o.ops = o.ops || {}; },
-      fields: [{ k: "int", p: "stops", label: "Количество остановок (этажей)", unit: "шт.", min: 1, max: 100 }, { k: "num", p: "width", label: "Ширина проёма", unit: mm }, { k: "num", p: "C", label: "Размер С (высота вертикального обрамления)", unit: mm },
+    { p: "form.shaft", t: "form", sec: "Обрамление ДШ", q: "Лифт и обрамления", hint: "Остановки, общие размеры и как вводить обрамления: одинаковые на всех этажах или по каждому отдельно.", finish: o => { o.ops = o.ops || {}; if (o.c_mode !== "Свой размер") o.C = 2000; },
+      fields: [{ k: "int", p: "stops", label: "Количество остановок (этажей)", unit: "шт.", min: 1, max: 100 }, { k: "num", p: "width", label: "Ширина проёма", unit: mm }, { k: "seg", p: "c_mode", label: "Размер С", opts: [["Стандарт 2000 мм", "Стандарт 2000 мм"], ["Свой размер", "Свой размер"]], def: "Стандарт 2000 мм" }, { k: "num", p: "C", label: "Свой размер С", unit: mm, when: o => o.c_mode === "Свой размер" },
         { k: "seg", p: "dsh_same", label: "Размеры на этажах", opts: [["Одинаковые", "Одинаковые на всех этажах"], ["По этажам", "Индивидуально по этажам"]], def: "Одинаковые на всех этажах" }] }
   ];
   const OPEN = [
@@ -232,7 +231,14 @@
       ${dimA(46, 70, 46, 220, 36, 145, "Высота", 1)}${dimA(96, 28, 172, 28, 134, 19, "Ширина")}
       <text x="134" y="240" text-anchor="middle" class="flo">пол</text></svg>`;
   }
-  function sectionPic() {
+  function sectionPic(mir) {
+    const s = sectionPic0();
+    if (!mir) return s;
+    const W = 300, texts = [];
+    const body = s.replace(/<text\b[^>]*>[^<]*<\/text>/g, t => { texts.push(t.replace(/\bx="([\d.]+)"/, (m, x) => `x="${W - x}"`).replace(/rotate\(-90 ([\d.]+) /, (m, x) => `rotate(-90 ${W - x} `).replace(/(<text\b[^>]*?)(\s*(?:transform="[^"]*")?\s*>)/, (m, p, q) => /text-anchor/.test(m) ? m : `${p} text-anchor="end"${q}`)); return ""; });
+    return body.replace(/(<svg[^>]*>)(<defs>.*?<\/defs>)?/s, (m, h, d) => `${h}${d || ""}<g transform="translate(${W},0) scale(-1,1)">`).replace(/<\/svg>\s*$/, `</g>${texts.join("")}</svg>`);
+  }
+  function sectionPic0() {
     return `<svg class="pic" viewBox="0 0 300 244" role="img" aria-label="Сечение I-I">${PDEF}
       <text x="190" y="14" text-anchor="middle" class="dl" style="fill:currentColor;font-size:12px">I – I</text><line x1="174" y1="18" x2="206" y2="18" stroke="currentColor" stroke-width="1.2"/>
       <rect x="150" y="62" width="122" height="66" fill="#e3eef7"/><rect x="150" y="62" width="122" height="66" fill="url(#hp2)"/><rect x="150" y="62" width="122" height="66" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -315,6 +321,8 @@
   function ensureForms() {
     order.common = order.common || {};
     const c = order.common;
+    if (!c.color) c.color = "RAL 7035";
+    if (order.c_mode === undefined) order.c_mode = order.C && Number(order.C) !== 2000 ? "Свой размер" : "Стандарт 2000 мм";
     if (c.ind_on === undefined) c.ind_on = c.ind_floor ? (c.ind_floor === "Нет табло" ? "Нет" : "Да") : "Да";
     if (c.ind_where === undefined && c.ind_floor && c.ind_floor !== "Нет табло") c.ind_where = c.ind_floor;
     SETUP.forEach(st => { if (st.t === "form") st.fields.forEach(f => { if ((f.k === "seg" || f.k === "tgl") && getP(order, f.p) === undefined) setP(order, f.p, f.def); }); });
@@ -327,7 +335,7 @@
     const floors = same() ? [1] : Array.from({ length: order.stops || 0 }, (_, i) => i + 1);
     floors.forEach(f => {
       const sec = same() ? "Обрамление, все этажи" : `Этаж ${f} из ${order.stops}`;
-      OPEN.forEach(([k, q, h, pr], i) => l.push({ p: `ops.${f}.${k}.pair`, t: "pair", min: 1, unit: mm, sec, q, hint: h + " В миллиметрах.", pic: k === "top" ? "" : "section", floor: f, first: i === 0, pair: pr.map(([key, lab]) => [`ops.${f}.${key}`, lab]) }));
+      OPEN.forEach(([k, q, h, pr], i) => l.push({ p: `ops.${f}.${k}.pair`, t: "pair", min: 1, unit: mm, sec, q, hint: h + " В миллиметрах.", pic: k === "top" ? "" : k === "left" ? "section_l" : "section", floor: f, first: i === 0, pair: pr.map(([key, lab]) => [`ops.${f}.${key}`, lab]) }));
     });
     return l;
   }
@@ -448,8 +456,10 @@
     if (order.kind === "dl" && !sameDL() && s.first && s.ent > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как в подъезде ${s.ent - 1}</button>`;
     if (order.kind === "win" && s.first && s.win > 1) foot += `<button class="btn sec" data-a="copyprev">Как окно ${s.win - 1}: всё то же</button>`;
     if (order.kind === "frame" && !same() && s.first && s.floor > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как на этаже ${s.floor - 1}</button>`;
+    if (order.kind === "frame" && !same() && s.first && s.floor > 1 && order.stops > 2) foot += `<button class="btn sec" data-a="floors">Таблица всех этажей сразу</button>`;
     shell(s.sec, pos / list.length, body, foot);
     bindInput(s);
+    if (order.kind === "frame" && !same() && s.first && s.floor === 2 && order.stops > 2 && !order._ftabAsked) { order._ftabAsked = 1; save(); setTimeout(() => act("floors"), 350); }
   }
   function tglHtml([p, lab, def, seg]) {
     const v = getP(order, p) || (setP(order, p, def), def);
@@ -460,6 +470,7 @@
     let h = "";
     if (s.pic === "door") h += doorPic(getP(order, s.casP), getP(order, s.hingeP));
     else if (s.pic === "hatch") h += hatchPic();
+    else if (s.pic === "section_l") h += `<div class="secpic">${sectionPic(true)}</div>`;
     else if (s.pic === "section") h += `<div class="secpic">${sectionPic()}</div>`;
     else if (s.pic === "win") h += winPic(WK[getP(order, s.pk + ".kind")], getP(order, s.pk + ".hinge"));
     if (s.pic && s.tg) h += `<div class="tgls">${s.tg.map(tglHtml).join("")}</div>`;
@@ -474,6 +485,7 @@
     if (!s || s.t !== "form") return;
     s.fields.forEach((f, i) => {
       if (f.k === "num" || f.k === "int" || f.k === "floors") { const e = document.getElementById("f" + i); if (e) formDraft[f.p] = e.value; }
+      if (f.k === "text") { const e = document.getElementById("f" + i); if (e) formDraft[f.p] = e.value; }
       if (f.k === "dims2") { const a = document.getElementById("f" + i + "a"), b = document.getElementById("f" + i + "b"); if (a && b) formDraft[f.p] = [a.value, b.value]; }
     });
   }
@@ -483,6 +495,8 @@
       if (!fvis(s, f)) return "";
       const v = getP(order, f.p);
       if (f.k === "tgl") return tglHtml0(f.p, f.label, v === "Да");
+      if (f.k === "text") { const raw = formDraft[f.p] !== undefined ? formDraft[f.p] : (v == null ? "" : String(v));
+        return `<label class="plab">${esc(f.label)}</label><div class="field">${f.area ? `<textarea id="f${i}" rows="2" placeholder="${esc(f.ph || "")}">${esc(raw)}</textarea>` : `<input id="f${i}" enterkeyhint="next" placeholder="${esc(f.ph || "")}" value="${esc(raw)}" autocomplete="off">`}</div>`; }
       if (f.k === "seg") return `<div class="tgl segrow"><span>${esc(f.label)}</span><div class="seg" role="radiogroup">${f.opts.map(([lab, val]) => `<button type="button" role="radio" aria-checked="${v === val}" class="${v === val ? "on" : ""}" data-fseg="${esc(f.p)}|${esc(val)}">${esc(lab)}</button>`).join("")}</div></div>`;
       if (f.k === "dims2") {
         const d = formDraft[f.p] || (v ? splitDims(v) : ["", ""]);
@@ -499,6 +513,7 @@
     const out = [];
     for (let i = 0; i < s.fields.length; i++) {
       const f = s.fields[i]; if (!fvis(s, f)) continue;
+      if (f.k === "text") { const r = parse({ t: "text" }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
       if (f.k === "num") { const r = parse({ t: "num", min: f.min != null ? f.min : 1, max: f.max }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
       if (f.k === "int") { const r = parse({ t: "int", min: f.min, max: f.max }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
       if (f.k === "floors") { const r = parse({ t: "floors" }, formDraft[f.p]); if (r.e) return fail(f.label + ": " + r.e, "f" + i); out.push([f.p, r.v]); }
@@ -507,6 +522,10 @@
     out.forEach(([p, v]) => setP(order, p, v));
     wizardView.err = ""; if (s.finish) s.finish(order);
     formDraft = {}; pos++; save(); return render();
+  }
+  function colorBlock() {
+    const cur = getP(order, "common.color") || "RAL 7035";
+    return `<label class="plab" style="margin-top:14px;display:block">Цвет окраски</label><div class="sw colsw">${[["7035", "#cbd0cc"], ["7038", "#b4b8b0"]].map(([n, h]) => `<button type="button" data-colpick="RAL ${n}" class="${cur === "RAL " + n ? "on" : ""}"><i style="background:${h}"></i>RAL ${n}${n === "7035" ? `<small class="std">применяется стандартно</small>` : ""}</button>`).join("")}</div>`;
   }
   function controlBase(s, val) {
     if (s.t === "form") return formHtml(s);
@@ -524,7 +543,7 @@
       })() : "");
     }
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
-    if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}" aria-label="Схема ${k}">${schemeSvg(k)}<b>Схема ${k}</b><small>${k === "А" ? "Верхнее обрамление накрывает боковые" : "Верхнее обрамление между боковыми"}</small></button>`).join("")}</div>`;
+    if (s.t === "scheme") return `<div class="schemes">${["А", "В"].map(k => `<button class="sch${val === k ? " on" : ""}" data-pick="${k}" aria-label="Схема ${k}">${schemeSvg(k)}<b>Схема ${k}</b><small>${k === "А" ? "Верхнее обрамление накрывает боковые" : "Верхнее обрамление между боковыми"}</small></button>`).join("")}</div>` + colorBlock();
     if (s.t === "color") {
       const sw = [["7035", "#cbd0cc"], ["7038", "#b4b8b0"]];
       return `<div class="sw">${sw.map(([n, h]) => `<button data-pick="RAL ${n}" class="${val === "RAL " + n ? "on" : ""}"><i style="background:${h}"></i>RAL ${n}${n === "7035" ? `<small class="std">применяется стандартно</small>` : ""}</button>`).join("")}</div>`;
@@ -536,6 +555,7 @@
   function bindInput(s) {
     if (s.t === "form") {
       const ins = [...document.querySelectorAll(".form input")];
+      if (s.p === "form.obj") setTimeout(() => { const t = document.querySelector(".form textarea,.form input"); if (t) t.focus(); }, 60);
       ins.forEach((el, k) => el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (ins[k + 1]) ins[k + 1].focus(); else act("next"); } }));
       return;
     }
@@ -1087,6 +1107,25 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "finish") { if (pdfCache && pdfCache.axis) { ax = axFresh(); axSave(); } order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
     if (a === "backrev") { view = pdfCache && pdfCache.axis ? "axrev" : "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
+    if (a === "floors") {
+      const n = order.stops || 0, cols = OPEN.flatMap(x => x[3]);
+      const o = document.createElement("div"); o.className = "sheet";
+      const head = `<tr><th>Эт.</th>${cols.map(([k, lab]) => `<th>${esc(k.replace("top_", "Верх ").replace("left_", "Лев ").replace("right_", "Прав ").replace(/ A$/, " А").replace(/ H$/, " Н").replace(/ B$/, " В"))}</th>`).join("")}</tr>`;
+      let rows = "";
+      for (let f = 2; f <= n; f++) rows += `<tr><td><b>${f}</b></td>${cols.map(([k]) => `<td><input inputmode="numeric" data-f="${f}" data-k="${k}" value="${esc(String((order.ops[f] || {})[k] || ""))}"></td>`).join("")}</tr>`;
+      o.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>Размеры по этажам 2–${n}</h3><p class="hint">Как в бланке: впишите все размеры сразу, мм. Этаж 1 уже заполнен.</p><div class="ftab"><table>${head}${rows}</table></div><p class="err" id="ferr"></p><button class="btn" data-a="floorsave">Сохранить</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+      o.addEventListener("click", ev => {
+        if (ev.target === o || ev.target.closest("[data-a=mailclose]")) { o.remove(); return; }
+        if (ev.target.closest("[data-a=floorsave]")) {
+          const ins = [...o.querySelectorAll("input")], bad = ins.find(i => i.value.trim() && !(Number(i.value.replace(",", ".")) > 0));
+          if (bad) { o.querySelector("#ferr").textContent = "Только числа больше нуля"; bad.focus(); return; }
+          ins.forEach(i => { if (i.value.trim()) { order.ops[i.dataset.f] = order.ops[i.dataset.f] || {}; order.ops[i.dataset.f][i.dataset.k] = Number(i.value.replace(",", ".")); } });
+          o.remove(); save(); toast && toast("Размеры сохранены");
+          const l = buildList(); pos = l.length; view = "hub"; save(); render();
+        }
+      });
+      document.body.appendChild(o); return;
+    }
     if (a === "hint") {
       const o = document.createElement("div"); o.className = "sheet";
       o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Сечение I – I</h3>${sectionPic()}<p>Н — глубина, В — ширина бокового обрамления.</p><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
@@ -1212,6 +1251,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") { document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); document.querySelectorAll(".pic .hgL").forEach(g => { g.style.display = v === "Справа" ? "none" : ""; }); document.querySelectorAll(".pic .hgR").forEach(g => { g.style.display = v === "Справа" ? "" : "none"; }); } else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
     if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
+    if (b.dataset.colpick) { setP(order, "common.color", b.dataset.colpick); document.querySelectorAll("[data-colpick]").forEach(x => x.classList.toggle("on", x === b)); save(); return; }
     if (b.dataset.cvs) { b.classList.toggle("on"); cvData.skills = [...document.querySelectorAll("[data-cvs].on")].map(x => x.dataset.cvs); return; }
     if (b.dataset.cvtg) { const on = !b.classList.contains("on"); b.classList.toggle("on", on); b.setAttribute("aria-checked", on); cvData.trip = on ? "Да" : "Нет"; return; }
     if (b.dataset.supp) { supplyView.app = b.dataset.supp; document.querySelectorAll("[data-supp]").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); return; }
