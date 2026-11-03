@@ -502,6 +502,26 @@ body::after,.hw,#lift .pk,.spk2,.btn::after,.tile::after,.tile.soon::after{displ
 .card{animation:popin .35s ease both}
 @media (prefers-reduced-motion:reduce){.card{animation:none}*{transition:none!important}}
 .ftab{overflow:auto;margin:8px 0}.ftab table{border-collapse:collapse;width:100%}.ftab th{font:700 11px system-ui;color:var(--muted,#6b7a86);padding:4px 2px}.ftab td{padding:2px}.ftab input{width:100%;min-width:0;padding:9px 2px;text-align:center;border:1.5px solid #cfd8e0;border-radius:8px;font:600 15px system-ui}
+
+.fscr{margin-top:10px}
+.fbig{width:100%;max-width:360px;display:block;margin:0 auto;color:var(--ink)}
+.fbig .gap{fill:none;stroke:var(--muted,#8a98a5);stroke-width:.8;stroke-dasharray:3 3}
+.fbig .floor{stroke:currentColor;stroke-width:1.6;stroke-dasharray:5 3}
+.fpart{cursor:pointer;outline:none}
+.fpart rect{fill:#dcebf7;stroke:var(--accent,#1b6fa8);stroke-width:1.6;transition:fill .2s,transform .25s cubic-bezier(.3,1.6,.5,1);transform-box:fill-box;transform-origin:center}
+.fpart text{font:700 8.5px system-ui;fill:#0f4c75;pointer-events:none}
+.fpart:hover rect,.fpart:focus-visible rect{fill:#b9d9f0;transform:scale(1.06)}
+.fpart:active rect{transform:scale(.95)}
+.fpart.done rect{fill:#c8ecd6;stroke:#2e8b57}.fpart.done text{fill:#1d6b40}
+.fpart{animation:fpulse 2.4s ease-in-out infinite}.fpart.done{animation:none}
+.fpart:nth-of-type(2){animation-delay:.3s}.fpart:nth-of-type(3){animation-delay:.6s}
+@keyframes fpulse{50%{filter:drop-shadow(0 0 4px rgba(27,111,168,.65))}}
+.fchips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.fchip{display:flex;flex-direction:column;gap:3px;align-items:center;padding:10px 4px;border:2px solid var(--line,#cfd8e0);border-radius:14px;background:var(--surface,#fff);color:inherit;font:inherit;text-align:center}
+.fchip b{font-size:14px}.fchip span{font:600 11px system-ui;color:var(--muted,#6b7a86)}
+.fchip.on{border-color:#2e8b57;background:#eaf8f0}.fchip.on span{color:#1d6b40}
+.segrow.dsh{display:flex;flex-direction:column;align-items:stretch;gap:8px}.segrow.dsh .seg{width:100%}.segrow.dsh .seg button{flex:1;white-space:normal}
+.fbig{margin-top:-6px}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>

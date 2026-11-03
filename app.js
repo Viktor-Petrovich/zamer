@@ -135,9 +135,8 @@
         { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева" },
         { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
         { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] },
-    { p: "form.shaft", t: "form", sec: "Обрамление ДШ", q: "Лифт и обрамления", hint: "Остановки, общие размеры и как вводить обрамления: одинаковые на всех этажах или по каждому отдельно.", finish: o => { o.ops = o.ops || {}; if (o.c_mode !== "Свой размер") o.C = 2000; },
-      fields: [{ k: "int", p: "stops", label: "Количество остановок (этажей)", unit: "шт.", min: 1, max: 100 }, { k: "num", p: "width", label: "Ширина проёма", unit: mm }, { k: "seg", p: "c_mode", label: "Размер С", opts: [["Стандарт 2000 мм", "Стандарт 2000 мм"], ["Свой размер", "Свой размер"]], def: "Стандарт 2000 мм" }, { k: "num", p: "C", label: "Свой размер С", unit: mm, when: o => o.c_mode === "Свой размер" },
-        { k: "seg", p: "dsh_same", label: "Размеры на этажах", opts: [["Одинаковые", "Одинаковые на всех этажах"], ["По этажам", "Индивидуально по этажам"]], def: "Одинаковые на всех этажах" }] }
+    { p: "form.shaft", t: "form", sec: "Обрамление ДШ", q: "Лифт и обрамления", hint: "Остановки и общие размеры. Одинаковые или разные размеры по этажам выбираются на следующем экране.", finish: o => { o.ops = o.ops || {}; if (o.c_mode !== "Свой размер") o.C = 2000; },
+      fields: [{ k: "int", p: "stops", label: "Количество остановок (этажей)", unit: "шт.", min: 1, max: 100 }, { k: "num", p: "width", label: "Ширина проёма", unit: mm }, { k: "seg", p: "c_mode", label: "Размер С", opts: [["Стандарт 2000 мм", "Стандарт 2000 мм"], ["Свой размер", "Свой размер"]], def: "Стандарт 2000 мм" }, { k: "num", p: "C", label: "Свой размер С", unit: mm, when: o => o.c_mode === "Свой размер" }] }
   ];
   const OPEN = [
     ["top", "Верхнее обрамление", "А — высота, Н — глубина верхнего обрамления.", [["top_A", "Размер А (высота)"], ["top_H", "Размер Н (глубина)"]]],
@@ -322,6 +321,7 @@
     order.common = order.common || {};
     const c = order.common;
     if (!c.color) c.color = "RAL 7035";
+    if (!order.dsh_same) order.dsh_same = "Одинаковые на всех этажах";
     if (order.c_mode === undefined) order.c_mode = order.C && Number(order.C) !== 2000 ? "Свой размер" : "Стандарт 2000 мм";
     if (c.ind_on === undefined) c.ind_on = c.ind_floor ? (c.ind_floor === "Нет табло" ? "Нет" : "Да") : "Да";
     if (c.ind_where === undefined && c.ind_floor && c.ind_floor !== "Нет табло") c.ind_where = c.ind_floor;
@@ -335,7 +335,7 @@
     const floors = same() ? [1] : Array.from({ length: order.stops || 0 }, (_, i) => i + 1);
     floors.forEach(f => {
       const sec = same() ? "Обрамление, все этажи" : `Этаж ${f} из ${order.stops}`;
-      OPEN.forEach(([k, q, h, pr], i) => l.push({ p: `ops.${f}.${k}.pair`, t: "pair", min: 1, unit: mm, sec, q, hint: h + " В миллиметрах.", pic: k === "top" ? "" : k === "left" ? "section_l" : "section", floor: f, first: i === 0, pair: pr.map(([key, lab]) => [`ops.${f}.${key}`, lab]) }));
+      l.push({ p: `ops.${f}.frame`, t: "fscreen", sec, q: same() ? "Обрамление: размеры" : `Обрамление, этаж ${f}`, hint: "Нажмите на нужную часть обрамления на схеме и впишите размеры.", floor: f, first: true });
     });
     return l;
   }
@@ -466,8 +466,40 @@
     if (seg) return `<div class="tgl segrow"><span>${esc(lab)}</span><div class="seg" role="radiogroup">${seg.map(o => `<button type="button" role="radio" aria-checked="${v === o}" class="${v === o ? "on" : ""}" data-seg="${esc(p)}|${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
     return `<button class="tgl${v === "Да" ? " on" : ""}" role="switch" aria-checked="${v === "Да"}" data-tg="${p}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`;
   }
+  function frameBig(f) {
+    const A = order.scheme !== "В", o = (order.ops && order.ops[f]) || {};
+    const ok = k => OPEN.find(x => x[0] === k)[3].every(([key]) => o[key] > 0);
+    const part = (k, x, y, w, h, lab, tx, ty, rot) => `<g class="fpart${ok(k) ? " done" : ""}" data-fpart="${k}" role="button" tabindex="0" aria-label="${lab}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/><text ${rot ? `transform="translate(${tx} ${ty}) rotate(-90)"` : `x="${tx}" y="${ty}"`} text-anchor="middle">${ok(k) ? "✓ " : ""}${lab}</text></g>`;
+    const svg = `<svg class="fbig" viewBox="0 0 200 196" role="group" aria-label="Схема обрамления">${PDEF}
+      <rect x="62" y="30" width="76" height="140" class="gap"/>
+      ${A ? part("left", 40, 56, 22, 114, "левое", 54.5, 113, 1) + part("right", 138, 56, 22, 114, "правое", 152.5, 113, 1) + part("top", 40, 30, 120, 26, "верхнее", 100, 46.5)
+          : part("left", 40, 30, 22, 140, "левое", 54.5, 100, 1) + part("right", 138, 30, 22, 140, "правое", 152.5, 100, 1) + part("top", 62, 30, 76, 26, "верхнее", 100, 46.5)}
+      <line x1="30" y1="170" x2="170" y2="170" class="floor"/></svg>`;
+    const sum = OPEN.map(([k, q, h, pr]) => `<button type="button" class="fchip${ok(k) ? " on" : ""}" data-fpart="${k}"><b>${{ top: "Верхнее", left: "Левое", right: "Правое" }[k]}</b><span>${ok(k) ? pr.map(([key]) => o[key]).join(" × ") + " мм" : "нажмите, чтобы внести"}</span></button>`).join("");
+    return `<div class="fscr">${svg}<div class="fchips">${sum}</div></div>`;
+  }
+  function dshToggle() {
+    return `<div class="tgl segrow dsh"><span>Размеры на этажах</span><div class="seg" role="radiogroup">${[["Одинаковые", "Одинаковые на всех этажах"], ["По этажам", "Индивидуально по этажам"]].map(([t, v]) => `<button type="button" role="radio" aria-checked="${order.dsh_same === v}" class="${order.dsh_same === v ? "on" : ""}" data-dsh="${v}">${t}</button>`).join("")}</div></div>`;
+  }
+  function openPart(f, k) {
+    const d = OPEN.find(x => x[0] === k), o = document.createElement("div"); o.className = "sheet";
+    const pic = k === "left" ? sectionPic(true) : k === "right" ? sectionPic() : "";
+    const ops = (order.ops && order.ops[f]) || {};
+    o.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>${d[1]}${same() ? "" : ", этаж " + f}</h3><p class="hint">${d[2]} В миллиметрах.</p>${pic ? `<div class="secpic">${pic}</div>` : ""}${d[3].map(([key, lab], i) => `<label class="plab">${esc(lab)}</label><div class="field"><input id="pp${i}" inputmode="decimal" enterkeyhint="${i ? "done" : "next"}" value="${ops[key] || ""}"><span class="u">мм</span></div>`).join("")}<p class="err" id="perr"></p><button class="btn" data-a="partsave">Сохранить</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+    const save1 = () => {
+      const rs = d[3].map((x, i) => parse({ t: "num", min: 1 }, o.querySelector("#pp" + i).value)), bad = rs.findIndex(r => r.e);
+      if (bad >= 0) { o.querySelector("#perr").textContent = d[3][bad][1] + ": " + rs[bad].e; o.querySelector("#pp" + bad).focus(); return; }
+      order.ops = order.ops || {}; order.ops[f] = order.ops[f] || {};
+      d[3].forEach(([key], i) => { order.ops[f][key] = rs[i].v; });
+      wizardView.err = ""; o.remove(); save(); render();
+    };
+    o.addEventListener("click", ev => { if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove(); else if (ev.target.closest("[data-a=partsave]")) save1(); });
+    o.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); const i1 = o.querySelector("#pp1"); if (ev.target.id === "pp0" && i1) i1.focus(); else save1(); } });
+    document.body.appendChild(o); setTimeout(() => { const i0 = o.querySelector("#pp0"); i0 && i0.focus(); }, 80);
+  }
   function controlHtml(s, val) {
     let h = "";
+    if (s.t === "fscreen") return (s.floor === 1 ? dshToggle() : "") + frameBig(s.floor);
     if (s.pic === "door") h += doorPic(getP(order, s.casP), getP(order, s.hingeP));
     else if (s.pic === "hatch") h += hatchPic();
     else if (s.pic === "section_l") h += `<div class="secpic">${sectionPic(true)}</div>`;
@@ -583,6 +615,11 @@
       const bad = rs.findIndex(r => r.e);
       if (bad >= 0) { const m = s.pair[bad][1] + ": " + rs[bad].e; wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; const f = document.getElementById(ids[bad]); if (f) f.focus(); return; }
       wizardView.err = ""; s.pair.forEach(([p], k) => setP(order, p, rs[k].v)); pos++; save(); return render();
+    }
+    if (s.t === "fscreen") {
+      const o = (order.ops && order.ops[s.floor]) || {}, miss = OPEN.filter(x => !x[3].every(([key]) => o[key] > 0)).map(x => ({ top: "верхнее", left: "левое", right: "правое" }[x[0]]));
+      if (miss.length) { const m = "Внесите размеры: " + miss.join(", "); wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; return; }
+      wizardView.err = ""; pos++; save(); return render();
     }
     if (s.t === "toggles") { pos++; save(); return render(); }
     if (s.t === "casing") { if (!getP(order, s.p)) setP(order, s.p, { l: true, t: true, r: true }); pos++; save(); return render(); }
@@ -1225,11 +1262,13 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     }
     if (a === "copyprev") {
       const l = buildList(), s = l[pos], f = s.floor; order.ops[f] = Object.assign({}, order.ops[f - 1]);
-      pos += OPEN.length + 1; save(); return render();
+      pos += 1; save(); return render();
     }
   }
   let menuReturn = "home";
   $app.addEventListener("click", e => {
+    const fp = e.target.closest("[data-fpart]");
+    if (fp) { const s = buildList()[pos]; if (s && s.t === "fscreen") openPart(s.floor, fp.dataset.fpart); return; }
     const cs = e.target.closest("[data-cas]");
     if (cs) {
       const s = buildList()[pos]; if (!s || (s.t !== "casing" && !s.casP)) return;
@@ -1251,6 +1290,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") { document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); document.querySelectorAll(".pic .hgL").forEach(g => { g.style.display = v === "Справа" ? "none" : ""; }); document.querySelectorAll(".pic .hgR").forEach(g => { g.style.display = v === "Справа" ? "" : "none"; }); } else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
     if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
+    if (b.dataset.dsh) { order.dsh_same = b.dataset.dsh; order.ops = order.ops || {}; save(); return render(); }
     if (b.dataset.colpick) { setP(order, "common.color", b.dataset.colpick); document.querySelectorAll("[data-colpick]").forEach(x => x.classList.toggle("on", x === b)); save(); return; }
     if (b.dataset.cvs) { b.classList.toggle("on"); cvData.skills = [...document.querySelectorAll("[data-cvs].on")].map(x => x.dataset.cvs); return; }
     if (b.dataset.cvtg) { const on = !b.classList.contains("on"); b.classList.toggle("on", on); b.setAttribute("aria-checked", on); cvData.trip = on ? "Да" : "Нет"; return; }
