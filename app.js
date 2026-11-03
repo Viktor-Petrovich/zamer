@@ -134,9 +134,7 @@
         { k: "floors", p: "common.btn_floors", label: "На каких этажах", ph: "1, 3, 5-7", when: o => o.common.btn_all === "Не на всех этажах" },
         { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева" },
         { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
-        { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] },
-    { p: "form.shaft", t: "form", sec: "Обрамление ДШ", q: "Лифт и обрамления", hint: "Остановки и общие размеры. Одинаковые или разные размеры по этажам выбираются на следующем экране.", finish: o => { o.ops = o.ops || {}; if (o.c_mode !== "Свой размер") o.C = 2000; },
-      fields: [{ k: "int", p: "stops", label: "Количество остановок (этажей)", unit: "шт.", min: 1, max: 100 }, { k: "num", p: "width", label: "Ширина проёма", unit: mm }, { k: "seg", p: "c_mode", label: "Размер С", opts: [["Стандарт 2000 мм", "Стандарт 2000 мм"], ["Свой размер", "Свой размер"]], def: "Стандарт 2000 мм" }, { k: "num", p: "C", label: "Свой размер С", unit: mm, when: o => o.c_mode === "Свой размер" }] }
+        { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] }
   ];
   const OPEN = [
     ["top", "Верхнее обрамление", "А — высота, Н — глубина верхнего обрамления.", [["top_A", "Размер А (высота)"], ["top_H", "Размер Н (глубина)"]]],
@@ -322,6 +320,7 @@
     const c = order.common;
     if (!c.color) c.color = "RAL 7035";
     if (!order.dsh_same) order.dsh_same = "Одинаковые на всех этажах";
+    if (!order.C) order.C = 2000;
     if (order.c_mode === undefined) order.c_mode = order.C && Number(order.C) !== 2000 ? "Свой размер" : "Стандарт 2000 мм";
     if (c.ind_on === undefined) c.ind_on = c.ind_floor ? (c.ind_floor === "Нет табло" ? "Нет" : "Да") : "Да";
     if (c.ind_where === undefined && c.ind_floor && c.ind_floor !== "Нет табло") c.ind_where = c.ind_floor;
@@ -332,10 +331,10 @@
     if (order.kind === "win") return buildListWin();
     ensureForms();
     const l = SETUP.filter(s => !s.when || s.when(order));
-    const floors = same() ? [1] : Array.from({ length: order.stops || 0 }, (_, i) => i + 1);
+    const floors = [1];
     floors.forEach(f => {
-      const sec = same() ? "Обрамление, все этажи" : `Этаж ${f} из ${order.stops}`;
-      l.push({ p: `ops.${f}.frame`, t: "fscreen", sec, q: same() ? "Обрамление: размеры" : `Обрамление, этаж ${f}`, hint: "Нажмите на нужную часть обрамления на схеме и впишите размеры.", floor: f, first: true });
+      const sec = "Обрамление ДШ";
+      l.push({ p: `ops.${f}.frame`, t: "fscreen", sec, q: "Проём и обрамление", hint: "Внутри проёма: «Проём» (этажи, ширина) и «Размер С». Нажмите на часть обрамления, чтобы внести размеры" + (same() ? "." : " сразу для всех этажей."), floor: f, first: true });
     });
     return l;
   }
@@ -455,47 +454,89 @@
     if (s.t === "scheme") foot = `<button class="btn" data-a="next">Далее</button>`;
     if (order.kind === "dl" && !sameDL() && s.first && s.ent > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как в подъезде ${s.ent - 1}</button>`;
     if (order.kind === "win" && s.first && s.win > 1) foot += `<button class="btn sec" data-a="copyprev">Как окно ${s.win - 1}: всё то же</button>`;
-    if (order.kind === "frame" && !same() && s.first && s.floor > 1) foot += `<button class="btn sec" data-a="copyprev">Все размеры как на этаже ${s.floor - 1}</button>`;
-    if (order.kind === "frame" && !same() && s.first && s.floor > 1 && order.stops > 2) foot += `<button class="btn sec" data-a="floors">Таблица всех этажей сразу</button>`;
     shell(s.sec, pos / list.length, body, foot);
     bindInput(s);
-    if (order.kind === "frame" && !same() && s.first && s.floor === 2 && order.stops > 2 && !order._ftabAsked) { order._ftabAsked = 1; save(); setTimeout(() => act("floors"), 350); }
   }
   function tglHtml([p, lab, def, seg]) {
     const v = getP(order, p) || (setP(order, p, def), def);
     if (seg) return `<div class="tgl segrow"><span>${esc(lab)}</span><div class="seg" role="radiogroup">${seg.map(o => `<button type="button" role="radio" aria-checked="${v === o}" class="${v === o ? "on" : ""}" data-seg="${esc(p)}|${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
     return `<button class="tgl${v === "Да" ? " on" : ""}" role="switch" aria-checked="${v === "Да"}" data-tg="${p}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`;
   }
+  const flist = () => same() ? [1] : Array.from({ length: order.stops || 1 }, (_, i) => i + 1);
+  const partOk = (k, fl) => flist().every(f => OPEN.find(x => x[0] === k)[3].every(([key]) => ((order.ops && order.ops[f]) || {})[key] > 0));
+  const gbtn = (id, x, y, w, h, lab, val, done) => `<g class="fpart gbtn${done ? " done" : ""}" data-gap="${id}" role="button" tabindex="0" aria-label="${lab}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4"/><text x="${x + w / 2}" y="${y + h / 2 - 3}" text-anchor="middle">${lab}</text><text class="gv" x="${x + w / 2}" y="${y + h / 2 + 9}" text-anchor="middle">${esc(String(val))}</text></g>`;
+  function openGap(id) {
+    const o = document.createElement("div"); o.className = "sheet";
+    const seg = (cur) => ["Стандарт 2000 мм", "Свой размер"].map(v => `<button type="button" role="radio" aria-checked="${cur === v}" class="${cur === v ? "on" : ""}" data-gseg="${v}">${v}</button>`).join("");
+    o.innerHTML = id === "shaft"
+      ? `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>Проём шахты</h3><p class="hint">Количество остановок и ширина проёма.</p><label class="plab">Количество остановок (этажей)</label><div class="field"><input id="g_stops" inputmode="numeric" value="${order.stops || ""}"><span class="u">шт.</span></div><label class="plab">Ширина проёма</label><div class="field"><input id="g_w" inputmode="decimal" value="${order.width || ""}"><span class="u">мм</span></div><p class="err" id="gerr"></p><button class="btn" data-a="gsave">Сохранить</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`
+      : `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>Размер С</h3><p class="hint">Высота вертикального обрамления.</p><div class="tgl segrow dsh"><div class="seg" role="radiogroup">${seg(order.c_mode)}</div></div><div id="g_cw" ${order.c_mode === "Свой размер" ? "" : "hidden"}><label class="plab">Свой размер С</label><div class="field"><input id="g_c" inputmode="decimal" value="${order.c_mode === "Свой размер" ? order.C || "" : ""}"><span class="u">мм</span></div></div><p class="err" id="gerr"></p><button class="btn" data-a="gsave">Сохранить</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+    let mode = order.c_mode;
+    const fail = (m, sel) => { o.querySelector("#gerr").textContent = m; const e = o.querySelector(sel); e && e.focus(); };
+    o.addEventListener("click", ev => {
+      if (ev.target === o || ev.target.closest("[data-a=mailclose]")) return o.remove();
+      const sg = ev.target.closest("[data-gseg]");
+      if (sg) { mode = sg.dataset.gseg; o.querySelectorAll("[data-gseg]").forEach(x => { x.classList.toggle("on", x === sg); x.setAttribute("aria-checked", x === sg); }); o.querySelector("#g_cw").hidden = mode !== "Свой размер"; if (mode === "Свой размер") o.querySelector("#g_c").focus(); return; }
+      if (!ev.target.closest("[data-a=gsave]")) return;
+      if (id === "shaft") {
+        const r1 = parse({ t: "int", min: 1, max: 100 }, o.querySelector("#g_stops").value), r2 = parse({ t: "num", min: 1 }, o.querySelector("#g_w").value);
+        if (r1.e) return fail("Остановки: " + r1.e, "#g_stops"); if (r2.e) return fail("Ширина проёма: " + r2.e, "#g_w");
+        order.stops = r1.v; order.width = r2.v; order.ops = order.ops || {};
+      } else {
+        if (mode === "Свой размер") { const r = parse({ t: "num", min: 1 }, o.querySelector("#g_c").value); if (r.e) return fail("Размер С: " + r.e, "#g_c"); order.C = r.v; } else order.C = 2000;
+        order.c_mode = mode;
+      }
+      wizardView.err = ""; o.remove(); save(); render();
+    });
+    o.addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.matches("input")) { ev.preventDefault(); const ins = [...o.querySelectorAll("input")].filter(i => i.offsetParent), k = ins.indexOf(ev.target); if (ins[k + 1]) ins[k + 1].focus(); else o.querySelector("[data-a=gsave]").click(); } });
+    document.body.appendChild(o); setTimeout(() => { const i0 = o.querySelector("input"); i0 && i0.offsetParent && i0.focus(); }, 80);
+  }
   function frameBig(f) {
     const A = order.scheme !== "В", o = (order.ops && order.ops[f]) || {};
-    const ok = k => OPEN.find(x => x[0] === k)[3].every(([key]) => o[key] > 0);
+    const ok = k => partOk(k);
     const part = (k, x, y, w, h, lab, tx, ty, rot) => `<g class="fpart${ok(k) ? " done" : ""}" data-fpart="${k}" role="button" tabindex="0" aria-label="${lab}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/><text ${rot ? `transform="translate(${tx} ${ty}) rotate(-90)"` : `x="${tx}" y="${ty}"`} text-anchor="middle">${ok(k) ? "✓ " : ""}${lab}</text></g>`;
     const svg = `<svg class="fbig" viewBox="0 0 200 196" role="group" aria-label="Схема обрамления">${PDEF}
       <rect x="62" y="30" width="76" height="140" class="gap"/>
       ${A ? part("left", 40, 56, 22, 114, "левое", 54.5, 113, 1) + part("right", 138, 56, 22, 114, "правое", 152.5, 113, 1) + part("top", 40, 30, 120, 26, "верхнее", 100, 46.5)
           : part("left", 40, 30, 22, 140, "левое", 54.5, 100, 1) + part("right", 138, 30, 22, 140, "правое", 152.5, 100, 1) + part("top", 62, 30, 76, 26, "верхнее", 100, 46.5)}
+      ${gbtn("shaft", 66, 62, 68, 48, "Проём", order.stops && order.width ? order.stops + " эт. · " + order.width : "заполнить", !!(order.stops && order.width))}
+      ${gbtn("c", 66, 116, 68, 48, "Размер С", order.c_mode === "Свой размер" && order.C ? order.C + " мм" : "2000 мм", true)}
       <line x1="30" y1="170" x2="170" y2="170" class="floor"/></svg>`;
-    const sum = OPEN.map(([k, q, h, pr]) => `<button type="button" class="fchip${ok(k) ? " on" : ""}" data-fpart="${k}"><b>${{ top: "Верхнее", left: "Левое", right: "Правое" }[k]}</b><span>${ok(k) ? pr.map(([key]) => o[key]).join(" × ") + " мм" : "нажмите, чтобы внести"}</span></button>`).join("");
+    const sum = OPEN.map(([k, q, h, pr]) => `<button type="button" class="fchip${ok(k) ? " on" : ""}" data-fpart="${k}"><b>${{ top: "Верхнее", left: "Левое", right: "Правое" }[k]}</b><span>${ok(k) ? (same() ? pr.map(([key]) => o[key]).join(" × ") + " мм" : "все " + flist().length + " эт. внесены") : same() ? "нажмите, чтобы внести" : (flist().filter(x => OPEN.find(y => y[0] === k)[3].every(([key]) => ((order.ops && order.ops[x]) || {})[key] > 0)).length + " из " + flist().length + " эт.")}</span></button>`).join("");
     return `<div class="fscr">${svg}<div class="fchips">${sum}</div></div>`;
   }
   function dshToggle() {
     return `<div class="tgl segrow dsh"><span>Размеры на этажах</span><div class="seg" role="radiogroup">${[["Одинаковые", "Одинаковые на всех этажах"], ["По этажам", "Индивидуально по этажам"]].map(([t, v]) => `<button type="button" role="radio" aria-checked="${order.dsh_same === v}" class="${order.dsh_same === v ? "on" : ""}" data-dsh="${v}">${t}</button>`).join("")}</div></div>`;
   }
   function openPart(f, k) {
-    const d = OPEN.find(x => x[0] === k), o = document.createElement("div"); o.className = "sheet";
+    const d = OPEN.find(x => x[0] === k), o = document.createElement("div"); o.className = "sheet"; const fl = flist();
     const pic = k === "left" ? sectionPic(true) : k === "right" ? sectionPic() : "";
-    const ops = (order.ops && order.ops[f]) || {};
-    o.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>${d[1]}${same() ? "" : ", этаж " + f}</h3><p class="hint">${d[2]} В миллиметрах.</p>${pic ? `<div class="secpic">${pic}</div>` : ""}${d[3].map(([key, lab], i) => `<label class="plab">${esc(lab)}</label><div class="field"><input id="pp${i}" inputmode="decimal" enterkeyhint="${i ? "done" : "next"}" value="${ops[key] || ""}"><span class="u">мм</span></div>`).join("")}<p class="err" id="perr"></p><button class="btn" data-a="partsave">Сохранить</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+    const cols = d[3];
+    const body = same()
+      ? cols.map(([key, lab], i) => `<label class="plab">${esc(lab)}</label><div class="field"><input id="p1_${i}" inputmode="decimal" value="${((order.ops && order.ops[1]) || {})[key] || ""}"><span class="u">мм</span></div>`).join("")
+      : `<div class="ftab"><table><tr><th>Эт.</th>${cols.map(([key, lab]) => `<th>${esc(lab.replace(/^Размер /, "").replace(/ \(.*\)/, ""))}</th>`).join("")}</tr>${fl.map(n => `<tr><td><b>${n}</b></td>${cols.map(([key], i) => `<td><input id="p${n}_${i}" inputmode="decimal" value="${((order.ops && order.ops[n]) || {})[key] || ""}"></td>`).join("")}</tr>`).join("")}</table></div><button class="btn sec" data-a="pfill">Как на этаже 1 для всех</button>`;
+    o.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>${d[1]}${same() ? "" : ": все этажи"}</h3><p class="hint">${d[2]} В миллиметрах.</p>${pic ? `<div class="secpic">${pic}</div>` : ""}${body}<p class="err" id="perr"></p><button class="btn" data-a="partsave">Сохранить</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
     const save1 = () => {
-      const rs = d[3].map((x, i) => parse({ t: "num", min: 1 }, o.querySelector("#pp" + i).value)), bad = rs.findIndex(r => r.e);
-      if (bad >= 0) { o.querySelector("#perr").textContent = d[3][bad][1] + ": " + rs[bad].e; o.querySelector("#pp" + bad).focus(); return; }
-      order.ops = order.ops || {}; order.ops[f] = order.ops[f] || {};
-      d[3].forEach(([key], i) => { order.ops[f][key] = rs[i].v; });
+      const out = [];
+      for (const n of fl) for (let i = 0; i < cols.length; i++) {
+        const el = o.querySelector(`#p${n}_${i}`), r = parse({ t: "num", min: 1 }, el.value);
+        if (r.e) { o.querySelector("#perr").textContent = (same() ? "" : "Этаж " + n + ", ") + cols[i][1] + ": " + r.e; el.focus(); return; }
+        out.push([n, cols[i][0], r.v]);
+      }
+      order.ops = order.ops || {};
+      out.forEach(([n, key, v]) => { order.ops[n] = order.ops[n] || {}; order.ops[n][key] = v; });
       wizardView.err = ""; o.remove(); save(); render();
     };
-    o.addEventListener("click", ev => { if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove(); else if (ev.target.closest("[data-a=partsave]")) save1(); });
-    o.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); const i1 = o.querySelector("#pp1"); if (ev.target.id === "pp0" && i1) i1.focus(); else save1(); } });
-    document.body.appendChild(o); setTimeout(() => { const i0 = o.querySelector("#pp0"); i0 && i0.focus(); }, 80);
+    o.addEventListener("click", ev => {
+      if (ev.target === o || ev.target.closest("[data-a=mailclose]")) o.remove();
+      else if (ev.target.closest("[data-a=partsave]")) save1();
+      else if (ev.target.closest("[data-a=pfill]")) { cols.forEach((c, i) => { const v = o.querySelector(`#p1_${i}`).value; fl.forEach(n => { o.querySelector(`#p${n}_${i}`).value = v; }); }); }
+    });
+    o.addEventListener("keydown", ev => {
+      if (ev.key !== "Enter" || !ev.target.matches("input")) return; ev.preventDefault();
+      const ins = [...o.querySelectorAll("input")], k2 = ins.indexOf(ev.target); if (ins[k2 + 1]) ins[k2 + 1].focus(); else save1();
+    });
+    document.body.appendChild(o); setTimeout(() => { const i0 = o.querySelector("input"); i0 && i0.focus(); }, 80);
   }
   function controlHtml(s, val) {
     let h = "";
@@ -617,7 +658,8 @@
       wizardView.err = ""; s.pair.forEach(([p], k) => setP(order, p, rs[k].v)); pos++; save(); return render();
     }
     if (s.t === "fscreen") {
-      const o = (order.ops && order.ops[s.floor]) || {}, miss = OPEN.filter(x => !x[3].every(([key]) => o[key] > 0)).map(x => ({ top: "верхнее", left: "левое", right: "правое" }[x[0]]));
+      if (!(order.stops > 0) || !(order.width > 0)) { const m = "Нажмите «Проём» и внесите количество остановок и ширину проёма"; wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; return; }
+      const miss = OPEN.filter(x => !partOk(x[0])).map(x => ({ top: "верхнее", left: "левое", right: "правое" }[x[0]]));
       if (miss.length) { const m = "Внесите размеры: " + miss.join(", "); wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; return; }
       wizardView.err = ""; pos++; save(); return render();
     }
@@ -1267,8 +1309,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   }
   let menuReturn = "home";
   $app.addEventListener("click", e => {
-    const fp = e.target.closest("[data-fpart]");
-    if (fp) { const s = buildList()[pos]; if (s && s.t === "fscreen") openPart(s.floor, fp.dataset.fpart); return; }
+    const fp = e.target.closest("[data-fpart],[data-gap]");
+    if (fp) { const s = buildList()[pos]; if (s && s.t === "fscreen") { if (fp.dataset.gap) openGap(fp.dataset.gap); else openPart(s.floor, fp.dataset.fpart); } return; }
     const cs = e.target.closest("[data-cas]");
     if (cs) {
       const s = buildList()[pos]; if (!s || (s.t !== "casing" && !s.casP)) return;
