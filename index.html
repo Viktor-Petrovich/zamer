@@ -523,12 +523,32 @@ body::after,.hw,#lift .pk,.spk2,.btn::after,.tile::after,.tile.soon::after{displ
 .segrow.dsh{display:flex;flex-direction:column;align-items:stretch;gap:8px}.segrow.dsh .seg{width:100%}.segrow.dsh .seg button{flex:1;white-space:normal}
 .fbig{margin-top:-6px}
 .fpart.gbtn text{font-size:8.5px}.fpart.gbtn text.gv{font:600 7px system-ui;fill:#4a6275}.fpart.gbtn.done text.gv{fill:#1d6b40}
+
+/* ---- стеклянные вставки в дверях ---- */
+#lift{background:transparent}
+#lift .door{background:none!important;box-shadow:none!important}
+#lift .door .st{position:absolute;inset:0;display:block;
+ background:
+  linear-gradient(90deg,rgba(0,0,0,.55),transparent 6%,transparent 94%,rgba(0,0,0,.5)),
+  linear-gradient(100deg,transparent 8%,rgba(255,255,255,.34) 24%,transparent 38%,transparent 60%,rgba(255,255,255,.22) 74%,transparent 90%),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,rgba(0,0,0,.06) 1px 2px,transparent 2px 4px),
+  linear-gradient(180deg,#8d979f 0%,#c9d1d7 18%,#9aa4ac 45%,#cdd4d9 72%,#7b858d 100%);
+ box-shadow:inset 0 0 60px rgba(0,0,0,.45);
+ -webkit-mask:linear-gradient(#000,#000),linear-gradient(#000,#000) 50% 23.08%/76% 61% no-repeat,linear-gradient(#000,#000) 50% 92.68%/76% 18% no-repeat;
+ -webkit-mask-composite:xor;
+ mask:linear-gradient(#000,#000),linear-gradient(#000,#000) 50% 23.08%/76% 61% no-repeat,linear-gradient(#000,#000) 50% 92.68%/76% 18% no-repeat;
+ mask-composite:exclude}
+#lift .door::before,#lift .door .pk{background:linear-gradient(135deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,.06) 28%,rgba(150,200,240,.08) 55%,rgba(255,255,255,.18) 100%);
+ -webkit-backdrop-filter:blur(1.5px) saturate(1.15);backdrop-filter:blur(1.5px) saturate(1.15);
+ box-shadow:inset 0 0 0 2px rgba(255,255,255,.55),inset 0 0 0 4px rgba(40,50,60,.45),inset 0 0 18px rgba(255,255,255,.25),0 0 0 2px #4b555d,0 0 0 3px rgba(255,255,255,.35),0 3px 6px rgba(0,0,0,.35)}
+#lift .door::before{z-index:1}#lift .door .pk{z-index:1}
+#lift .door::after{z-index:2}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
 <body>
 <div id="app" class="pre"></div>
-<div id="lift" aria-hidden="true"><div class="head"><i>▲</i><b id="lfl">1</b></div><div class="door l"><i class="pk"></i></div><div class="door r"><i class="pk"></i></div><div class="tag">Замер ДШ</div></div>
+<div id="lift" aria-hidden="true"><div class="head"><i>▲</i><b id="lfl">1</b></div><div class="door l"><b class="st"></b><i class="pk"></i></div><div class="door r"><b class="st"></b><i class="pk"></i></div><div class="tag">Замер ДШ</div></div>
 <script src="config.js"></script>
 <script src="sheet.js"></script>
 <script src="pdf.js"></script>
