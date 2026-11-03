@@ -418,14 +418,14 @@
       T(x, "табло", X0(100), PH - Y0(46), { size: 6.5, align: "center", color: "#ffb347", bold: true });
     } else T(x, "верхнее", X0(100), PH - Y0(46), { size: 8, align: "center", color: INKC });
     if (cm.btn_side) {
-      const left = String(cm.btn_side).toLowerCase().startsWith("слева"), bx = left ? 51 : 149, by = 142;
+      const left = String(cm.btn_side).toLowerCase().startsWith("слева"), bx = left ? 51 : 149, by = A ? 113 : 100;
       boxT(x, X0(bx - 8), Y0(by - 8), 16 * f, 16 * f, "#e8912d", INKC, 1);
       x.fillStyle = "#fff"; x.beginPath(); x.arc(X0(bx), PH - Y0(by + 0), 3 * f, 0, 6.2832); x.fill();
       T(x, left ? "кнопка слева" : "кнопка справа", X0(100), PH - Y0(by + 3), { size: 6.5, align: "center", color: "#a85d0a", bold: true });
       x.strokeStyle = "#a85d0a"; x.lineWidth = .8; lineT(x, left ? X0(63) : X0(137), Y0(by), left ? X0(68) : X0(132), Y0(by));
     }
     [[51, "левое"], [149, "правое"]].forEach(([cx, s]) => {
-      x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.translate(X0(cx + 3) / K, Y0(cm.btn_side ? (A ? 84 : 78) : (A ? 113 : 100)) / K); x.rotate(-Math.PI / 2);
+      x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.translate(X0(cx + 3) / K, Y0(cm.btn_side ? (A ? 78 : 62) : (A ? 113 : 100)) / K); x.rotate(-Math.PI / 2);
       x.font = fontStr(8); x.fillStyle = INKC; x.textAlign = "center"; x.fillText(s, 0, cm.btn_side ? -0 : 0); x.restore();
     });
     x.strokeStyle = MUT; x.lineWidth = .6;

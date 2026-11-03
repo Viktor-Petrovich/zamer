@@ -141,11 +141,11 @@
   ];
   const same = () => order.dsh_same === "Одинаковые на всех этажах";
   /* ---------- двери и люки ---------- */
+  const OBJ = () => SETUP[0];
   const sameDL = () => (order.entrances || 0) <= 1 || !String(order.dl_same || "").startsWith("Разные");
   function buildListDL() {
     const l = [
-      { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
-      { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
+      OBJ(),
       { p: "entrances", t: "int", min: 1, max: 50, unit: "шт.", sec: "Объект", q: "Сколько подъездов?", hint: "Выберите, одинаковые ли размеры по подъездам, и что нужно измерить: дверь, люк или оба.", tg: [["dl_same", "Размеры", "Одинаковые", ["Одинаковые", "Разные"]], ["need_door", "Дверь", "Да"], ["need_hatch", "Люк", "Да"]] }
     ];
     const N = order.entrances || 0, es = sameDL() ? [1] : Array.from({ length: N }, (_, i) => i + 1);
@@ -159,13 +159,11 @@
       if (getP(order, `${pk}.door.need`) === "Да") {
         if (!getP(order, `${pk}.door.hinge`)) setP(order, `${pk}.door.hinge`, "Слева");
         if (!getP(order, `${pk}.door.cas`)) setP(order, `${pk}.door.cas`, { l: true, t: true, r: true });
-        l.push({ p: `${pk}.door.pair`, t: "pair", pic: "door", min: 100, unit: mm, sec, ent: e, q: "Дверь: проём, петли, наличник", hint: "Нажимайте на наличник на рисунке. Размер двери: высота минус 20, ширина минус 40.",
-          casP: `${pk}.door.cas`, hingeP: `${pk}.door.hinge`, tg: [[`${pk}.door.hinge`, "Петли", "Слева", ["Слева", "Справа"]]], pair: [[`${pk}.door.h`, "Высота проёма"], [`${pk}.door.w`, "Ширина проёма"]] });
-        l.push({ p: `${pk}.door.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество дверей", hint: qh });
+        l.push({ p: `${pk}.door.pair`, t: "pair", pic: "door", min: 100, unit: mm, sec, ent: e, q: "Дверь: проём, петли, наличник, количество", hint: "Нажимайте на наличник на рисунке. Размер двери: высота минус 20, ширина минус 40.",
+          casP: `${pk}.door.cas`, hingeP: `${pk}.door.hinge`, tg: [[`${pk}.door.hinge`, "Петли", "Слева", ["Слева", "Справа"]]], pair: [[`${pk}.door.h`, "Высота проёма"], [`${pk}.door.w`, "Ширина проёма"]], qtyP: `${pk}.door.qty`, qtyLab: "Количество дверей" + (qh ? " (на один подъезд)" : "") });
       }
       if (getP(order, `${pk}.hatch.need`) === "Да") {
-        l.push({ p: `${pk}.hatch.pair`, t: "pair", pic: "hatch", min: 100, unit: mm, sec, ent: e, q: "Люк: строительный проём", hint: "Размер люка посчитаем сами: проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон.", pair: [[`${pk}.hatch.h`, "Высота проёма"], [`${pk}.hatch.w`, "Ширина проёма"]] });
-        l.push({ p: `${pk}.hatch.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, ent: e, q: "Количество люков", hint: qh });
+        l.push({ p: `${pk}.hatch.pair`, t: "pair", pic: "hatch", min: 100, unit: mm, sec, ent: e, q: "Люк: проём и количество", hint: "Размер люка посчитаем сами: проём минус 10 мм. Наличник на люке ставится всегда, со всех сторон.", pair: [[`${pk}.hatch.h`, "Высота проёма"], [`${pk}.hatch.w`, "Ширина проёма"]], qtyP: `${pk}.hatch.qty`, qtyLab: "Количество люков" + (qh ? " (на один подъезд)" : "") });
       }
     });
     return l;
@@ -276,23 +274,17 @@
   const winList = () => Math.max(1, Math.min(20, order.wins || 0));
   function buildListWin() {
     const l = [
-      { p: "address", t: "text", sec: "Объект", q: "Адрес объекта", hint: "Город, улица, дом. Файл заявки будет назван этим адресом.", ph: "г. Казань, ул. Мира, 3", area: 1 },
-      { p: "contact", t: "text", sec: "Объект", q: "Контактное лицо на объекте", hint: "Имя и телефон", ph: "Иван, +7 900 123-45-67", area: 1 },
+      OBJ(),
     ];
     const N = Math.max(1, order.wins || 1);
     for (let i = 1; i <= N; i++) {
       const sec = N > 1 ? `Окно ${i} из ${N}` : "Окно", pk = `win.${i}`;
       l.push({ p: `${pk}.pair`, t: "pair", pic: "win", pk, min: 100, unit: mm, sec, win: i, first: true, q: "Оконный проём", hint: "Размер окна посчитаем сами: слева, сверху и справа минус 20 мм, т.е. высота минус 20, ширина минус 40.", pair: [[`${pk}.h`, "Высота проёма"], [`${pk}.w`, "Ширина проёма"]] });
-      l.push({ p: `${pk}.kind`, t: "choice", sash: "type", pk, sec, q: "Как открывается створка?", hint: "Вид изнутри помещения. Выберите тип, сторону петель и нужен ли отлив.", ch: Object.keys(WK) });
+      l.push({ p: `${pk}.kind`, t: "choice", sash: "type", pk, sec, win: i, qtyStep: true, q: "Открывание, отлив и количество", hint: "Вид изнутри помещения. Выберите тип и сторону петель. Если нужен отлив, появятся его размеры. Внизу укажите количество таких окон.", ch: Object.keys(WK) });
       const k = WK[getP(order, `${pk}.kind`)];
       if (!getP(order, `${pk}.ebb.need`)) setP(order, `${pk}.ebb.need`, "Нет");
       if (!getP(order, `${pk}.hinge`)) setP(order, `${pk}.hinge`, "Слева");
       if (!getP(order, `${pk}.ebb.need`)) setP(order, `${pk}.ebb.need`, "Нет");
-      if (getP(order, `${pk}.ebb.need`) === "Да") {
-        l.push({ p: `${pk}.ebb.pair`, t: "pair", unit: mm, sec, q: "Размеры отлива", hint: "Введите длину и ширину отлива.", pair: [[`${pk}.ebb.l`, "Длина"], [`${pk}.ebb.w`, "Ширина"]] });
-      }
-      l.push({ p: `${pk}.qty`, t: "int", min: 1, max: 999, unit: "шт.", quick: 1, sec, win: i, qtyStep: true, q: "Количество таких окон", hint: "Отлив тоже считается на каждое такое окно." });
-      l.push({ p: `${pk}.more`, t: "choice", sec, win: i, more: true, q: "Есть ещё окна?", hint: "Если в заявке окна другого размера или с другим открыванием, добавьте ещё одно.", ch: ["Добавить ещё окно", "Нет, это все окна"] });
     }
     return l;
   }
@@ -345,9 +337,10 @@
 
   /* ---------- общие части интерфейса ---------- */
   function shell(title, progress, body, foot, opts = {}) {
+    const sig = view + "|" + pos + "|" + (sub ? sub.key + sub.i : "") + "|" + title, keepY = shell.sig === sig ? window.scrollY : 0; shell.sig = sig;
     $app.innerHTML = `<header class="top"><div class="bar">${opts.back === false ? "" : `<button class="ib" data-a="back" aria-label="Назад">${ICON.back}</button>`}<h1>${esc(title)}</h1>${opts.menu === false ? "" : `<button class="ib" data-a="menu" aria-label="Меню">${ICON.menu}</button>`}</div>${progress == null ? "" : `<div class="prog"><i style="width:${Math.round(progress * 100)}%"></i></div>`}</header><main>${body}</main><footer class="act">${foot}</footer>${flash ? `<div class="toast">${esc(flash)}</div>` : ""}`;
     if (flash) setTimeout(() => { flash = ""; const t = document.querySelector(".toast"); if (t) t.remove(); }, 2200);
-    window.scrollTo(0, 0);
+    window.scrollTo(0, keepY);
   }
   const toast = m => { flash = m; render(); };
 
@@ -636,7 +629,7 @@
   function controlBase(s, val) {
     if (s.t === "form") return formHtml(s);
     if (s.t === "casing") return casingHtml(val);
-    if (s.t === "pair") return s.pair.map(([p, lab], k) => { const v = getP(order, p); return `<label class="plab">${esc(lab)}</label><div class="field"><input id="${k ? "inp2" : "inp"}" inputmode="decimal" enterkeyhint="${k ? "done" : "next"}" value="${esc(v == null ? "" : String(v).replace(".", ","))}"><span class="u">${s.unit}</span></div>`; }).join("");
+    if (s.t === "pair") return s.pair.map(([p, lab], k) => { const v = getP(order, p); return `<label class="plab">${esc(lab)}</label><div class="field"><input id="${k ? "inp2" : "inp"}" inputmode="decimal" enterkeyhint="${k ? "done" : "next"}" value="${esc(v == null ? "" : String(v).replace(".", ","))}"><span class="u">${s.unit}</span></div>`; }).join("") + (s.qtyP ? `<label class="plab">${esc(s.qtyLab || "Количество")}</label><div class="field"><input id="inp3" inputmode="numeric" enterkeyhint="done" value="${esc(String(getP(order, s.qtyP) || ""))}"><span class="u">шт.</span></div>` : "");
     if (s.t === "toggles") return `<div class="tgls">${s.tg.map(tglHtml).join("")}</div>`;
     if (false) return `<div class="tgls">${s.tg.map(([p, lab, def, seg]) => { const v = getP(order, p) || (setP(order, p, def), def);
       if (seg) return `<div class="tgl segrow"><span>${esc(lab)}</span><div class="seg" role="radiogroup">${seg.map(o => `<button type="button" role="radio" aria-checked="${v === o}" class="${v === o ? "on" : ""}" data-seg="${esc(p)}|${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
@@ -645,7 +638,7 @@
       const kp = s.sash === "hinge" ? WK[getP(order, s.kindPath)] : null;
       return `<div class="schemes wsch">${s.ch.map(c => `<button class="sch${val === c ? " on" : ""}" data-pick="${esc(c)}">${s.sash === "hinge" ? sashSvg(kp, c) : sashSvg(WK[c], (s.pk && getP(order, s.pk + ".hinge")) || "Слева")}<b>${esc(c)}</b></button>`).join("")}</div>` + (s.sash === "type" ? (() => {
         const k = WK[val], turn = k === "tr" || k === "tt";
-        return `<div class="tgls" style="margin-top:12px"><div${turn ? "" : ' style="opacity:.45"'}>${tglHtml([`${s.pk}.hinge`, "Петли", "Слева", ["Слева", "Справа"]])}</div>${tglHtml([`${s.pk}.ebb.need`, "Отлив", "Нет"])}</div>`;
+        return `<div class="tgls" style="margin-top:12px"><div${turn ? "" : ' style="opacity:.45"'}>${tglHtml([`${s.pk}.hinge`, "Петли", "Слева", ["Слева", "Справа"]])}</div>${tglHtml([`${s.pk}.ebb.need`, "Отлив", "Нет"])}</div>` + (getP(order, `${s.pk}.ebb.need`) === "Да" ? `<div class="ebbbox"><label class="plab">Длина отлива</label><div class="field"><input id="eb1" data-live="${s.pk}.ebb.l" inputmode="decimal" value="${esc(String(getP(order, s.pk + ".ebb.l") || "").replace(".", ","))}"><span class="u">мм</span></div><label class="plab">Ширина отлива</label><div class="field"><input id="eb2" data-live="${s.pk}.ebb.w" inputmode="decimal" value="${esc(String(getP(order, s.pk + ".ebb.w") || "").replace(".", ","))}"><span class="u">мм</span></div></div>` : "") + `<label class="plab" style="margin-top:12px;display:block">Количество таких окон</label><div class="field"><input id="eqty" data-live="${s.pk}.qty" inputmode="numeric" value="${esc(String(getP(order, s.pk + ".qty") || ""))}"><span class="u">шт.</span></div>`;
       })() : "");
     }
     if (s.t === "choice") return `<div class="choices">${s.ch.map(c => `<button class="choice${val === c ? " on" : ""}" data-pick="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
@@ -679,6 +672,13 @@
     return inp ? inp.value : "";
   }
   function advance(s, raw) {
+    if (s.sash === "type") {
+      const bad = m => { wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; };
+      if (!getP(order, s.p)) return bad("Выберите, как открывается створка");
+      if (getP(order, `${s.pk}.ebb.need`) === "Да") for (const [k, lab, id] of [["l", "Длина отлива", "eb1"], ["w", "Ширина отлива", "eb2"]]) { const r = parse({ t: "num", min: 1 }, (document.getElementById(id) || {}).value); if (r.e) { bad(lab + ": " + r.e); const f = document.getElementById(id); if (f) f.focus(); return; } setP(order, `${s.pk}.ebb.${k}`, r.v); }
+      const q = parse({ t: "int", min: 1, max: 999 }, (document.getElementById("eqty") || {}).value); if (q.e) { bad("Количество окон: " + q.e); const f = document.getElementById("eqty"); if (f) f.focus(); return; }
+      setP(order, `${s.pk}.qty`, q.v); wizardView.err = ""; pos++; save(); return render();
+    }
     if (s.more) {
       setP(order, s.p, raw); order.wins = String(raw).startsWith("Добавить") ? Math.max(order.wins || 1, s.win + 1) : s.win;
       pos++; save(); return render();
@@ -688,7 +688,8 @@
       const ids = ["inp", "inp2"], rs = s.pair.map((x, k) => parse({ t: "num", min: s.min || 10 }, (document.getElementById(ids[k]) || {}).value));
       const bad = rs.findIndex(r => r.e);
       if (bad >= 0) { const m = s.pair[bad][1] + ": " + rs[bad].e; wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; const f = document.getElementById(ids[bad]); if (f) f.focus(); return; }
-      wizardView.err = ""; s.pair.forEach(([p], k) => setP(order, p, rs[k].v)); pos++; save(); return render();
+      let qr = null; if (s.qtyP) { qr = parse({ t: "int", min: 1, max: 999 }, (document.getElementById("inp3") || {}).value); if (qr.e) { const m = (s.qtyLab || "Количество") + ": " + qr.e; wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; const f = document.getElementById("inp3"); if (f) f.focus(); return; } }
+      wizardView.err = ""; s.pair.forEach(([p], k) => setP(order, p, rs[k].v)); if (qr) setP(order, s.qtyP, qr.v); pos++; save(); return render();
     }
     if (s.t === "fscreen") {
       if (!(order.stops > 0) || !(order.width > 0)) { const m = "Нажмите «Этажность и ширина проёма» и внесите количество остановок и ширину проёма"; wizardView.err = m; const el = document.getElementById("err"); if (el) el.textContent = m; return; }
@@ -755,7 +756,7 @@
   }
   async function reviewView() {
     shell("Проверка заявки", 1, summaryHtml() + `<div class="card"><p class="hint" id="gen">Формирую бланк…</p><div class="pages" id="pages"></div></div>`,
-      `${supplyLink() ? `<button class="btn sec" data-a="supply_open">Открыть чат: ${esc(supply.app)}</button>` : ""}<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button><button class="btn ghost" data-a="${isSimple() ? "back" : "hub"}">${isSimple() ? "Изменить ответы" : "Назад к разделам"}</button>`);
+      `${supplyLink() ? `<button class="btn sec" data-a="supply_open">Открыть чат: ${esc(supply.app)}</button>` : ""}<button class="btn" data-a="send" disabled id="sendBtn">Отправить в снабжение</button><button class="btn sec" data-a="download">Скачать PDF</button>${order.kind === "win" ? `<button class="btn sec" data-a="addwin">Добавить ещё окно (другой размер или открывание)</button>` : ""}<button class="btn ghost" data-a="${isSimple() ? "back" : "hub"}">${isSimple() ? "Изменить ответы" : "Назад к разделам"}</button>`);
     try {
       const full = exportOrder();
       const canv = await PDFGEN.buildPages(full);
@@ -1330,6 +1331,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "hub") { view = "hub"; return render(); }
     if (a === "send") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => ok && share()); if (!LIM || order.paid || acc.tickets.length) { charge(); return share(); } return; }
     if (a === "download") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => { if (ok) { download(); toast("Файл сохранён"); } }); charge(); download(); return toast("Файл сохранён"); }
+    if (a === "addwin") { order.wins = Math.max(1, order.wins || 1) + 1; const nl = buildList(); const k = nl.findIndex(x => x.win === order.wins && x.first); pos = k < 0 ? nl.length - 1 : k; view = "wizard"; save(); return render(); }
     if (a === "copyprev" && order.kind === "win") {
       const l0 = buildList(), i = l0[pos].win;
       order.win = order.win || {}; order.win[i] = JSON.parse(JSON.stringify(order.win[i - 1] || {}));
@@ -1345,6 +1347,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       pos += 1; save(); return render();
     }
   }
+  $app.addEventListener("input", e => { const t = e.target, p = t && t.dataset && t.dataset.live; if (!p) return; const r = parse({ t: "num", min: 1 }, t.value); if (!r.e) setP(order, p, r.v); });
   let menuReturn = "home";
   $app.addEventListener("click", e => {
     const fp = e.target.closest("[data-fpart],[data-gap]");
@@ -1368,7 +1371,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       save(); return render();
     }
     if (b.dataset.seg) { const [p, v] = b.dataset.seg.split("|"); setP(order, p, v); if (/\.hinge$/.test(p)) { save(); const ls = buildList()[pos]; if (ls && ls.pic === "door") { document.querySelectorAll(".pic .hd").forEach(c => c.setAttribute("cx", v === "Справа" ? 106 : 162)); document.querySelectorAll(".pic .hgL").forEach(g => { g.style.display = v === "Справа" ? "none" : ""; }); document.querySelectorAll(".pic .hgR").forEach(g => { g.style.display = v === "Справа" ? "" : "none"; }); } else return render(); } b.parentNode.querySelectorAll("button").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); save(); return; }
-    if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); return; }
+    if (b.dataset.tg) { const v = getP(order, b.dataset.tg) === "Да" ? "Нет" : "Да"; setP(order, b.dataset.tg, v); b.classList.toggle("on", v === "Да"); b.setAttribute("aria-checked", v === "Да"); save(); if (/\.ebb\.need$/.test(b.dataset.tg)) return render(); return; }
     if (b.dataset.q) { const i = document.getElementById("inp"); if (i) { i.value = b.dataset.q; return act("next"); } }
     if (b.dataset.bendm) { order.common = order.common || {}; order.common.bend_mode = b.dataset.bendm; save(); return render(); }
     if (b.dataset.dsh) { order.dsh_same = b.dataset.dsh; order.ops = order.ops || {}; save(); return render(); }
