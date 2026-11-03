@@ -833,20 +833,25 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       ${A ? `<line x1="14" y1="30" x2="46" y2="30" class="ex"/><line x1="14" y1="56" x2="46" y2="56" class="ex"/>` : ""}<line x1="164" y1="56" x2="190" y2="56" class="ex"/><line x1="164" y1="170" x2="190" y2="170" class="ex"/>
       <line x1="30" y1="${bottom}" x2="170" y2="${bottom}" class="floor"/></svg>`;
   }
-  function showDone(kind) { sheetPush(); ominous("toll"); goal(kind === "sent" ? "sent" : "saved"); doneKind = kind; view = "done"; save(); render(); if (kind === "sent") liftClose(); else confetti(); }
+  function showDone(kind) { sheetPush(); ominous("toll"); goal(kind === "sent" ? "sent" : "saved"); doneKind = kind; view = "done"; save(); liftClose(); }
   function liftClose() {
-    const axm = pdfCache && pdfCache.axis, n = axm ? ax.n : order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 0), unit = axm ? "этажей" : order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return confetti();
-    const L = document.createElement("div"); L.id = "lift"; L.className = "open";
-    L.innerHTML = `<div class="head"><i>▲</i><b>1</b></div><div class="door l"><i class="pk"></i></div><div class="door r"><i class="pk"></i></div><div class="tag"><span>заказано ${unit}: ${n}</span></div>`;
+    const axm = pdfCache && pdfCache.axis, n = Math.max(1, axm ? ax.n : order.kind === "dl" ? (order.entrances || 1) : order.kind === "win" ? winItems().length : (order.stops || 1)), unit = axm ? "этажей" : order.kind === "dl" ? "подъездов" : order.kind === "win" ? "окон" : "этажей";
+    const finish = () => { $app.style.transition = "none"; $app.style.transform = ""; render(); };
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { finish(); return confetti(); }
+    const L = document.createElement("div"); L.id = "lift"; L.className = "open ride";
+    L.innerHTML = `<div class="head"><i>▲</i><b>1</b></div><div class="door l"><b class="st"></b><i class="pk"></i></div><div class="door r"><b class="st"></b><i class="pk"></i></div><div class="tag"><span>заказано ${unit}: ${n}</span></div>`;
     document.body.appendChild(L); void L.offsetWidth;
-    const b = L.querySelector("b"); let off = false;
-    const open = () => { if (off) return; off = true; clearInterval(iv); L.classList.add("open"); confetti(); setTimeout(() => L.remove(), 2600); };
-    let c = 1, iv;
-    L.addEventListener("click", open);
-    setTimeout(() => { L.classList.remove("open"); L.querySelector(".tag").style.opacity = 1; }, 50);
-    setTimeout(() => { iv = setInterval(() => { c = Math.min(n, c + Math.max(1, Math.ceil(n / 14))); b.textContent = c; if (c >= n) clearInterval(iv); }, 90); }, 1500);
-    setTimeout(open, 4200);
+    const b = L.querySelector("b"), T = [], at = (ms, f) => T.push(setTimeout(f, ms));
+    let iv = 0, done = false;
+    const end = () => { if (done) return; done = true; T.forEach(clearTimeout); clearInterval(iv); finish(); L.classList.add("open"); confetti(); setTimeout(() => L.remove(), 2800); };
+    L.addEventListener("click", () => { if (!done) end(); });
+    at(40, () => { L.classList.remove("open"); L.querySelector(".tag").style.opacity = 1; });            // двери закрываются
+    at(1900, () => {                                                                                       // кабина уезжает вверх
+      $app.style.transition = "transform 1.6s cubic-bezier(.55,0,.85,.45)"; $app.style.transform = "translateY(-118%)";
+      let c = 1; iv = setInterval(() => { c = Math.min(n, c + Math.max(1, Math.ceil(n / 12))); b.textContent = c; if (c >= n) clearInterval(iv); }, 120);
+    });
+    at(3700, () => { finish(); });                                                                         // новый экран за закрытыми дверями
+    at(4300, () => { L.classList.add("open"); confetti(); setTimeout(() => L.remove(), 2800); done = true; });
   }
   function confetti() {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -864,7 +869,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
-  const APP_VERSION = "V.1-93";
+  const APP_VERSION = "V.1-94";
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
