@@ -123,12 +123,12 @@
   const SETUP = [
     { p: "form.obj", t: "form", sec: "Объект", q: "Адрес и контактное лицо", hint: "Город, улица, дом: файл заявки будет назван этим адресом. Контакт: имя и телефон.",
       fields: [{ k: "text", p: "address", label: "Адрес объекта", ph: "г. Казань, ул. Мира, 3", area: 1 }, { k: "text", p: "contact", label: "Контактное лицо на объекте", ph: "Иван, +7 900 123-45-67" }] },
-    { p: "form.sch", t: "form", sch: 1, sec: "Объект", q: "Схема, цвет, табло и загиб", hint: "Выберите схему и цвет окраски, затем укажите табло и загиб. Выбор действует на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
+    { p: "form.sch", t: "form", sch: 1, sec: "Объект", q: "Схема, цвет, табло, загиб и кнопка", hint: "Выберите схему и цвет окраски, затем укажите табло, загиб и кнопку вызова. Выбор действует на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
       fields: [{ k: "h", label: "Табло индикации" }, { k: "tgl", p: "common.ind_on", label: "Есть табло", def: "Да" }, { k: "seg", p: "common.ind_where", label: "Где", opts: [["Только 1 этаж", "Только на 1 этаже"], ["Все этажи", "На всех этажах"]], def: "На всех этажах", when: o => o.common.ind_on !== "Нет" },
         { k: "dims2", p: "common.ind_size", label: "Размер отверстия под табло", ph: ["80", "120"], when: o => o.common.ind_on !== "Нет" },
-        { k: "h", label: "Загиб" }, { k: "seg", p: "common.bend_mode", label: "Размеры", opts: [["С учётом загиба", "С учётом загиба"], ["Без учёта загиба", "Без учёта загиба"]], def: "С учётом загиба" }, { k: "num", p: "common.bend", label: "Размер загиба", unit: mm, max: 500, min: 0 }] },
-    { p: "form.btn", t: "form", sec: "Кнопка вызова", q: "Кнопка вызова", hint: "Всё про кнопку вызова на одном экране.",
-      fields: [{ k: "seg", p: "common.btn_all", label: "Ставится", opts: [["На всех этажах", "На всех этажах"], ["Не на всех", "Не на всех этажах"]], def: "На всех этажах" },
+        { k: "h", label: "Загиб" }, { k: "seg", p: "common.bend_mode", label: "Размеры", opts: [["С учётом загиба", "С учётом загиба"], ["Без учёта загиба", "Без учёта загиба"]], def: "С учётом загиба" }, { k: "num", p: "common.bend", label: "Размер загиба", unit: mm, max: 500, min: 0 },
+        { k: "h", label: "Кнопка вызова" },
+        { k: "seg", p: "common.btn_all", label: "Ставится", opts: [["На всех этажах", "На всех этажах"], ["Не на всех", "Не на всех этажах"]], def: "На всех этажах" },
         { k: "floors", p: "common.btn_floors", label: "На каких этажах", ph: "1, 3, 5-7", when: o => o.common.btn_all === "Не на всех этажах" },
         { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева" },
         { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
@@ -516,8 +516,9 @@
     document.body.appendChild(o);
   }
   function bendToggle() {
-    const cur = (order.common && order.common.bend_mode) || "С учётом загиба";
-    return `<div class="tgl segrow dsh"><span>Размеры обрамления</span><div class="seg" role="radiogroup">${["С учётом загиба", "Без учёта загиба"].map(v => `<button type="button" role="radio" aria-checked="${cur === v}" class="${cur === v ? "on" : ""}" data-bendm="${v}">${v}</button>`).join("")}</div></div>`;
+    const c = order.common || {}, withB = (c.bend_mode || "С учётом загиба") === "С учётом загиба";
+    const txt = withB ? `Размеры с учётом загиба: <b>${esc(String(c.bend == null || c.bend === "" ? "—" : String(c.bend).replace(".", ",")))} мм</b>` : `Размеры без учёта загиба. Загиб стандартный: <b>20 мм</b>`;
+    return `<div class="bendnote">${txt}</div>`;
   }
   function dshToggle() {
     return `<div class="tgl segrow dsh"><span>Размеры на этажах</span><div class="seg" role="radiogroup">${[["Одинаковые", "Одинаковые на всех этажах"], ["По этажам", "Индивидуально по этажам"]].map(([t, v]) => `<button type="button" role="radio" aria-checked="${order.dsh_same === v}" class="${order.dsh_same === v ? "on" : ""}" data-dsh="${v}">${t}</button>`).join("")}</div></div>`;
