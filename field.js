@@ -25,7 +25,8 @@
   }
   window.ZF = { parseSpoken };
 
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const VOICE = false;   // голосовой ввод временно выключен
+  const SR = VOICE ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
   let bar, cur = null, rec = null, hideT = 0;
   const isNum = e => e && e.tagName === "INPUT" && /numeric|decimal/.test(e.getAttribute("inputmode") || "");
   const isField = e => e && (e.tagName === "TEXTAREA" || (e.tagName === "INPUT" && !/checkbox|radio|button/.test(e.type)));
@@ -43,7 +44,6 @@
       else if (k === "next" && list[i + 1]) list[i + 1].focus();
       else if (k === "mic") listen();
       else if (k === "go") {
-        if (list[i + 1]) { list[i + 1].focus(); return; }
         const sc = scope(cur), btn = sc.querySelector("[data-a=gsave],[data-a=partsave],[data-a=floorsave],[data-a=copysave]") || document.querySelector("[data-a=next]");
         cur.blur(); if (btn) btn.click();
       }
@@ -54,7 +54,7 @@
     const kb = v ? Math.max(0, window.innerHeight - v.height - v.offsetTop) : 0;
     bar.style.bottom = kb + "px";
   }
-  function setLast(e) { const list = inputs(e), i = list.indexOf(e); bar.querySelector("[data-k=go]").textContent = list[i + 1] ? "Далее ›" : "Готово"; bar.querySelector("[data-k=prev]").disabled = i <= 0; bar.querySelector("[data-k=next]").disabled = i >= list.length - 1; const m = bar.querySelector("[data-k=mic]"); if (m) m.style.display = isNum(e) ? "" : "none"; }
+  function setLast(e) { const list = inputs(e), i = list.indexOf(e); bar.querySelector("[data-k=go]").textContent = scope(e).classList.contains("sheetbox") ? "Сохранить" : "Далее"; bar.querySelector("[data-k=prev]").disabled = i <= 0; bar.querySelector("[data-k=next]").disabled = i >= list.length - 1; const m = bar.querySelector("[data-k=mic]"); if (m) m.style.display = isNum(e) ? "" : "none"; }
   function listen() {
     if (!SR || !cur) return;
     const st = bar.querySelector(".kst");
@@ -73,7 +73,7 @@
     try { rec.start(); } catch (err) { rec = null; bar.classList.remove("rec"); }
   }
   document.addEventListener("focusin", e => {
-    if (!isField(e.target) || !matchMedia("(pointer:coarse)").matches) return; if (!bar) make();
+    if (!isField(e.target) || !(matchMedia("(pointer:coarse)").matches || navigator.maxTouchPoints > 0)) return; if (!bar) make();
     clearTimeout(hideT); cur = e.target; bar.hidden = false; setLast(cur); place();
     document.documentElement.classList.add("kb");
     setTimeout(() => { try { cur.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) {} }, 260);
