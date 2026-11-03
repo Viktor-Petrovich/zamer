@@ -403,17 +403,30 @@
     while (size > 5.5 && tw(x, s, size, o.bold) > maxw) size -= 0.5;
     T(x, s, px, PH - yt, Object.assign({ size }, o));
   }
-  function schemeCanvas(x, ox, oy, k) {   // область 200×190, масштаб f
+  function schemeCanvas(x, ox, oy, k, cm) {   // область 200×190, масштаб f
     const A = k === "А", f = 0.66, X0 = v => ox + v * f, Y0 = v => oy + v * f;
     const R = (xx, yy, w, h, fill) => boxT(x, X0(xx), Y0(yy), w * f, h * f, fill, INKC, 1.3);
     boxT(x, X0(62), Y0(30), 76 * f, 140 * f, "#f1f5f8", null);
     const sideFill = "#cfe2f1", topFill = "#9fc3e0";
     if (A) { R(40, 56, 22, 114, sideFill); R(138, 56, 22, 114, sideFill); R(40, 30, 120, 26, topFill); }
     else { R(40, 30, 22, 140, sideFill); R(138, 30, 22, 140, sideFill); R(62, 30, 76, 26, topFill); }
-    T(x, "верхнее", X0(100), PH - Y0(46), { size: 8, align: "center", color: INKC });
+    cm = cm || {};
+    const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло";
+    if (cm.ind_floor && !noInd) {
+      boxT(x, X0(84), Y0(33), 32 * f, 20 * f, "#26323c", INKC, 1);
+      boxT(x, X0(87), Y0(36), 26 * f, 14 * f, "#0f171d", null);
+      T(x, "табло", X0(100), PH - Y0(46), { size: 6.5, align: "center", color: "#ffb347", bold: true });
+    } else T(x, "верхнее", X0(100), PH - Y0(46), { size: 8, align: "center", color: INKC });
+    if (cm.btn_side) {
+      const left = String(cm.btn_side).toLowerCase().startsWith("слева"), bx = left ? 51 : 149, by = 142;
+      boxT(x, X0(bx - 8), Y0(by - 8), 16 * f, 16 * f, "#e8912d", INKC, 1);
+      x.fillStyle = "#fff"; x.beginPath(); x.arc(X0(bx), PH - Y0(by + 0), 3 * f, 0, 6.2832); x.fill();
+      T(x, left ? "кнопка слева" : "кнопка справа", X0(100), PH - Y0(by + 3), { size: 6.5, align: "center", color: "#a85d0a", bold: true });
+      x.strokeStyle = "#a85d0a"; x.lineWidth = .8; lineT(x, left ? X0(63) : X0(137), Y0(by), left ? X0(68) : X0(132), Y0(by));
+    }
     [[51, "левое"], [149, "правое"]].forEach(([cx, s]) => {
-      x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.translate(X0(cx + 3) / K, Y0(A ? 113 : 100) / K); x.rotate(-Math.PI / 2);
-      x.font = fontStr(8); x.fillStyle = INKC; x.textAlign = "center"; x.fillText(s, 0, 0); x.restore();
+      x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.translate(X0(cx + 3) / K, Y0(cm.btn_side ? (A ? 84 : 78) : (A ? 113 : 100)) / K); x.rotate(-Math.PI / 2);
+      x.font = fontStr(8); x.fillStyle = INKC; x.textAlign = "center"; x.fillText(s, 0, cm.btn_side ? -0 : 0); x.restore();
     });
     x.strokeStyle = MUT; x.lineWidth = .6;
     if (A) { lineT(x, X0(14), Y0(30), X0(46), Y0(30)); lineT(x, X0(14), Y0(56), X0(46), Y0(56)); }
@@ -506,7 +519,7 @@
         const ch = 180, w1 = BLANK ? 330 : 250; rr(x, M, top, w1, ch, 10, "#fff", LN, 1);
         T(x, BLANK ? "Схема обрамления (отметьте А или В)" : "Схема обрамления " + (order.scheme || ""), M + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
         if (BLANK) ["А", "В"].forEach((k, i) => { const sx = M + 14 + i * 158; schemeCanvas(x, sx, top + 36, k); x.strokeStyle = INKC; x.lineWidth = 1.2; x.strokeRect(sx + 4, PH - (top + 168), 12, 12); T(x, "Схема " + k, sx + 22, PH - (top + 167), { size: 10, bold: true, color: INKC }); });
-        else schemeCanvas(x, M + (w1 - 132) / 2, top + 36, order.scheme === "В" ? "В" : "А");
+        else schemeCanvas(x, M + (w1 - 132) / 2, top + 36, order.scheme === "В" ? "В" : "А", cm);
         const cx0 = M + w1 + 12, cw2 = PW - M - cx0;
         rr(x, cx0, top, cw2, ch, 10, "#fff", LN, 1);
         T(x, "Общие параметры", cx0 + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
@@ -531,6 +544,16 @@
   const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 
   async function buildPages(order) {
+    const pages = await buildPages0(order);
+    if (!BLANK) pages.forEach(c => {
+      const x = c.getContext("2d"); x.save(); x.setTransform(1 / K, 0, 0, -1 / K, 0, PHpx);
+      const s = "Сделано СтройЛифтКомплекс", w = tw(x, s, 8.5, true);
+      x.strokeStyle = ACC; x.lineWidth = 1; lineT(x, PW - 30 - w - 14, PH - 9, PW - 30 - w - 4, PH - 9); lineT(x, PW - 30 + 4, PH - 9, PW - 30 + 14, PH - 9);
+      T(x, s, PW - 30, 6, { size: 8.5, bold: true, color: ACC, align: "right" }); x.restore();
+    });
+    return pages;
+  }
+  async function buildPages0(order) {
     if (order.kind === "dl") return order.items.map(it => dlPage(order, it));
     if (order.kind === "win") { const pc = Math.max(1, Math.ceil(order.items.length / 2)); return Array.from({ length: pc }, (_, i) => winPage(order, order.items.slice(i * 2, i * 2 + 2), i + 1, pc)); }
     const pages = [], ops = order.openings || [];
