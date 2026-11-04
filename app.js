@@ -895,7 +895,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
-  const APP_VERSION = "V.2-08";
+  const APP_VERSION = "V.2-10";
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
@@ -1127,7 +1127,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   const S_ST = ["Начало работ", "Приёмка оборудования", "Демонтаж старого оборудования", "Монтаж направляющих", "Монтаж порталов ДШ", "Замена кабины", "Замена противовеса", "Электроразводка шахты", "Механоналадка", "Пусконаладочные работы", "Установка оборудования МП", "Замена лебёдки", "Запуск лифта"];
   const S_RN = { mon: "Монтажник", el: "Электрик", bld: "Строитель", pro: "Прораб", boss: "Руководитель", acc: "Бухгалтер", sup: "Снабжение", pto: "Отдел ПТО" };
   const S_KINDS = ["Двери шахты", "Люки", "Окна", "Обрамления", "Диспетчерская связь", "Расходники", "Электрика", "Стройматериалы"];
-  const S_SUP = ["Получено", "Принято", "В пути", "Пришло на объект", "Отказано"];
+  const S_SUP = ["Получено", "Принято", "В производство", "В пути", "Пришло на объект", "Отказано"];
   const sTabsFor = r => ({ mon: ["Объекты", "Снабжение", "История"], el: ["Объекты", "Снабжение"], bld: ["Объекты", "Снабжение"], pro: ["Проверка", "Назначения", "Объекты", "ПТО", "Отчёты", "Сотрудники"], boss: ["Сводка", "Проверка", "Назначения", "Снабжение", "Финансы", "ПТО", "Отчёты", "Сотрудники"], acc: ["Финансы"], sup: ["Заявки"], pto: ["ПТО"] }[r] || []);
   const sTabs = () => sU && sU.dev ? ["Сотрудники"].concat(sTabsFor("boss").filter(t => t !== "Сотрудники")) : sTabsFor(sU.role);
   const sRoleName = () => sU.dev ? "Разработчик" : S_RN[sU.role];
@@ -1166,9 +1166,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (sU && (sU.role === "mon" || sU.role === "el" || sU.role === "bld")) {
       let ss = null; try { ss = JSON.parse(localStorage.getItem("zamer_slk_seenst") || "null"); } catch (e) {}
       const first = !ss; ss = ss || {}; const ch = [];
-      ((sD && sD.reqs) || []).forEach(r => { const k = sU.fio + "|" + r.id; if (!first && ss[k] !== undefined && ss[k] !== r.s && (r.s === 1 || r.s === 2 || r.s === 4)) ch.push(r); ss[k] = r.s; });
+      ((sD && sD.reqs) || []).forEach(r => { const k = sU.fio + "|" + r.id; if (!first && ss[k] !== undefined && ss[k] !== r.s && (r.s === 1 || r.s === 2 || r.s === 3 || r.s === 5)) ch.push(r); ss[k] = r.s; });
       try { localStorage.setItem("zamer_slk_seenst", JSON.stringify(ss)); } catch (e) {}
-      if (ch.length) { const r = ch[0], tx = ch.length > 1 ? "Изменились статусы заявок: " + ch.length : "Заявка «" + r.kind + "»: " + S_SUP[r.s] + (r.s === 4 && r.why ? " (" + r.why + ")" : ""); chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast(tx), 400); sSysNotify("Снабжение", tx); }
+      if (ch.length) { const r = ch[0], tx = ch.length > 1 ? "Изменились статусы заявок: " + ch.length : "Заявка «" + r.kind + "»: " + S_SUP[r.s] + (r.s === 5 && r.why ? " (" + r.why + ")" : ""); chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast(tx), 400); sSysNotify("Снабжение", tx); }
     }
     if (!sU || (sU.role !== "el" && sU.role !== "bld")) return;
     let seen = {}; try { seen = JSON.parse(localStorage.getItem("zamer_slk_seen") || "{}"); } catch (e) {}
@@ -1279,21 +1279,21 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     return `<div class="card"><b>Новая заявка</b><p class="hint" style="margin:6px 0 4px">Что нужно</p><div class="rchips">${S_KINDS.map(k => `<button class="${sNr.kind === k ? "on" : ""}" data-a="s:nrk:${S_KINDS.indexOf(k)}">${k}</button>`).join("")}</div><p class="hint" style="margin:8px 0 4px">Объект</p><div class="rchips">${addrs.map((a, i) => `<button class="${sNr.addr === a ? "on" : ""}" data-a="s:nra:${i}">${esc(a)}</button>`).join("")}</div><label class="plab" style="margin-top:8px">Подробности и количество</label><div class="field"><input id="snrw" data-sf="nrw" autocomplete="off" value="${esc(sNr.what)}" placeholder="Например, кабель 5×2,5, 100 м"></div><button class="btn" style="margin-top:10px" data-a="s:nrsend" ${sNr.kind && sNr.addr ? "" : "disabled"}>Отправить в снабжение</button></div>`;
   }
   function sReqCard(x, i, mode) {
-    const LBL = ["Получено", "Принято", "В пути", "На объекте"], rej = x.s === 4;
+    const LBL = ["Получено", "Принято", "Произв-во", "В пути", "На объекте"], rej = x.s === 5;
     const steps = rej ? "" : `<div class="ssteps">${LBL.map((l, k) => `<span class="${k <= x.s ? "on" : ""}">${l}</span>`).join("")}</div>`;
     let btn = "";
     if (mode === "sup") {
       if (x.s === 0) btn = `<button class="btn" data-a="s:racc:${i}">Проверил: принять заявку</button>`;
       btn += `<p class="rqm" style="margin-top:4px">Изменить статус:</p><div class="rchips">${S_SUP.map((l, k) => `<button class="${x.s === k ? "on" : ""}" data-a="s:rst:${i}:${k}">${l}</button>`).join("")}</div>`;
     }
-    if (mode === "own" && (x.s === 1 || x.s === 2)) btn = `<button class="btn" data-a="s:rarr:${i}">Пришло на объект</button>`;
-    if (x.s === 3) btn = sNote("Материал на объекте ✓", "ok");
+    if (mode === "own" && (x.s >= 1 && x.s <= 3)) btn = `<button class="btn" data-a="s:rarr:${i}">Пришло на объект</button>`;
+    if (x.s === 4) btn = sNote("Материал на объекте ✓", "ok");
     const where = (x.city ? esc(x.city) + ", " : "") + esc(x.addr) + (x.ent ? ", подъезд " + esc(x.ent) : "");
     const by = x.accBy ? esc(x.accBy.replace(/^снабжение /i, "")) : "";
     const acc = rej ? sNote("Снабжение отказало" + (by ? " (" + by + ")" : "") + ": " + esc(x.why || "причина не указана"), "bad")
       : x.s >= 1 && by ? sNote("Статус «" + S_SUP[x.s] + "»: снабжение, " + by + (x.stAt || x.accAt ? ", " + esc(x.stAt || x.accAt) : ""), "ok")
       : x.s === 0 && mode === "own" ? sNote("Ждёт, пока снабжение примет заявку.") : "";
-    return `<div class="card sreq"><div class="rq1"><b>${esc(x.kind)}</b>${x.num ? `<span class="rqn">№ ${esc(x.num)}</span>` : ""}</div><p class="rqm">${esc(x.by)}${x.brig ? " · " + esc(x.brig) : ""} · ${esc(x.at)}</p><p class="rqw">${esc(x.what)}</p><p class="rqm">${where}${x.src ? " · " + esc(x.src) : ""}</p>${x.comp ? `<details class="scomp"><summary>Размеры и состав</summary><p>${esc(x.comp).replace(/\n/g, "<br>")}</p></details>` : ""}${acc}${steps}${btn}</div>`;
+    return `<div class="card sreq st${x.s}"><div class="rq1"><b>${esc(x.kind)}</b>${x.num ? `<span class="rqn">№ ${esc(x.num)}</span>` : ""}</div><p class="rqm">${esc(x.by)}${x.brig ? " · " + esc(x.brig) : ""} · ${esc(x.at)}</p><p class="rqw">${esc(x.what)}</p><p class="rqm">${where}${x.src ? " · " + esc(x.src) : ""}</p>${x.comp ? `<details class="scomp"><summary>Размеры и состав</summary><p>${esc(x.comp).replace(/\n/g, "<br>")}</p></details>` : ""}${acc}${steps}${btn}</div>`;
   }
   function sReqTab(mode) {
     const rs = sD.reqs || [];
@@ -1482,7 +1482,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (c === "nrk") { sNr.kind = S_KINDS[+p[1]]; return render(); }
     if (c === "nra") { sNr.addr = [...new Set(sD.lifts.map(l => l.addr))][+p[1]]; return render(); }
     if (c === "nrsend") return sCall("req_new", { kind: sNr.kind, addr: sNr.addr, what: sNr.what }, "Заявка отправлена в снабжение ✓").then(() => { sNr = { kind: "", addr: "", what: "" }; render(); });
-    if (c === "rst") { const r = (sD.reqs || [])[+p[1]], k = +p[2]; if (!r || r.s === k) return; if (k === 4) return sReasonSheet(r, why => sCall("req_status", { id: r.id, status: S_SUP[4], why }, "Заявка отклонена"));
+    if (c === "rst") { const r = (sD.reqs || [])[+p[1]], k = +p[2]; if (!r || r.s === k) return; if (k === 5) return sReasonSheet(r, why => sCall("req_status", { id: r.id, status: S_SUP[5], why }, "Заявка отклонена"));
       return sCall("req_status", { id: r.id, status: S_SUP[k] }, "Статус: " + S_SUP[k] + " ✓"); }
     if (c === "notif") { try { Notification.requestPermission().then(() => render()); } catch (e) { toast("Этот телефон не поддерживает уведомления"); } return; }
     if (c === "racc") return sCall("req_accept", { id: sD.reqs[+p[1]].id }, "Заявка принята ✓");

@@ -691,29 +691,39 @@ input,textarea,.fchip span,.ftab input,.gv,.stepn,.led,.ledfl{font-variant-numer
 .snote.ok,.sb.ok{display:block;width:auto;height:auto;border-radius:12px;place-items:initial;font-size:14px;color:#14532d}
 .sb.ok{display:inline-block;border-radius:8px;font-size:12px}
 .toast{width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;border-radius:16px;line-height:1.35;overflow-wrap:anywhere}
-.sreq{gap:8px}.sreq .rq1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.sreq .rq1 b{font-size:17px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.sreq{gap:8px;border-left:6px solid #e5c200}.sreq.st1{border-left-color:#3b82f6}.sreq.st2{border-left-color:#8b5cf6}.sreq.st3{border-left-color:#f97316}.sreq.st4{border-left-color:#16a34a}.sreq.st5{border-left-color:#dc2626}.sreq.st0{background-image:linear-gradient(rgba(229,194,0,.14),rgba(229,194,0,.14))}.sreq.st1{background-image:linear-gradient(rgba(59,130,246,.14),rgba(59,130,246,.14))}.sreq.st2{background-image:linear-gradient(rgba(139,92,246,.14),rgba(139,92,246,.14))}.sreq.st3{background-image:linear-gradient(rgba(249,115,22,.14),rgba(249,115,22,.14))}.sreq.st4{background-image:linear-gradient(rgba(22,163,74,.14),rgba(22,163,74,.14))}.sreq.st5{background-image:linear-gradient(rgba(220,38,38,.14),rgba(220,38,38,.14))}.sreq .rq1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.sreq .rq1 b{font-size:17px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
 .sreq .rq1 .rqn{flex:none;font-size:12px;font-weight:800;color:var(--muted);background:var(--soft);border-radius:8px;padding:3px 8px}
 .sreq .rqw{font-size:15px;line-height:1.4;margin:0;overflow-wrap:anywhere}.sreq .rqm{margin:0;color:var(--muted);font-size:13px;line-height:1.4;overflow-wrap:anywhere}
-.sreq .ssteps span{padding:7px 2px;font-size:12px;line-height:1.2}.sreq .btn{margin-top:2px}
+.sreq .ssteps{gap:4px}.sreq .ssteps span{padding:7px 1px;font-size:10.5px;line-height:1.15;min-width:0;display:flex;align-items:center;justify-content:center}.sreq .btn{margin-top:2px}
 .rchips{padding-bottom:2px}.rchips button{height:auto;min-height:36px;padding:6px 12px;line-height:1.2}
 .snote{overflow-wrap:anywhere}
 .toast{bottom:calc(150px + env(safe-area-inset-bottom))}
+
+/* Запуск: кабина приезжает сверху вниз, затем открываются двери */
+#shaft{position:fixed;inset:0;z-index:99;background:#0d1114;transition:opacity .4s ease}
+#lift.intro{animation:cabin 1.7s cubic-bezier(.2,.75,.3,1) both}
+@keyframes cabin{from{transform:translateY(-104%)}to{transform:translateY(0)}}
+#lift.intro .door{transition-duration:1.5s;transition-timing-function:cubic-bezier(.65,.02,.25,1)}
+#lift.intro .head i{animation:arr .6s infinite}
+@media (prefers-reduced-motion:reduce){#shaft{display:none}#lift.intro{animation:none}}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>
 <body>
 <div id="app" class="pre"></div>
-<div id="lift" aria-hidden="true"><div class="head"><i>▲</i><b id="lfl">1</b></div><div class="door l"><b class="st"></b><i class="pk"></i></div><div class="door r"><b class="st"></b><i class="pk"></i></div><div class="tag">Замер ДШ</div></div>
+<div id="shaft" aria-hidden="true"></div>
+<div id="lift" class="intro" aria-hidden="true"><div class="head"><i>▼</i><b id="lfl">5</b></div><div class="door l"><b class="st"></b><i class="pk"></i></div><div class="door r"><b class="st"></b><i class="pk"></i></div><div class="tag">Замер ДШ</div></div>
 <script src="config.js"></script>
 <script src="sheet.js"></script>
 <script src="pdf.js"></script>
 <script src="field.js"></script>
 <script src="app.js"></script>
 <script>
-(function(){var L=document.getElementById("lift"),A=document.getElementById("app");if(!L)return;
-var done=false;function fin(){if(done)return;done=true;A.classList.remove("pre");L.classList.add("open");setTimeout(function(){L.remove()},2800)}
-if(matchMedia("(prefers-reduced-motion: reduce)").matches){L.remove();A.classList.remove("pre");return}
-L.addEventListener("click",fin);setTimeout(fin,1200)})();
+(function(){var L=document.getElementById("lift"),A=document.getElementById("app"),S=document.getElementById("shaft"),F=document.getElementById("lfl");if(!L)return;
+var done=false,n=5,iv;function fin(){if(done)return;done=true;clearInterval(iv);if(F)F.textContent="1";if(S){S.style.opacity="0";setTimeout(function(){S.remove()},500)}A.classList.remove("pre");L.classList.add("open");setTimeout(function(){L.remove()},2800)}
+if(matchMedia("(prefers-reduced-motion: reduce)").matches){L.remove();if(S)S.remove();A.classList.remove("pre");return}
+iv=setInterval(function(){n=Math.max(1,n-1);if(F)F.textContent=n;if(n<=1)clearInterval(iv)},340);
+L.addEventListener("click",fin);setTimeout(fin,1850)})();
 </script>
 </body>
 </html>
