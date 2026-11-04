@@ -10,7 +10,7 @@
 
   /* ---------- состояние ---------- */
   const fresh = () => ({ kind: "frame", paid: "", ent: {}, common: {}, ops: {}, thresholds: [], nashchelnik: [], cable: {} });
-  let order = fresh(), pos = 0, view = "home", sub = null, pdfCache = null, flash = "";
+  let order = fresh(), pos = 0, view = "home", sub = null, pdfCache = null, flash = "", slkMeas = null;
   const save = () => { try { localStorage.setItem("zamer", JSON.stringify({ order, pos, view })); } catch (e) {} };
   try {
     const s = JSON.parse(localStorage.getItem("zamer") || "null");
@@ -294,7 +294,7 @@
   function newOrder(kind) {
     if (LIM && !acc.session) { view = "home"; return render(); }
     if (hasDraft() && !confirm("Начать новую заявку? Текущие ответы будут удалены.")) return;
-    order = fresh(); order.kind = kind; pos = 0; view = "wizard"; sub = null; save(); render();
+    order = fresh(); order.kind = kind; if (slkMeas) { order.address = slkMeas.addr + ", подъезд " + slkMeas.ent; order.contact = sU ? sU.fio : ""; } pos = 0; view = "wizard"; sub = null; save(); render();
   }
   function ensureForms() {
     order.common = order.common || {};
@@ -372,6 +372,10 @@
       `<button class="btn" data-a="cv_send">Отправить анкету</button><button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
   }
   function measView() {
+    if (slkMeas) return shell("Заявка с размерами · п." + slkMeas.ent, null, `<div class="card"><p class="hint" style="margin:0">Объект: ${esc(slkMeas.addr)}, подъезд ${esc(slkMeas.ent)}. Адрес подставится сам. После отправки заявка появится у снабжения.</p></div><div class="tiles">
+        ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
+        ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
+        ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}</div>`, `<button class="btn ghost" data-a="s:mback">Назад к подъезду</button>`, { menu: false });
     shell("Замеры", null, `<div class="tiles">
         ${tile("sec_frame", "frame", "Замер обрамлений", "Двери шахты, пороги, нащельник, бортики", false)}
         ${tile("sec_door", "door", "Замер дверей и люков", "Машинное помещение лифта", false)}
@@ -822,10 +826,10 @@
     try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: pdfCache.title || order.address, text: "Заявка: " + (pdfCache.title || order.address) });
-        return showDone("sent");
+        sMeasReg(); return showDone("sent");
       }
     } catch (e) { if (e && e.name === "AbortError") return; }
-    download(); showDone("saved");
+    download(); sMeasReg(); showDone("saved");
   }
   function download() {
     if (!pdfCache) return;
@@ -891,7 +895,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
-  const APP_VERSION = "V.2-02";
+  const APP_VERSION = "V.2-03";
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
@@ -1145,7 +1149,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (!j.ok) { const e = new Error(S_ERR[j.error] || j.error || "Ошибка таблицы"); e.code = j.error; throw e; }
     return j;
   }
-  function sLogout(keep) { sStaff = null; sEd = null; sU = null; sD = null; sFin = null; sRep = null; sOpen = null; sPend = {}; sHand = null; sAdd = null; try { sessionStorage.removeItem("zamer_slk"); localStorage.removeItem("zamer_slk_rem"); } catch (e) {} if (!keep) { view = "home"; render(); } }
+  function sLogout(keep) { slkMeas = null; sStaff = null; sEd = null; sU = null; sD = null; sFin = null; sRep = null; sOpen = null; sPend = {}; sHand = null; sAdd = null; try { sessionStorage.removeItem("zamer_slk"); localStorage.removeItem("zamer_slk_rem"); } catch (e) {} if (!keep) { view = "home"; render(); } }
   async function sLoad(silent) {
     if (!sU) return; sBusy = true; sErr = ""; if (!silent && view === "slk") render();
     try { const j = await sApi("load"); sD = j; sD.t = Date.now(); sNotify(); }
@@ -1153,15 +1157,57 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     sBusy = false; if (view === "slk" || view === "home") render();
   }
   function sNotify() {
+    if (sU && (sU.role === "sup" || sU.role === "boss")) {
+      let sr = {}; try { sr = JSON.parse(localStorage.getItem("zamer_slk_seenreq") || "{}"); } catch (e) {}
+      const nw = sNewReqs().filter(r => !sr[r.id]);
+      if (nw.length) { nw.forEach(r => { sr[r.id] = 1; }); try { localStorage.setItem("zamer_slk_seenreq", JSON.stringify(sr)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast("Новая заявка: " + nw.map(r => r.kind + ", " + r.addr + (r.ent ? ", п." + r.ent : "")).join("; ")), 400); }
+      return;
+    }
+    if (sU && (sU.role === "mon" || sU.role === "el" || sU.role === "bld")) {
+      let sa = {}; try { sa = JSON.parse(localStorage.getItem("zamer_slk_seenacc") || "{}"); } catch (e) {}
+      const ac = ((sD && sD.reqs) || []).filter(r => r.s === 1 && !sa[r.id]);
+      if (ac.length) { ac.forEach(r => { sa[r.id] = 1; }); try { localStorage.setItem("zamer_slk_seenacc", JSON.stringify(sa)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast("Снабжение приняло заявку: " + ac.map(r => r.kind + ", " + r.addr).join("; ")), 400); }
+    }
     if (!sU || (sU.role !== "el" && sU.role !== "bld")) return;
     let seen = {}; try { seen = JSON.parse(localStorage.getItem("zamer_slk_seen") || "{}"); } catch (e) {}
     const fresh = (sD.lifts || []).filter(l => l.ready && !seen[sU.fio + "|" + l.key]);
     if (fresh.length) { fresh.forEach(l => { seen[sU.fio + "|" + l.key] = 1; }); try { localStorage.setItem("zamer_slk_seen", JSON.stringify(seen)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast("Можно заходить на объект: " + fresh.map(l => l.addr + ", п." + l.ent).join("; ")), 400); }
   }
+  setInterval(() => { if (sU && (sU.role === "sup" || sU.role === "boss") && view === "slk" && !document.hidden && !sBusy) sLoad(true); }, 60000);
   async function sCall(action, body, msg) {
     toast("Сохраняем…");
     try { const j = await sApi(action, body); await sLoad(true); toast(msg || "Готово ✓"); return j; }
     catch (e) { toast(e.message); return null; }
+  }
+  function sQuickSheet(l) {
+    let kind = "", what = ""; const o = document.createElement("div"); o.className = "sheet";
+    const draw = () => { o.innerHTML = `<div class="sheetbox scroll" role="dialog" aria-modal="true"><h3>Короткая заявка</h3><p class="hint">${esc(l.addr)}, подъезд ${esc(l.ent)}</p><p class="hint" style="margin:8px 0 4px">Что нужно</p><div class="rchips">${S_KINDS.map((k, n) => `<button class="${kind === k ? "on" : ""}" data-k="${n}">${k}</button>`).join("")}</div><label class="plab" style="margin-top:8px">Подробности и количество</label><div class="field"><input id="qw" autocomplete="off" value="${esc(what)}" placeholder="Например, кабель 5×2,5, 100 м"></div><p class="err" id="qe"></p><button class="btn" data-q="go" ${kind ? "" : "disabled"}>Отправить в снабжение</button><button class="btn ghost" data-q="no">Закрыть</button></div>`; };
+    draw();
+    o.addEventListener("input", ev => { if (ev.target.id === "qw") what = ev.target.value; });
+    o.addEventListener("click", async ev => {
+      const b = ev.target.closest("[data-k]"); if (b) { what = (o.querySelector("#qw") || {}).value || what; kind = S_KINDS[+b.dataset.k]; draw(); return; }
+      if (ev.target === o || ev.target.closest("[data-q=no]")) return o.remove();
+      if (ev.target.closest("[data-q=go]")) { const e = o.querySelector("#qe"); e.textContent = "Отправляем…";
+        try { await sApi("req_new", { kind, addr: l.addr, ent: l.ent, what, src: "короткая заявка" }); o.remove(); await sLoad(true); toast("Заявка отправлена в снабжение ✓"); render(); }
+        catch (er) { e.textContent = er.message; } }
+    });
+    document.body.appendChild(o);
+  }
+  function sMeasSummary() {
+    const lines = [kindName() + ". " + (order.address || "")]; if (order.contact) lines.push("Контакт: " + order.contact);
+    try {
+      if (order.kind === "win") winItems().forEach(w => lines.push("Окно " + w.n + ": " + [w.kindName, (w.w || "?") + "×" + (w.h || "?") + " мм", w.hinge ? "петли " + w.hinge : "", w.qty ? w.qty + " шт." : "", w.ebb ? "отлив " + w.ebb.l + "×" + w.ebb.w : ""].filter(Boolean).join(", ")));
+      else if (order.kind === "frame") { const o = exportOrder(); lines.push("Остановок: " + (o.stops || "?") + (o.scheme ? ", схема " + o.scheme : "")); }
+      else lines.push("Подъездов в заявке: " + (order.entrances || 1));
+    } catch (e) {}
+    lines.push("Полный бланк PDF отправлен в чат снабжения."); return lines.join("\n").slice(0, 1800);
+  }
+  async function sMeasReg() {
+    if (!slkMeas || !sU || !pdfCache || pdfCache.slkReg) return; pdfCache.slkReg = 1;
+    const KM = { dl: "Замер: двери и люки", win: "Замер: окна", frame: "Замер: обрамления" };
+    const body = { kind: KM[order.kind] || KM.frame, addr: slkMeas.addr, ent: slkMeas.ent, what: kindName() + ", бланк PDF", comp: sMeasSummary(), src: "заявка с размерами" };
+    try { await sApi("req_new", body); toast("Заявка передана в снабжение ✓"); sLoad(true); }
+    catch (e) { pdfCache.slkReg = 0; toast("Заявка в таблицу не ушла: " + e.message + ". Нажмите «Отправить» ещё раз"); }
   }
   function sLoginSheet() {
     const o = document.createElement("div"); o.className = "sheet";
@@ -1192,10 +1238,12 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   const sLeft = l => l.due ? sDiff(sToday(), l.due) : "—";
   const sCnt = l => `<div class="scnt"><div><b>${sDays(l) || "—"}</b><small>день на объекте</small></div><div><b>${sLeft(l)}</b><small>дней осталось</small></div><div><b>${l.pto ? sF(l.pto) : "—"}</b><small>ПТО назначено</small></div></div>`;
   const sRows = (l) => (l.hist ? l.hist.split("\n").filter(Boolean) : []);
+  const sReqBtns = i => `<div class="sreqrow"><button class="btn sec" data-a="s:mreq:${i}">Заявка с размерами</button><button class="btn sec" data-a="s:qreq:${i}">Короткая заявка</button></div>`;
   function sLiftCard(l, i, act, extra) {
     return `<div class="rhouse"><div class="rh1"><b>${esc(l.addr)} · п.${esc(l.ent)}</b><span>${l.pct}%</span></div><p class="hint">${esc(l.city)} · ${esc(l.brig)} · монтажник ${esc(l.mon)} · сдать до ${sF(l.due) || "—"}</p><div class="rbar"><i style="width:${l.pct}%"></i></div>${extra || ""}${act ? `<button class="btn sec" data-a="${act}">${act.startsWith("s:open") ? "Открыть этапы" : "Подробнее"}</button>` : ""}</div>`;
   }
-  const sTabBar = () => sTabs().length < 2 ? "" : `<div class="stabs">${sTabs().map(t => `<button class="${sTab === t ? "on" : ""}" data-a="s:tab:${t}">${t}${t === "Проверка" && sD && sPending().length ? " (" + sPending().length + ")" : ""}</button>`).join("")}</div>`;
+  const sTabBar = () => sTabs().length < 2 ? "" : `<div class="stabs">${sTabs().map(t => `<button class="${sTab === t ? "on" : ""}" data-a="s:tab:${t}">${t}${t === "Проверка" && sD && sPending().length ? " (" + sPending().length + ")" : ""}${(t === "Снабжение" || t === "Заявки") && sD && (sU.role === "sup" || sU.role === "boss") && sNewReqs().length ? " (" + sNewReqs().length + ")" : ""}</button>`).join("")}</div>`;
+  const sNewReqs = () => ((sD && sD.reqs) || []).filter(r => r.s === 0);
   function sPending() {
     const o = []; if (!sD) return o;
     (sD.lifts || []).forEach((l, i) => {
@@ -1216,18 +1264,18 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (mode === "sup" && x.s === 0) btn = `<button class="btn" data-a="s:racc:${i}">Проверил: принять заявку</button>`;
     if (mode === "own" && x.s === 1) btn = `<button class="btn" data-a="s:rarr:${i}">Пришло на объект</button>`;
     if (x.s === 2) btn = sNote("Материал на объекте ✓", "ok");
-    return `<div class="card"><div class="rh1"><b>${esc(x.kind)}</b><span class="hint">${esc(x.by)} · ${esc(x.brig)}</span></div><p style="margin:2px 0">${esc(x.what)}</p><p class="hint" style="margin:0 0 8px">${esc(x.addr)} · ${esc(x.at)}</p><div class="ssteps">${steps}</div>${btn ? `<div style="margin-top:8px">${btn}</div>` : ""}</div>`;
+    return `<div class="card"><div class="rh1"><b>${esc(x.kind)}</b><span class="hint">${esc(x.by)} · ${esc(x.brig)}</span></div><p style="margin:2px 0">${esc(x.what)}</p><p class="hint" style="margin:0 0 8px">${esc(x.addr)}${x.ent ? " · п." + esc(x.ent) : ""} · ${esc(x.at)}${x.src ? " · " + esc(x.src) : ""}</p>${x.comp ? `<details class="scomp"><summary>Размеры и состав</summary><p>${esc(x.comp).replace(/\n/g, "<br>")}</p></details>` : ""}${x.s >= 1 && x.accBy ? sNote("Снабжение приняло заявку: " + esc(x.accBy.replace(/^снабжение /i, "")) + (x.accAt ? ", " + esc(x.accAt) : ""), "ok") : x.s === 0 && mode === "own" ? sNote("Ждёт, пока снабжение примет заявку.") : ""}<div class="ssteps">${steps}</div>${btn ? `<div style="margin-top:8px">${btn}</div>` : ""}</div>`;
   }
   function sReqTab(mode) {
     const rs = sD.reqs || [];
-    const head = mode === "sup" ? sNote("Здесь все заявки. Бригады и сотрудники видят только свои.", "ok") + `<div class="rchips">${["Все", ...new Set(rs.map(r => r.brig))].map((b, i) => `<button class="${sSf === b ? "on" : ""}" data-a="s:sf:${i}">${esc(b)}</button>`).join("")}</div>` : sNote(sU.role === "mon" ? `Вы видите заявки бригады «${esc(sU.brig)}».` : "Вы видите только свои заявки.") + sReqForm();
+    const head = mode === "sup" ? (sNewReqs().length ? sNote("🔔 Новых заявок: " + sNewReqs().length + ". Проверьте и нажмите «Проверил: принять заявку», чтобы подтвердить приём.", "bad") : "") + sNote("Здесь все заявки. Бригады и сотрудники видят только свои.", "ok") + `<div class="rchips">${["Все", ...new Set(rs.map(r => r.brig))].map((b, i) => `<button class="${sSf === b ? "on" : ""}" data-a="s:sf:${i}">${esc(b)}</button>`).join("")}</div>` : sNote(sU.role === "mon" ? `Вы видите заявки бригады «${esc(sU.brig)}».` : "Вы видите только свои заявки.") + sReqForm();
     const list = rs.map((x, i) => ({ x, i })).filter(o => mode !== "sup" || sSf === "Все" || o.x.brig === sSf);
     return head + (list.length ? list.map(o => sReqCard(o.x, o.i, mode)).join("") : `<div class="card"><p class="hint">Заявок пока нет.</p></div>`);
   }
   function sMonObjects() {
     const ls = sD.lifts || []; if (!ls.length) return `<div class="card"><p class="hint">Вам пока не назначены подъезды. Их назначает прораб.</p></div>`;
     return ls.map((l, i) => { const mine = sRows(l).filter(t => t.includes("→ " + sU.fio + ","));
-      return sLiftCard(l, i, `s:open:${i}`, sCnt(l) + `<div style="margin:4px 0 8px">${sRepB(l)}</div>` + mine.map(t => sNote(esc(t))).join("")); }).join("") + `<p class="hint">Видны только подъезды, назначенные вам прорабом.</p>`;
+      return sLiftCard(l, i, `s:open:${i}`, sCnt(l) + `<div style="margin:4px 0 8px">${sRepB(l)}</div>` + mine.map(t => sNote(esc(t))).join("") + sReqBtns(i)); }).join("") + `<p class="hint">Видны только подъезды, назначенные вам прорабом.</p>`;
   }
   function sSubObjects() {
     const ls = sD.lifts || [], me = sU.role; if (!ls.length) return `<div class="card"><p class="hint">Вам пока не назначены подъезды.</p></div>`;
@@ -1240,7 +1288,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       else if (!c.in) act = sNote("🔔 Можно заходить на объект (с " + sF(l.readyDate) + ")", "ok") + `<button class="btn" style="margin-top:8px" data-a="s:crew:${i}:in">Зашли на объект</button>`;
       else if (!c.out) act = `<p class="hint">Зашли ${sF(c.in)} (подтверждено прорабом)</p><button class="btn" data-a="s:crew:${i}:out">Работы выполнены</button>`;
       else act = sNote(`Зашли ${sF(c.in)} · сделано ${sF(c.out)} · подтверждено прорабом ✓`, "ok");
-      return `<div class="rhouse${l.ready ? " hot" : ""}"><div class="rh1"><b>${esc(l.addr)} · п.${esc(l.ent)}</b>${sGate(l)}</div><p class="hint">${esc(l.city)} · монтаж: ${esc(l.brig)} · сдать до ${sF(l.due) || "—"}</p>${mine.map(t => sNote(esc(t))).join("")}${act}</div>`;
+      return `<div class="rhouse${l.ready ? " hot" : ""}"><div class="rh1"><b>${esc(l.addr)} · п.${esc(l.ent)}</b>${sGate(l)}</div><p class="hint">${esc(l.city)} · монтаж: ${esc(l.brig)} · сдать до ${sF(l.due) || "—"}</p>${mine.map(t => sNote(esc(t))).join("")}${act}${sReqBtns(i)}</div>`;
     }).join("");
   }
   function sHistory() {
@@ -1399,6 +1447,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (c === "crew") { const l = sD.lifts[+p[1]]; return sCall("send_crew", { key: l.key, kind: p[2] }, "Отчёт отправлен прорабу ✓"); }
     if (c === "why") { sWhy = ["Неверная дата", "Не хватает акта", "Этап не завершён"][+p[1]]; return render(); }
     if (c === "dec") return sCall("decide", { id: p[1], ok: p[2] === "1", why: sWhy }, p[2] === "1" ? "Принято ✓" : "Возвращено");
+    if (c === "mback") { slkMeas = null; order = fresh(); pdfCache = null; save(); view = "slk"; return render(); }
+    if (c === "mreq") { const l = (sD.lifts || [])[+p[1]]; if (!l) return; if (hasDraft() && !confirm("На телефоне есть незаконченная заявка из раздела замеров. Начать новую? Текущие ответы будут удалены.")) return; slkMeas = { addr: l.addr, ent: l.ent, city: l.city }; order = fresh(); pos = 0; sub = null; pdfCache = null; view = "meas"; wail(); return render(); }
+    if (c === "qreq") { const l = (sD.lifts || [])[+p[1]]; if (l) sQuickSheet(l); return; }
     if (c === "nrk") { sNr.kind = S_KINDS[+p[1]]; return render(); }
     if (c === "nra") { sNr.addr = [...new Set(sD.lifts.map(l => l.addr))][+p[1]]; return render(); }
     if (c === "nrsend") return sCall("req_new", { kind: sNr.kind, addr: sNr.addr, what: sNr.what }, "Заявка отправлена в снабжение ✓").then(() => { sNr = { kind: "", addr: "", what: "" }; render(); });
@@ -1597,13 +1648,14 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       if (view === "axis") { view = "meas"; return render(); }
       if (view === "axrev") { view = "axis"; return render(); }
       if (view === "soon") { view = /^claim_/.test(soonView.what) ? "claim" : "home"; return render(); }
+      if (view === "meas" && slkMeas) { slkMeas = null; order = fresh(); pdfCache = null; save(); view = "slk"; return render(); }
       if (view === "meas" || view === "cv") { view = "home"; return render(); }
       if (view === "slk") { if (sOpen !== null) { sOpen = null; return render(); } view = "home"; return render(); }
       if (view === "work" || view === "claim") { view = sU ? "slk" : "home"; return render(); }
       if (sub) { sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
       else if (view === "review") { if (isSimple()) { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
-      else if (pos > 0) pos--; else view = "home";
+      else if (pos > 0) pos--; else view = slkMeas ? "meas" : "home";
       wizardView.err = ""; save(); return render();
     }
     if (a === "refresh") {
@@ -1619,7 +1671,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       try { localStorage.setItem("zamer_theme", t); } catch (e) {}
       return toast(t === "dark" ? "Тёмная тема" : "Светлая тема");
     }
-    if (a === "finish") { if (pdfCache && pdfCache.axis) { ax = axFresh(); axSave(); } order = fresh(); pos = 0; sub = null; pdfCache = null; view = "home"; save(); return render(); }
+    if (a === "finish") { if (pdfCache && pdfCache.axis) { ax = axFresh(); axSave(); } order = fresh(); pos = 0; sub = null; pdfCache = null; view = slkMeas ? "slk" : "home"; slkMeas = null; save(); return render(); }
     if (a === "backrev") { view = pdfCache && pdfCache.axis ? "axrev" : "review"; save(); return render(); }
     if (a === "login" || a === "dologin") return startLogin();
     if (a === "opencopy") return openCopy();
@@ -1694,7 +1746,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (/^claim_/.test(a)) { soonView.fb = ""; soonView.what = a; view = "soon"; return render(); }
     if (a === "sec_door") return newOrder("dl");
     if (a === "sec_frame") return newOrder("frame");
-    if (a === "home") { view = "home"; return render(); }
+    if (a === "home") { view = slkMeas ? "slk" : "home"; slkMeas = null; return render(); }
     if (a === "back2") { view = "review"; return render(); }
     if (a === "logout") { if (!confirm("Выйти из аккаунта? Неотправленные замеры на телефоне будут возвращены на баланс при следующем входе.")) return; api("/api/release", { tickets: acc.tickets }).catch(() => {}); acc = { session: "", id: "", name: "", credits: null, tickets: [], redeem: acc.redeem }; saveAcc(); view = "home"; return render(); }
     if (a === "new") {
@@ -1727,7 +1779,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (a === "review") { view = "review"; save(); return render(); }
     if (a === "hub") { view = "hub"; return render(); }
     if (a === "send") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => ok && share()); if (!LIM || order.paid || acc.tickets.length) { charge(); return share(); } return; }
-    if (a === "download") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => { if (ok) { download(); toast("Файл сохранён"); } }); charge(); download(); return toast("Файл сохранён"); }
+    if (a === "download") { if (LIM && !order.paid && !acc.tickets.length) return charge().then(ok => { if (ok) { download(); sMeasReg(); toast("Файл сохранён"); } }); charge(); download(); sMeasReg(); return toast("Файл сохранён"); }
     if (a === "addwin") { order.wins = Math.max(1, order.wins || 1) + 1; const nl = buildList(); const k = nl.findIndex(x => x.win === order.wins && x.first); pos = k < 0 ? nl.length - 1 : k; view = "wizard"; save(); return render(); }
     if (a === "copyprev" && order.kind === "win") {
       const l0 = buildList(), i = l0[pos].win;
