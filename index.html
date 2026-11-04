@@ -686,6 +686,18 @@ input,textarea,.fchip span,.ftab input,.gv,.stepn,.led,.ledfl{font-variant-numer
 .srem{display:flex;align-items:center;gap:8px;margin:10px 2px;font-size:14px;font-weight:600}.srem input{width:22px;height:22px}
 .field select{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:600 16px system-ui;padding:12px 0;outline:0}.sgrid .field input,.rhouse .field input[type=date],.rhouse .field input[data-sfp],.rhouse .field input[data-sff]{font-size:17px!important;min-height:46px}.card .field input[data-sfp]{font-size:17px!important;min-height:46px}
 .rhouse{grid-template-columns:minmax(0,1fr)}.rhouse>*{min-width:0}.srow3 select{min-width:0;font-size:12.5px;padding:0 2px}.srow3{grid-template-columns:28px repeat(3,minmax(0,1fr));gap:3px}
+
+/* V.2-04: исправление наложений (общий стиль .ok «галочка» ломал зелёные подсказки), карточка заявки, всплывающее сообщение */
+.snote.ok,.sb.ok{display:block;width:auto;height:auto;border-radius:12px;place-items:initial;font-size:14px;color:#14532d}
+.sb.ok{display:inline-block;border-radius:8px;font-size:12px}
+.toast{width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;border-radius:16px;line-height:1.35;overflow-wrap:anywhere}
+.sreq{gap:8px}.sreq .rq1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.sreq .rq1 b{font-size:17px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.sreq .rq1 .rqn{flex:none;font-size:12px;font-weight:800;color:var(--muted);background:var(--soft);border-radius:8px;padding:3px 8px}
+.sreq .rqw{font-size:15px;line-height:1.4;margin:0;overflow-wrap:anywhere}.sreq .rqm{margin:0;color:var(--muted);font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.sreq .ssteps span{padding:7px 2px;font-size:12px;line-height:1.2}.sreq .btn{margin-top:2px}
+.rchips{padding-bottom:2px}.rchips button{height:auto;min-height:36px;padding:6px 12px;line-height:1.2}
+.snote{overflow-wrap:anywhere}
+.toast{bottom:calc(150px + env(safe-area-inset-bottom))}
 </style>
 <script>(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");ym(113845787,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});</script>
 </head>

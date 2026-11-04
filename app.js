@@ -895,7 +895,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
-  const APP_VERSION = "V.2-03";
+  const APP_VERSION = "V.2-07";
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
@@ -1160,13 +1160,13 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (sU && (sU.role === "sup" || sU.role === "boss")) {
       let sr = {}; try { sr = JSON.parse(localStorage.getItem("zamer_slk_seenreq") || "{}"); } catch (e) {}
       const nw = sNewReqs().filter(r => !sr[r.id]);
-      if (nw.length) { nw.forEach(r => { sr[r.id] = 1; }); try { localStorage.setItem("zamer_slk_seenreq", JSON.stringify(sr)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast("Новая заявка: " + nw.map(r => r.kind + ", " + r.addr + (r.ent ? ", п." + r.ent : "")).join("; ")), 400); }
+      if (nw.length) { nw.forEach(r => { sr[r.id] = 1; }); try { localStorage.setItem("zamer_slk_seenreq", JSON.stringify(sr)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast(nw.length > 1 ? "Новых заявок: " + nw.length : "Новая заявка: " + nw[0].kind + ", " + nw[0].addr + (nw[0].ent ? ", п." + nw[0].ent : "")), 400); }
       return;
     }
     if (sU && (sU.role === "mon" || sU.role === "el" || sU.role === "bld")) {
       let sa = {}; try { sa = JSON.parse(localStorage.getItem("zamer_slk_seenacc") || "{}"); } catch (e) {}
       const ac = ((sD && sD.reqs) || []).filter(r => r.s === 1 && !sa[r.id]);
-      if (ac.length) { ac.forEach(r => { sa[r.id] = 1; }); try { localStorage.setItem("zamer_slk_seenacc", JSON.stringify(sa)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast("Снабжение приняло заявку: " + ac.map(r => r.kind + ", " + r.addr).join("; ")), 400); }
+      if (ac.length) { ac.forEach(r => { sa[r.id] = 1; }); try { localStorage.setItem("zamer_slk_seenacc", JSON.stringify(sa)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast(ac.length > 1 ? "Снабжение приняло заявок: " + ac.length : "Снабжение приняло: " + ac[0].kind + ", " + ac[0].addr), 400); }
     }
     if (!sU || (sU.role !== "el" && sU.role !== "bld")) return;
     let seen = {}; try { seen = JSON.parse(localStorage.getItem("zamer_slk_seen") || "{}"); } catch (e) {}
@@ -1259,12 +1259,14 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     return `<div class="card"><b>Новая заявка</b><p class="hint" style="margin:6px 0 4px">Что нужно</p><div class="rchips">${S_KINDS.map(k => `<button class="${sNr.kind === k ? "on" : ""}" data-a="s:nrk:${S_KINDS.indexOf(k)}">${k}</button>`).join("")}</div><p class="hint" style="margin:8px 0 4px">Объект</p><div class="rchips">${addrs.map((a, i) => `<button class="${sNr.addr === a ? "on" : ""}" data-a="s:nra:${i}">${esc(a)}</button>`).join("")}</div><label class="plab" style="margin-top:8px">Подробности и количество</label><div class="field"><input id="snrw" data-sf="nrw" autocomplete="off" value="${esc(sNr.what)}" placeholder="Например, кабель 5×2,5, 100 м"></div><button class="btn" style="margin-top:10px" data-a="s:nrsend" ${sNr.kind && sNr.addr ? "" : "disabled"}>Отправить в снабжение</button></div>`;
   }
   function sReqCard(x, i, mode) {
-    const steps = S_SUP.map((s, k) => `<span class="${k <= x.s ? "on" : ""}">${s}</span>`).join("");
+    const LBL = ["Получено", "Принято", "На объекте"], steps = LBL.map((l, k) => `<span class="${k <= x.s ? "on" : ""}">${l}</span>`).join("");
     let btn = "";
     if (mode === "sup" && x.s === 0) btn = `<button class="btn" data-a="s:racc:${i}">Проверил: принять заявку</button>`;
     if (mode === "own" && x.s === 1) btn = `<button class="btn" data-a="s:rarr:${i}">Пришло на объект</button>`;
     if (x.s === 2) btn = sNote("Материал на объекте ✓", "ok");
-    return `<div class="card"><div class="rh1"><b>${esc(x.kind)}</b><span class="hint">${esc(x.by)} · ${esc(x.brig)}</span></div><p style="margin:2px 0">${esc(x.what)}</p><p class="hint" style="margin:0 0 8px">${esc(x.addr)}${x.ent ? " · п." + esc(x.ent) : ""} · ${esc(x.at)}${x.src ? " · " + esc(x.src) : ""}</p>${x.comp ? `<details class="scomp"><summary>Размеры и состав</summary><p>${esc(x.comp).replace(/\n/g, "<br>")}</p></details>` : ""}${x.s >= 1 && x.accBy ? sNote("Снабжение приняло заявку: " + esc(x.accBy.replace(/^снабжение /i, "")) + (x.accAt ? ", " + esc(x.accAt) : ""), "ok") : x.s === 0 && mode === "own" ? sNote("Ждёт, пока снабжение примет заявку.") : ""}<div class="ssteps">${steps}</div>${btn ? `<div style="margin-top:8px">${btn}</div>` : ""}</div>`;
+    const where = (x.city ? esc(x.city) + ", " : "") + esc(x.addr) + (x.ent ? ", подъезд " + esc(x.ent) : "");
+    const acc = x.s >= 1 && x.accBy ? sNote("Снабжение приняло заявку: " + esc(x.accBy.replace(/^снабжение /i, "")) + (x.accAt ? ", " + esc(x.accAt) : ""), "ok") : x.s === 0 && mode === "own" ? sNote("Ждёт, пока снабжение примет заявку.") : "";
+    return `<div class="card sreq"><div class="rq1"><b>${esc(x.kind)}</b>${x.num ? `<span class="rqn">№ ${esc(x.num)}</span>` : ""}</div><p class="rqm">${esc(x.by)}${x.brig ? " · " + esc(x.brig) : ""} · ${esc(x.at)}</p><p class="rqw">${esc(x.what)}</p><p class="rqm">${where}${x.src ? " · " + esc(x.src) : ""}</p>${x.comp ? `<details class="scomp"><summary>Размеры и состав</summary><p>${esc(x.comp).replace(/\n/g, "<br>")}</p></details>` : ""}${acc}<div class="ssteps">${steps}</div>${btn}</div>`;
   }
   function sReqTab(mode) {
     const rs = sD.reqs || [];
