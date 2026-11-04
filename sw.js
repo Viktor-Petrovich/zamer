@@ -1,4 +1,4 @@
-const CACHE = "zamer-v108";
+const CACHE = "zamer-v109";
 const FILES = ["./", "./index.html", "./app.js", "./pdf.js", "./field.js", "./fonts/Inter-Regular.woff", "./fonts/Inter-SemiBold.woff", "./fonts/Inter-ExtraBold.woff", "./config.js", "./sheet.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
   "./icon-512-mask.png", "./form_p1.jpg", "./scheme_A.png", "./scheme_B.png"];
 self.addEventListener("install", e => {
@@ -19,3 +19,5 @@ self.addEventListener("fetch", e => {
     return res;
   }).catch(() => caches.match(r, { ignoreSearch: true }).then(m => m || caches.match("./index.html"))));
 });
+
+self.addEventListener("notificationclick", e => { e.notification.close(); e.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then(l => l.length ? l[0].focus() : clients.openWindow("./"))); });
