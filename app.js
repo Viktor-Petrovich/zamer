@@ -378,11 +378,6 @@
         ${tile("sec_win", "win", "Замер окон", "Проём, петли, схема открывания, отлив", false)}
         ${tile("sec_axis", "frame", "Тестовый замер", "Обрамление по осям · тестовая функция", false)}</div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
   }
-  function jobsView() {
-    shell("Работа", null, `<div class="tiles">
-        ${tile("sec_work", "work", "% выполнения работ по замене лифта", "Тестовая функция · отчёт монтажника о проделанной работе", false)}
-        ${tile("sec_claim", "claim", "Составление рекламации", "Поломка, недопоставка, пропажа", false)}</div>`, `<button class="btn ghost" data-a="home">На главный экран</button>`, { menu: false });
-  }
   function homeView() {
     $app.innerHTML = `<main style="padding-top:max(24px,env(safe-area-inset-top))">
       <div class="hello"><button class="logob" data-a="theme" aria-label="Сменить тему"><img src="icon-192.png" alt=""></button><div><h2>${esc(greeting())}</h2><p>Выберите, что будем измерять сегодня</p></div><button class="ib hmenu" data-a="menu" aria-label="Меню">${ICON.menu}</button></div>
@@ -391,10 +386,11 @@
       ${hasDraft() && !(LIM && !acc.session) ? `<button class="tile cont" data-a="resume"><span class="ti">${SECT_ICON.frame}</span><span class="tt"><b>Продолжить заявку</b><small>${order.kind === "dl" ? "Двери и люки" : order.kind === "win" ? "Окна" : "Обрамления"} · ${esc((order.address || "").slice(0, 32))}</small></span><span class="go">›</span></button>` : ""}
       <div class="tiles">
         ${tile("m_meas", "frame", "Замеры", "Обрамления, двери и люки, окна", false)}
-        ${tile("m_jobs", "work", "Работа", "% выполнения работ, рекламации", false)}
+        ${tile("s:enter", "work", "СтройЛифтКомплекс вход для сотрудников", "Работа, заявки, ПТО, финансы: по фамилии и паролю", false)}
       </div>
       <div class="card tips"><div class="sum"><span>✓ Работает без интернета</span><span>✓ Ответы сохраняются на телефоне</span><span>✓ Готовый бланк PDF в один клик</span></div></div>
       <p class="credit">Разработано отделом<br><b>информационных технологий</b><br><button class="co" data-a="mail">СтройЛифтКомплекс</button></p>
+      <p class="ipf">© 2026 Кащеев Виктор Петрович. Все права защищены.</p>
     </main>${LIM && !acc.session ? `<footer class="act"><button class="btn" data-a="login">Войти через Telegram</button></footer>` : ""}`;
   }
   function workView() {
@@ -896,7 +892,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
-  const APP_VERSION = "V.1-95";
+  const APP_VERSION = "V.2-01";
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
@@ -1124,6 +1120,368 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (/^ax_[BVADZP]$/.test(a) || a === "ax_FL") return axOpen(a.slice(3));
   }
 
+  /* ---------- СТРОЙЛИФТКОМПЛЕКС: вход для сотрудников (монтажники, электрики, строители, прораб, руководитель, снабжение, ПТО, бухгалтер) ---------- */
+  const S_ST = ["Начало работ", "Приёмка оборудования", "Демонтаж старого оборудования", "Монтаж направляющих", "Монтаж порталов ДШ", "Замена кабины", "Замена противовеса", "Электроразводка шахты", "Механоналадка", "Пусконаладочные работы", "Установка оборудования МП", "Замена лебёдки", "Запуск лифта"];
+  const S_RN = { mon: "Монтажник", el: "Электрик", bld: "Строитель", pro: "Прораб", boss: "Руководитель", acc: "Бухгалтер", sup: "Снабжение", pto: "Отдел ПТО" };
+  const S_KINDS = ["Двери шахты", "Люки", "Окна", "Обрамления", "Диспетчерская связь", "Расходники", "Электрика", "Стройматериалы"];
+  const S_SUP = ["Получено", "Принято", "Пришло на объект"];
+  const sTabsFor = r => ({ mon: ["Объекты", "Снабжение", "История"], el: ["Объекты", "Снабжение"], bld: ["Объекты", "Снабжение"], pro: ["Проверка", "Назначения", "Объекты", "ПТО", "Отчёты", "Сотрудники"], boss: ["Сводка", "Проверка", "Назначения", "Снабжение", "Финансы", "ПТО", "Отчёты", "Сотрудники"], acc: ["Финансы"], sup: ["Заявки"], pto: ["ПТО"] }[r] || []);
+  const sTabs = () => sU && sU.dev ? ["Сотрудники"].concat(sTabsFor("boss").filter(t => t !== "Сотрудники")) : sTabsFor(sU.role);
+  const sRoleName = () => sU.dev ? "Разработчик" : S_RN[sU.role];
+  let sU = (() => { try { return JSON.parse(sessionStorage.getItem("zamer_slk")) || JSON.parse(localStorage.getItem("zamer_slk_rem")); } catch (e) { return null; } })();
+  let sD = null, sTab = "", sBusy = false, sErr = "", sOpen = null, sPend = {}, sFlt = "", sPf = "Все", sWhy = "Неверная дата", sFin = null, sRep = null, sRper = "day", sRfrom = "", sRto = "";
+  let sNr = { kind: "", addr: "", what: "" }, sHand = null, sAdd = null, sNu = { st: "монтажник", err: "", ok: "" }, sMoney = false, sSf = "Все";
+  const sToday = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const sF = iso => iso ? iso.slice(8, 10) + "." + iso.slice(5, 7) : "";
+  const sDiff = (a, b) => Math.round((new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z")) / 864e5);
+  const sH = h => (h || 0) + (sD ? Math.floor((Date.now() - sD.t) / 36e5) : 0);
+  const sMoney$ = n => Number(n || 0).toLocaleString("ru-RU").replace(/ /g, " ");
+  const sUrl = () => window.RABOTA_SHEET || "";
+  const S_ERR = { pw: "Неверная фамилия или пароль", lock: "Слишком много неверных попыток. Подождите 15 минут", token: "Неверное секретное слово в sheet.js", role: "Для вашей роли это закрыто", forbidden: "Этот подъезд вам не назначен", busy: "Отчёт уже ждёт подтверждения", empty: "Отметьте хотя бы один этап", notready: "Заходить рано: лебёдка ещё не заменена", order: "Сначала нужен предыдущий шаг", done: "Это уже отправлено", people: "Проверьте фамилии: сотрудник с такой ролью не найден", dup: "Такая запись уже есть", pct: "Процент от 0 до 100", gone: "Отчёт уже обработан", bad: "Проверьте введённые данные", same: "Это тот же сотрудник" };
+  async function sApi(action, body) {
+    if (!sUrl()) throw new Error("Таблица ещё не подключена");
+    const b = Object.assign({ token: window.RABOTA_TOKEN || "", action }, sU ? { fio: sU.fio, pw: sU.pw } : {}, body || {});
+    let r; try { r = await fetch(sUrl(), { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(b) }); } catch (e) { throw new Error("Нет связи с таблицей. Проверьте интернет"); }
+    const j = await r.json();
+    if (!j.ok) { const e = new Error(S_ERR[j.error] || j.error || "Ошибка таблицы"); e.code = j.error; throw e; }
+    return j;
+  }
+  function sLogout(keep) { sStaff = null; sEd = null; sU = null; sD = null; sFin = null; sRep = null; sOpen = null; sPend = {}; sHand = null; sAdd = null; try { sessionStorage.removeItem("zamer_slk"); localStorage.removeItem("zamer_slk_rem"); } catch (e) {} if (!keep) { view = "home"; render(); } }
+  async function sLoad(silent) {
+    if (!sU) return; sBusy = true; sErr = ""; if (!silent && view === "slk") render();
+    try { const j = await sApi("load"); sD = j; sD.t = Date.now(); sNotify(); }
+    catch (e) { sErr = e.message; if (e.code === "pw" || e.code === "lock") { sLogout(true); sErr = e.message; view = "home"; } }
+    sBusy = false; if (view === "slk" || view === "home") render();
+  }
+  function sNotify() {
+    if (!sU || (sU.role !== "el" && sU.role !== "bld")) return;
+    let seen = {}; try { seen = JSON.parse(localStorage.getItem("zamer_slk_seen") || "{}"); } catch (e) {}
+    const fresh = (sD.lifts || []).filter(l => l.ready && !seen[sU.fio + "|" + l.key]);
+    if (fresh.length) { fresh.forEach(l => { seen[sU.fio + "|" + l.key] = 1; }); try { localStorage.setItem("zamer_slk_seen", JSON.stringify(seen)); } catch (e) {} chime([660, 880], 0.06, 0.4, 0.06); setTimeout(() => toast("Можно заходить на объект: " + fresh.map(l => l.addr + ", п." + l.ent).join("; ")), 400); }
+  }
+  async function sCall(action, body, msg) {
+    toast("Сохраняем…");
+    try { const j = await sApi(action, body); await sLoad(true); toast(msg || "Готово ✓"); return j; }
+    catch (e) { toast(e.message); return null; }
+  }
+  function sLoginSheet() {
+    const o = document.createElement("div"); o.className = "sheet";
+    o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Вход для сотрудников</h3><p>Фамилия и личный пароль. Их записал прораб или руководитель в таблице, лист «Доступ».</p><div class="field"><input id="sfio" autocomplete="off" autocapitalize="words" placeholder="Фамилия"></div><div class="field"><input id="spw" type="password" autocomplete="off" autocapitalize="off" placeholder="Пароль"></div><label class="srem"><input type="checkbox" id="srem"> Запомнить на этом телефоне</label><p class="err" id="sloge"></p><button class="btn" type="button" id="slogok">Войти</button><button class="btn ghost" type="button" id="slogno">Отмена</button></div>`;
+    document.body.appendChild(o);
+    const go = async () => {
+      const fio = o.querySelector("#sfio").value.trim(), pw = o.querySelector("#spw").value.trim(), er = o.querySelector("#sloge"); if (!fio || !pw) { er.textContent = "Введите фамилию и пароль"; return; }
+      er.textContent = "Проверяем…";
+      try { sU = null; const tmp = { fio, pw }; sU = tmp; const j = await sApi("login"); sU = { fio: j.user.fio, pw, role: j.user.role, brig: j.user.brig || "", dev: !!j.user.dev };
+        try { sessionStorage.setItem("zamer_slk", JSON.stringify(sU)); if (o.querySelector("#srem").checked) localStorage.setItem("zamer_slk_rem", JSON.stringify(sU)); } catch (e) {}
+        sD = null; sTab = sTabs()[0]; sOpen = null; o.remove(); wail(); view = "slk"; render(); sLoad(); }
+      catch (e) { sU = null; er.textContent = e.message; o.querySelector("#spw").value = ""; }
+    };
+    o.querySelector("#slogok").onclick = go; o.querySelector("#slogno").onclick = () => o.remove();
+    o.querySelector("#spw").onkeydown = ev => { if (ev.key === "Enter") go(); };
+    o.addEventListener("click", ev => { if (ev.target === o) o.remove(); });
+    setTimeout(() => o.querySelector("#sfio").focus(), 60);
+  }
+
+  /* --- мелкие части интерфейса --- */
+  const sBdg = (cls, t) => `<span class="sb ${cls}">${esc(t)}</span>`;
+  const sWait = h => { h = sH(h); return h >= 24 ? sBdg("bad", `Эскалация руководителю (${h} ч)`) : h >= 12 ? sBdg("warn", `Напоминание прорабу (${h} ч)`) : sBdg("wait", `Ожидает подтверждения (${h} ч)`); };
+  const sRepB = l => !l.rep ? sBdg("no", "нет отчёта") : l.rep.st === "ok" ? sBdg("ok", "Подтверждено") : l.rep.st === "back" ? sBdg("bad", "Возвращено: " + l.rep.why) : sWait(l.rep.h);
+  const sCrewB = c => c.st === "wait" ? sWait(c.h) + ` <small class="hint">${c.kind === "out" ? "сделали" : "зашли"} ${sF(c.date)}</small>` : c.st === "back" ? sBdg("bad", "Возвращено: " + c.why) : c.out ? sBdg("ok", "Сделано " + sF(c.out) + " · подтверждено") : c.in ? sBdg("ok", "Зашли " + sF(c.in) + " · подтверждено") : sBdg("no", "—");
+  const sGate = l => l.ready ? sBdg("ok", "Можно заходить") : sBdg("warn", "Ждём лебёдку");
+  const sNote = (t, c) => `<div class="snote ${c || ""}">${t}</div>`;
+  const sDays = l => l.start ? Math.max(1, sDiff(l.start, sToday()) + 1) : 0;
+  const sLeft = l => l.due ? sDiff(sToday(), l.due) : "—";
+  const sCnt = l => `<div class="scnt"><div><b>${sDays(l) || "—"}</b><small>день на объекте</small></div><div><b>${sLeft(l)}</b><small>дней осталось</small></div><div><b>${l.pto ? sF(l.pto) : "—"}</b><small>ПТО назначено</small></div></div>`;
+  const sRows = (l) => (l.hist ? l.hist.split("\n").filter(Boolean) : []);
+  function sLiftCard(l, i, act, extra) {
+    return `<div class="rhouse"><div class="rh1"><b>${esc(l.addr)} · п.${esc(l.ent)}</b><span>${l.pct}%</span></div><p class="hint">${esc(l.city)} · ${esc(l.brig)} · монтажник ${esc(l.mon)} · сдать до ${sF(l.due) || "—"}</p><div class="rbar"><i style="width:${l.pct}%"></i></div>${extra || ""}${act ? `<button class="btn sec" data-a="${act}">${act.startsWith("s:open") ? "Открыть этапы" : "Подробнее"}</button>` : ""}</div>`;
+  }
+  const sTabBar = () => sTabs().length < 2 ? "" : `<div class="stabs">${sTabs().map(t => `<button class="${sTab === t ? "on" : ""}" data-a="s:tab:${t}">${t}${t === "Проверка" && sD && sPending().length ? " (" + sPending().length + ")" : ""}</button>`).join("")}</div>`;
+  function sPending() {
+    const o = []; if (!sD) return o;
+    (sD.lifts || []).forEach((l, i) => {
+      if (l.rep && l.rep.st === "wait") o.push({ i, type: "mon", id: l.rep.id, h: sH(l.rep.h), l, txt: Object.keys((l.rep.data || {}).changes || {}).map(k => (+k + 1) + ". " + S_ST[k] + " " + sF(l.rep.data.changes[k])), who: "Монтажник " + l.mon + " · " + l.brig });
+      ["el", "bld"].forEach(r => { const c = l[r + "R"]; if (c && c.st === "wait") o.push({ i, type: r, id: c.id, h: sH(c.h), l, txt: [(c.kind === "out" ? "Работы выполнены " : "Зашли на объект ") + sF(c.date)], who: S_RN[r] + " " + l[r] }); });
+    });
+    return o;
+  }
+
+  /* --- вкладки --- */
+  function sReqForm() {
+    const addrs = [...new Set((sD.lifts || []).map(l => l.addr))];
+    return `<div class="card"><b>Новая заявка</b><p class="hint" style="margin:6px 0 4px">Что нужно</p><div class="rchips">${S_KINDS.map(k => `<button class="${sNr.kind === k ? "on" : ""}" data-a="s:nrk:${S_KINDS.indexOf(k)}">${k}</button>`).join("")}</div><p class="hint" style="margin:8px 0 4px">Объект</p><div class="rchips">${addrs.map((a, i) => `<button class="${sNr.addr === a ? "on" : ""}" data-a="s:nra:${i}">${esc(a)}</button>`).join("")}</div><label class="plab" style="margin-top:8px">Подробности и количество</label><div class="field"><input id="snrw" data-sf="nrw" autocomplete="off" value="${esc(sNr.what)}" placeholder="Например, кабель 5×2,5, 100 м"></div><button class="btn" style="margin-top:10px" data-a="s:nrsend" ${sNr.kind && sNr.addr ? "" : "disabled"}>Отправить в снабжение</button></div>`;
+  }
+  function sReqCard(x, i, mode) {
+    const steps = S_SUP.map((s, k) => `<span class="${k <= x.s ? "on" : ""}">${s}</span>`).join("");
+    let btn = "";
+    if (mode === "sup" && x.s === 0) btn = `<button class="btn" data-a="s:racc:${i}">Проверил: принять заявку</button>`;
+    if (mode === "own" && x.s === 1) btn = `<button class="btn" data-a="s:rarr:${i}">Пришло на объект</button>`;
+    if (x.s === 2) btn = sNote("Материал на объекте ✓", "ok");
+    return `<div class="card"><div class="rh1"><b>${esc(x.kind)}</b><span class="hint">${esc(x.by)} · ${esc(x.brig)}</span></div><p style="margin:2px 0">${esc(x.what)}</p><p class="hint" style="margin:0 0 8px">${esc(x.addr)} · ${esc(x.at)}</p><div class="ssteps">${steps}</div>${btn ? `<div style="margin-top:8px">${btn}</div>` : ""}</div>`;
+  }
+  function sReqTab(mode) {
+    const rs = sD.reqs || [];
+    const head = mode === "sup" ? sNote("Здесь все заявки. Бригады и сотрудники видят только свои.", "ok") + `<div class="rchips">${["Все", ...new Set(rs.map(r => r.brig))].map((b, i) => `<button class="${sSf === b ? "on" : ""}" data-a="s:sf:${i}">${esc(b)}</button>`).join("")}</div>` : sNote(sU.role === "mon" ? `Вы видите заявки бригады «${esc(sU.brig)}».` : "Вы видите только свои заявки.") + sReqForm();
+    const list = rs.map((x, i) => ({ x, i })).filter(o => mode !== "sup" || sSf === "Все" || o.x.brig === sSf);
+    return head + (list.length ? list.map(o => sReqCard(o.x, o.i, mode)).join("") : `<div class="card"><p class="hint">Заявок пока нет.</p></div>`);
+  }
+  function sMonObjects() {
+    const ls = sD.lifts || []; if (!ls.length) return `<div class="card"><p class="hint">Вам пока не назначены подъезды. Их назначает прораб.</p></div>`;
+    return ls.map((l, i) => { const mine = sRows(l).filter(t => t.includes("→ " + sU.fio + ","));
+      return sLiftCard(l, i, `s:open:${i}`, sCnt(l) + `<div style="margin:4px 0 8px">${sRepB(l)}</div>` + mine.map(t => sNote(esc(t))).join("")); }).join("") + `<p class="hint">Видны только подъезды, назначенные вам прорабом.</p>`;
+  }
+  function sSubObjects() {
+    const ls = sD.lifts || [], me = sU.role; if (!ls.length) return `<div class="card"><p class="hint">Вам пока не назначены подъезды.</p></div>`;
+    return sNote("Заходить на объект можно после замены лебёдки: придёт уведомление. Отчёты «зашли» и «сделали» подтверждает прораб.") + ls.map((l, i) => {
+      const c = l[me + "R"], mine = sRows(l).filter(t => t.includes("→ " + sU.fio + ","));
+      let act = "";
+      if (!l.ready) act = sNote("Ждите: лебёдка ещё не заменена.");
+      else if (c.st === "wait") act = sNote(`Отчёт «${c.kind === "out" ? "работы выполнены" : "зашли"} ${sF(c.date)}» у прораба, ждёт подтверждения (${sH(c.h)} ч).`);
+      else if (c.st === "back") act = sNote("Прораб вернул отчёт: " + esc(c.why) + ".", "bad") + `<button class="btn" style="margin-top:8px" data-a="s:crew:${i}:${c.kind === "out" ? "out" : "in"}">Отправить снова</button>`;
+      else if (!c.in) act = sNote("🔔 Можно заходить на объект (с " + sF(l.readyDate) + ")", "ok") + `<button class="btn" style="margin-top:8px" data-a="s:crew:${i}:in">Зашли на объект</button>`;
+      else if (!c.out) act = `<p class="hint">Зашли ${sF(c.in)} (подтверждено прорабом)</p><button class="btn" data-a="s:crew:${i}:out">Работы выполнены</button>`;
+      else act = sNote(`Зашли ${sF(c.in)} · сделано ${sF(c.out)} · подтверждено прорабом ✓`, "ok");
+      return `<div class="rhouse${l.ready ? " hot" : ""}"><div class="rh1"><b>${esc(l.addr)} · п.${esc(l.ent)}</b>${sGate(l)}</div><p class="hint">${esc(l.city)} · монтаж: ${esc(l.brig)} · сдать до ${sF(l.due) || "—"}</p>${mine.map(t => sNote(esc(t))).join("")}${act}</div>`;
+    }).join("");
+  }
+  function sHistory() {
+    const done = (sD.lifts || []).filter(l => l.st[12]);
+    return (done.length ? done.map(l => `<div class="card"><div class="rh1"><b>${esc(l.city)}, ${esc(l.addr)} · п.${esc(l.ent)}</b><span class="hint">сдан ${sF(l.st[12])}</span></div><p class="hint" style="margin:2px 0">${l.start ? Math.max(1, sDiff(l.start, l.st[12]) + 1) + " дн. на замену" : ""}</p></div>`).join("") : `<div class="card"><p class="hint">Сданных подъездов пока нет.</p></div>`)
+      + sNote("Деньги в истории показываются только по запросу.") + `<button class="btn sec" data-a="s:money">Запросить мои выплаты</button>` + (sMoney ? sNote("Запрос записан в журнал. Ответ даст бухгалтер.", "ok") : "");
+  }
+  function sCheckTab() {
+    const p = sPending(), late = p.filter(x => x.h >= 12);
+    return (late.length ? sNote(`Напоминание: ${late.length} отчёт(а) ждут подтверждения больше 12 часов.`, "bad") : "") + (p.length ? p.map(x => `<div class="rhouse hot"><div class="rh1"><b>${esc(x.l.addr)} · п.${esc(x.l.ent)}</b>${sWait(x.h)}</div><p class="hint">${esc(x.who)}</p>${x.txt.map(t => `<div class="srow">${esc(t)}</div>`).join("")}${x.type === "mon" && (x.l.rep.data.changes || {})[11] ? sNote("После «Принять» электрик " + esc(x.l.el) + " и строитель " + esc(x.l.bld) + " получат уведомление «можно заходить».", "ok") : ""}<p class="hint" style="margin:8px 0 4px">Вернуть, причина:</p><div class="rchips">${["Неверная дата", "Не хватает акта", "Этап не завершён"].map(w => `<button class="${sWhy === w ? "on" : ""}" data-a="s:why:${["Неверная дата", "Не хватает акта", "Этап не завершён"].indexOf(w)}">${w}</button>`).join("")}</div><div class="srow2"><button class="btn warn" data-a="s:dec:${x.id}:0">Вернуть</button><button class="btn" data-a="s:dec:${x.id}:1">Принять</button></div></div>`).join("") : `<div class="card"><b>Новых отчётов нет</b><p class="hint">Отчёты монтажников, электриков и строителей появятся здесь.</p></div>`);
+  }
+  function sHandForm() {
+    const h = sHand; if (!h) return "";
+    const l = sD.lifts[h.i], cur = l[h.role], cands = (sD.users || []).filter(u => u.role === h.role && u.fio !== cur);
+    return `<div class="rhouse hot"><b>Замена: ${S_RN[h.role].toLowerCase()}, ${esc(l.addr)} · п.${esc(l.ent)}</b><p class="hint">Сейчас: ${esc(cur)}. Кто продолжит:</p><div class="rchips">${cands.map((u, k) => `<button class="${h.nw === u.fio ? "on" : ""}" data-a="s:hn:${k}">${esc(u.fio)}</button>`).join("")}</div><label class="plab">Сколько уже сделал ${esc(cur)} на этом подъезде, %</label><div class="field"><input id="shp" data-sf="hp" inputmode="numeric" value="${esc(h.pct)}" placeholder="Например, 60"></div><label class="plab">Комментарий</label><div class="field"><input id="shc" data-sf="hc" autocomplete="off" value="${esc(h.comment)}" placeholder="Что сделано, что осталось"></div>${h.err ? `<p class="err">${esc(h.err)}</p>` : ""}<div class="srow2"><button class="btn sec" data-a="s:hno">Отмена</button><button class="btn" data-a="s:hok">Заменить</button></div></div>`;
+  }
+  function sAddForm() {
+    const a = sAdd; if (!a) return "";
+    const opt = (r, cur) => `<option value="">— выбрать —</option>` + (sD.users || []).filter(u => u.role === r).map(u => `<option${u.fio === cur ? " selected" : ""}>${esc(u.fio)}</option>`).join("");
+    const rows = a.ents.map((e, i) => `<div class="srow3"><b>п.${i + 1}</b><select data-se="${i}:mon">${opt("mon", e.mon)}</select><select data-se="${i}:el">${opt("el", e.el)}</select><select data-se="${i}:bld">${opt("bld", e.bld)}</select></div>`).join("");
+    return `<div class="rhouse hot"><b>Новый дом</b><label class="plab">Город</label><div class="field"><input data-sf="acity" autocomplete="off" value="${esc(a.city)}"></div><label class="plab">Регион России</label><div class="field"><input data-sf="areg" list="s_regs" autocomplete="off" value="${esc(a.reg)}"></div><datalist id="s_regs">${(sD.regions || []).map(r => `<option value="${esc(r)}">`).join("")}</datalist><label class="plab">Адрес (улица, дом)</label><div class="field"><input data-sf="aaddr" autocomplete="off" value="${esc(a.addr)}"></div><label class="plab">Сколько подъездов (лифтов)</label><div class="field"><input id="san" data-sf="an" inputmode="numeric" maxlength="2" value="${esc(a.n)}"></div><label class="plab">Сдать до</label><div class="field"><input type="date" data-sf="adue" value="${esc(a.due)}"></div>${a.ents.length ? `<p class="hint" style="margin:10px 0 4px">Заполнить всем подъездам сразу:</p><div class="srow3"><b></b><select data-sall="mon">${opt("mon", "")}</select><select data-sall="el">${opt("el", "")}</select><select data-sall="bld">${opt("bld", "")}</select></div><div class="srow3 sh"><b></b><small>Монтажник</small><small>Электрик</small><small>Строитель</small></div>${rows}` : ""}${a.err ? `<p class="err">${esc(a.err)}</p>` : ""}<div class="srow2"><button class="btn sec" data-a="s:addno">Отмена</button><button class="btn" data-a="s:${a.ents.length ? "addok" : "addn"}">${a.ents.length ? "Создать дом" : "Далее: назначить людей"}</button></div></div>`;
+  }
+  function sAssignTab() {
+    const ls = sD.lifts || [];
+    const line = (l, i, r) => `<div class="srow4"><span class="hint">${S_RN[r]}</span><b>${esc(l[r])}</b><button class="btn sec sm" data-a="s:hand:${i}:${r}">Заменить</button></div>`;
+    return sHandForm() + sAddForm() + (sAdd ? "" : `<button class="btn" data-a="s:addh">+ Добавить дом</button>`) + sNote("Каждый подъезд отдельной строкой. При замене монтажника, электрика или строителя указывается, сколько процентов сделал прежний: старые записи остаются.")
+      + ls.map((l, i) => `<div class="rhouse"><b>${esc(l.city)}, ${esc(l.addr)} · п.${esc(l.ent)}</b>${line(l, i, "mon")}${line(l, i, "el")}${line(l, i, "bld")}<label class="plab">Сдать до</label><div class="field"><input type="date" data-sdue="${i}" value="${esc(l.due)}"></div>${sRows(l).map(t => `<p class="hint" style="margin:4px 0 0">${esc(t)}</p>`).join("")}</div>`).join("");
+  }
+  function sAllObjects() {
+    const ls = sD.lifts || [];
+    return ls.map((l, i) => sLiftCard(l, i, `s:open:${i}`, `<div class="hint">Монтаж: ${sRepB(l)}</div><div class="hint" style="margin-top:4px">Электрик ${esc(l.el)}: ${sCrewB(l.elR)}</div><div class="hint" style="margin:4px 0 8px">Строитель ${esc(l.bld)}: ${sCrewB(l.bldR)}</div>` + sRows(l).map(t => `<p class="hint" style="margin:0 0 4px">${esc(t)}</p>`).join(""))).join("") || `<div class="card"><p class="hint">Подъездов нет.</p></div>`;
+  }
+  function sPtoTab() {
+    const ls = (sD.lifts || []).map((l, i) => ({ l, i })), cities = ["Все", ...new Set(ls.map(o => o.l.city))], vis = ls.filter(o => sPf === "Все" || o.l.city === sPf);
+    return `<p class="hint">Город</p><div class="rchips">${cities.map((c, k) => `<button class="${sPf === c ? "on" : ""}" data-a="s:pf:${k}">${esc(c)}</button>`).join("")}</div>` + vis.map(o => `<div class="rhouse"><div class="rh1"><b>${esc(o.l.addr)} · п.${esc(o.l.ent)}</b>${o.l.decl ? sBdg("ok", "Декларация получена") : o.l.pto ? sBdg("wait", "ПТО назначено") : sBdg("no", "не назначено")}</div><p class="hint">${esc(o.l.city)} · готово ${o.l.pct}%</p><div class="sgrid"><div><label class="plab">Дата проведения ПТО</label><div class="field"><input type="date" data-spto="${o.i}:pto" value="${esc(o.l.pto)}"></div></div><div><label class="plab">Декларация получена</label><div class="field"><input type="date" data-spto="${o.i}:decl" value="${esc(o.l.decl)}"></div></div></div></div>`).join("") + sNote("Дата ПТО сразу видна монтажнику и прорабу в карточке подъезда.");
+  }
+  const sGen = () => { for (;;) { let p = String(10000000 + Math.floor(Math.random() * 90000000)); if (!/(\d)\1\1/.test(p) && new Set(p).size >= 6 && !/0123|1234|2345|3456|4567|5678|6789|9876|8765|7654|6543|5432|4321|3210/.test(p)) return p; } };
+  let sStaff = null, sStaffLoading = false, sEd = null, sShowPw = false;
+  async function sLoadStaff() { sStaffLoading = true; try { sStaff = (await sApi("users_full")).list; } catch (e) { sErr = e.message; sStaff = []; } sStaffLoading = false; if (view === "slk") render(); }
+  const S_STATUSES_ALL = ["монтажник", "электрик", "строитель", "прораб", "руководитель", "бухгалтер", "снабжение", "ПТО"];
+  const sStatuses = () => sU.dev ? S_STATUSES_ALL : S_STATUSES_ALL.slice(0, 3);
+  function sStaffForm(pre, st, v) {
+    return `<p class="hint" style="margin:6px 0 4px">Статус</p><div class="rchips">${sStatuses().map((r, i) => `<button class="${st === r ? "on" : ""}" data-a="s:${pre}st:${i}">${r}</button>`).join("")}</div><label class="plab">Фамилия</label><div class="field"><input id="${pre}f" autocomplete="off" autocapitalize="words" value="${esc(v.fio || "")}"></div><label class="plab">Бригада (монтажникам, электрикам, строителям)</label><div class="field"><input id="${pre}b" list="s_brs" autocomplete="off" placeholder="Бригада 1" value="${esc(v.brig || "")}"></div><label class="plab">Почта Google (только если работает в таблице на компьютере)</label><div class="field"><input id="${pre}e" autocomplete="off" inputmode="email" value="${esc(v.email || "")}"></div><label class="plab">Пароль (от 6 символов)</label><div class="field"><input id="${pre}p" autocomplete="off" autocapitalize="off" value="${esc(v.pw || "")}"></div><button class="btn sec" style="margin-top:8px" data-a="s:${pre}gen">Придумать пароль</button>`;
+  }
+  function sStaffTab() {
+    if (!sStaff) return `<div class="card"><p class="hint">Загружаем список сотрудников…</p></div>`;
+    const brs = [...new Set(sStaff.map(u => u.brig).filter(Boolean))];
+    const add = `<div class="rhouse hot"><b>Добавить сотрудника</b>${sStaffForm("nu", sNu.st, sNu)}${sNu.err ? `<p class="err">${esc(sNu.err)}</p>` : ""}${sNu.ok ? sNote(esc(sNu.ok), "ok") : ""}<button class="btn" style="margin-top:8px" data-a="s:nuadd">Дать доступ</button></div><datalist id="s_brs">${brs.map(b => `<option value="${esc(b)}">`).join("")}</datalist>`;
+    const list = sStaff.map((u, i) => sEd && sEd.r === u.r
+      ? `<div class="rhouse hot"><b>Изменить: ${esc(u.fio)}</b>${u.dev ? sNote("Статус разработчика не меняется. Здесь можно сменить пароль и фамилию.") + `<label class="plab">Фамилия для входа</label><div class="field"><input id="edf" value="${esc(sEd.fio)}"></div><label class="plab">Пароль</label><div class="field"><input id="edp" autocomplete="off" autocapitalize="off" value="${esc(sEd.pw)}"></div><input type="hidden" id="edb" value="${esc(sEd.brig)}"><input type="hidden" id="ede" value="${esc(sEd.email)}"><button class="btn sec" style="margin-top:8px" data-a="s:edgen">Придумать пароль</button>` : sStaffForm("ed", sEd.st, sEd)}${sEd.err ? `<p class="err">${esc(sEd.err)}</p>` : ""}<div class="srow2"><button class="btn sec" data-a="s:edno">Отмена</button><button class="btn" data-a="s:edok">Сохранить</button></div></div>`
+      : `<div class="rhouse"><div class="rh1"><b>${esc(u.fio)}</b>${u.dev ? sBdg("ok", "разработчик") : sBdg("wait", u.st)}</div><p class="hint">${u.brig ? esc(u.brig) + " · " : ""}пароль: <b>${sShowPw ? esc(u.pw) : "••••••••"}</b></p><div class="srow2"><button class="btn sec" data-a="s:ed:${i}">Изменить</button>${u.dev ? "" : `<button class="btn warn" data-a="s:del:${i}">Удалить</button>`}</div></div>`).join("");
+    return sNote(sU.dev ? "Здесь вы даёте доступ всем остальным: фамилия, статус и пароль. Человек входит в приложении по фамилии и этому паролю. Всё сразу записывается в таблицу, лист «Доступ»." : "Здесь вы даёте доступ монтажникам, электрикам и строителям: фамилия, бригада и пароль. Человек входит по фамилии и этому паролю.") + add + `<button class="btn sec" data-a="s:showpw">${sShowPw ? "Скрыть пароли" : "Показать пароли"}</button>` + list;
+  }
+  const sRead = id => ((document.getElementById(id) || {}).value || "").trim();
+  function sFinCalc(f) {
+    const pool = Object.assign({}, f.pay), o = { rows: [], br: {}, city: {}, all: 0 };
+    f.rows.forEach((r, i) => { const t = (+r.work || 0) + (+r.road || 0) + (+r.flat || 0) + (+r.scrap || 0), left = pool[r.brig] || 0, c = Math.min(t, left); pool[r.brig] = left - c; o.rows[i] = { t, c, l: t - c }; const b = o.br[r.brig] = o.br[r.brig] || { tot: 0, left: 0 }; b.tot += t; b.left += t - c; o.city[r.city] = (o.city[r.city] || 0) + t - c; o.all += t - c; });
+    Object.keys(f.pay).forEach(b => { o.br[b] = o.br[b] || { tot: 0, left: 0 }; });
+    return o;
+  }
+  function sFinTab() {
+    if (!sFin) return `<div class="card"><p class="hint">Загружаем финансы…</p></div>`;
+    const c = sFinCalc(sFin), brs = Object.keys(sFin.pay);
+    let out = sNote("Бригаде выдаётся одна сумма. Приложение раскидывает её по адресам по очереди, поэтому остаток виден по каждому адресу.");
+    out += `<div class="card"><b>Выдано бригадам одной суммой, ₽</b>${brs.map((b, i) => `<div class="rh1" style="margin-top:6px"><span>${esc(b)}</span><span class="hint">осталось <b data-o="bl:${i}">${sMoney$(c.br[b].left)}</b> ₽</span></div><div class="field"><input inputmode="numeric" data-sfp="${i}" value="${sFin.pay[b]}"></div>`).join("")}<div class="field" style="margin-top:8px"><input id="snb" placeholder="+ новая бригада" autocomplete="off"></div><button class="btn sec" style="margin-top:6px" data-a="s:fbr">Добавить бригаду</button></div>`;
+    out += sFin.rows.map((r, i) => `<div class="rhouse"><div class="sgrid"><div><label class="plab">Бригада</label><div class="field"><select data-sff="${i}:brig">${brs.map(b => `<option${b === r.brig ? " selected" : ""}>${esc(b)}</option>`).join("")}</select></div></div><div><label class="plab">Город</label><div class="field"><input data-sff="${i}:city" value="${esc(r.city)}"></div></div></div><label class="plab">Адрес</label><div class="field"><input data-sff="${i}:addr" value="${esc(r.addr)}"></div><div class="sgrid">${[["work", "Работы"], ["road", "Дорога"], ["flat", "Квартира"], ["scrap", "Металлолом"]].map(([k, n]) => `<div><label class="plab">${n}, ₽</label><div class="field"><input inputmode="numeric" data-sff="${i}:${k}" value="${r[k]}"></div></div>`).join("")}</div><p class="hint" style="margin-top:6px">Начислено <b data-o="t${i}">${sMoney$(c.rows[i].t)}</b> · покрыто <b data-o="c${i}">${sMoney$(c.rows[i].c)}</b> · остаток <b data-o="l${i}">${sMoney$(c.rows[i].l)}</b> ₽</p></div>`).join("");
+    out += `<button class="btn sec" data-a="s:frow">+ Добавить адрес</button><div class="card"><b>Остаток по городам</b>${Object.keys(c.city).map((k, i) => `<div class="rh1" style="margin-top:6px"><span>${esc(k)}</span><b data-o="ct:${i}">${sMoney$(c.city[k])} ₽</b></div>`).join("") || `<p class="hint">Пока нет строк.</p>`}</div><div class="card hot"><div class="rh1"><b>Всего к выплате</b><b data-o="all">${sMoney$(c.all)} ₽</b></div></div><button class="btn" data-a="s:fsave">Сохранить в таблицу</button>`;
+    return out;
+  }
+  function sUpdFin() {
+    const c = sFinCalc(sFin), brs = Object.keys(sFin.pay), m = { all: sMoney$(c.all) + " ₽" };
+    sFin.rows.forEach((r, i) => { m["t" + i] = sMoney$(c.rows[i].t); m["c" + i] = sMoney$(c.rows[i].c); m["l" + i] = sMoney$(c.rows[i].l); });
+    brs.forEach((b, i) => { m["bl:" + i] = sMoney$(c.br[b].left); }); Object.keys(c.city).forEach((k, i) => { m["ct:" + i] = sMoney$(c.city[k]) + " ₽"; });
+    document.querySelectorAll("[data-o]").forEach(el => { if (m[el.dataset.o] != null) el.textContent = m[el.dataset.o]; });
+  }
+  function sSummary() {
+    const ls = sD.lifts || [], p = sPending(), esc24 = p.filter(x => x.h >= 24), avg = ls.length ? Math.round(ls.reduce((a, l) => a + l.pct, 0) / ls.length) : 0;
+    const grp = key => { const g = {}; ls.forEach(l => { const k = l[key] || "—"; const o = g[k] = g[k] || { n: 0, done: 0, pct: 0 }; o.n++; o.pct += l.pct; if (l.st[12]) o.done++; }); return g; };
+    const bars = g => Object.keys(g).sort().map(k => { const o = g[k], v = Math.round(o.pct / o.n); return `<div class="rhb"><span>${esc(k)}</span><div><i style="width:${v}%;background:var(--accent)"></i></div><b>${v}%</b></div><p class="hint" style="margin:-2px 0 6px 92px">сдано ${o.done} из ${o.n}</p>`; }).join("");
+    return (esc24.length ? sNote(`Начальнику участка: ${esc24.length} отчёт(а) не подтверждены прорабом больше 24 часов: ${esc24.map(x => esc(x.l.addr) + ", п." + esc(x.l.ent)).join("; ")}.`, "bad") : "")
+      + `<div class="rsum"><div><b>${ls.length}</b><small>подъездов</small></div><div><b>${avg}%</b><small>средний прогресс</small></div><div><b>${p.length}</b><small>ждут подтверждения</small></div></div>`
+      + `<div class="card"><h3 class="rh3">Бригады: готовность</h3>${bars(grp("brig"))}</div><div class="card"><h3 class="rh3">По регионам</h3>${bars(grp("reg"))}</div><div class="card"><h3 class="rh3">По городам</h3>${bars(grp("city"))}</div>`
+      + (sFin ? `<div class="card hot"><div class="rh1"><b>Остаток к выплате</b><b>${sMoney$(sFinCalc(sFin).all)} ₽</b></div></div>` : "");
+  }
+  function sRepHtml(r) {
+    if (!r) return `<div class="card"><p class="hint">Нажмите «Сформировать сейчас».</p></div>`;
+    const per = sRper, perN = { day: "за сегодня", week: "за неделю", month: "за месяц", custom: "за выбранный период" }[per], none = per === "day" && !r.stages.length && !r.crew.reduce((a, c) => a + c.finished, 0);
+    return `<div class="card hot"><b>Отчёт ${perN}</b><p class="hint" style="margin:2px 0 0">${sF(r.from)}${r.from !== r.to ? " — " + sF(r.to) : ""} · сформирован ${new Date(r.made).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</p></div>`
+      + (none ? sNote("За сегодня окончаний этапов нет. Ежедневный отчёт по расписанию в такие дни не формируется.") : "")
+      + `<div class="rsum"><div><b>${r.done}</b><small>подъездов сдано</small></div><div><b>${r.stages.length}</b><small>этапов выполнено</small></div><div><b>${r.avg}%</b><small>средний прогресс</small></div></div>`
+      + `<div class="card"><h3 class="rh3">Окончания этапов</h3>${r.stages.length ? r.stages.map(s => `<p class="hint" style="margin:0 0 4px">${esc(s.brig)}: ${esc(s.addr)}, п.${esc(s.ent)} — <b>${esc(s.stage)}</b> (${sF(s.date)})</p>`).join("") : `<p class="hint">Нет.</p>`}</div>`
+      + `<div class="card"><h3 class="rh3">Бригады</h3><div class="stbl"><table><tr><th>Бригада</th><th>Этапов</th><th>Сдано</th><th>В работе</th></tr>${r.byBrig.map(b => `<tr><td>${esc(b.brig)}</td><td>${b.stages}</td><td>${b.done}</td><td>${b.work}</td></tr>`).join("")}</table></div></div>`
+      + `<div class="card"><h3 class="rh3">Электрики и строители</h3><p class="hint" style="margin:0 0 4px">Доля = закончили ÷ закреплённых подъездов (только подтверждённое прорабом).</p><div class="stbl"><table><tr><th>Фамилия</th><th>Закреп.</th><th>Зашли</th><th>Закончили</th><th>Доля</th></tr>${r.crew.map(c => `<tr><td>${esc(c.fio)}<br><small>${c.role === "el" ? "электрик" : "строитель"}</small></td><td>${c.assigned}</td><td>${c.entered}</td><td>${c.finished}</td><td><b>${c.share}%</b></td></tr>`).join("")}</table></div></div>`
+      + `<div class="card"><h3 class="rh3">Ожидают подтверждения, просрочка, замены</h3><p class="hint" style="margin:0 0 4px">Ждут: ${r.pending.length}${r.late ? ", дольше 12 ч: " + r.late : ""}.</p><p class="hint" style="margin:0 0 4px">Просрочен срок сдачи: ${r.overdue.length ? r.overdue.map(o => esc(o.addr) + ", п." + esc(o.ent) + " (" + o.days + " дн.)").join("; ") : "нет"}.</p><p class="hint" style="margin:0">Замены: ${r.replaces.length ? r.replaces.map(esc).join("; ") : "нет"}.</p></div>`
+      + (r.money ? `<div class="card"><h3 class="rh3">Деньги</h3><p class="hint" style="margin:0">Остаток к выплате: <b>${sMoney$(r.money.all)} ₽</b> · ${r.money.br.map(b => esc(b.brig) + " " + sMoney$(b.left)).join(" · ")}</p></div>` : "")
+      + `<p class="hint">По расписанию: ежедневный в 18:00 (если были окончания), еженедельный по понедельникам, ежемесячный 1-го числа. Они сохраняются на листе «Отчёты» в таблице.</p>`;
+  }
+  function sRepTab() {
+    return `<div class="rchips">${[["day", "День"], ["week", "Неделя"], ["month", "Месяц"], ["custom", "Свой период"]].map(([k, n]) => `<button class="${sRper === k ? "on" : ""}" data-a="s:rper:${k}">${n}</button>`).join("")}</div>`
+      + (sRper === "custom" ? `<div class="sgrid"><div><label class="plab">С</label><div class="field"><input type="date" data-sf="rfrom" value="${esc(sRfrom)}"></div></div><div><label class="plab">По</label><div class="field"><input type="date" data-sf="rto" value="${esc(sRto)}"></div></div></div>` : "")
+      + `<button class="btn" data-a="s:rnow">Сформировать сейчас</button>` + sRepHtml(sRep);
+  }
+
+  /* --- карточка подъезда: этапы --- */
+  function sLiftDetail() {
+    const l = (sD.lifts || [])[sOpen]; if (!l) { sOpen = null; return slkView(); }
+    const direct = sU.role === "pro" || sU.role === "boss", pend = sPend[l.key] = sPend[l.key] || {}, locked = l.rep && l.rep.st === "wait";
+    const rows = S_ST.map((n, i) => {
+      const d = l.st[i], p = pend[i], on = !!(d || p);
+      return `<div class="rrow${on ? " on" : ""}"><button class="rchk" data-a="s:tg:${i}" ${!direct && (d || locked) ? "disabled" : ""} aria-pressed="${on}">${on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}</button><span class="rn"><i>${i + 1}.</i> ${esc(n)}</span>${direct ? `<input class="rdate" type="date" value="${d || ""}" data-sdir="${i}" aria-label="Дата: ${esc(n)}">` : d ? `<span class="hint">${sF(d)}</span>` : p ? `<input class="rdate" type="date" value="${p}" data-spend="${i}">` : ""}</div>`;
+    }).join("");
+    const np = Object.keys(pend).length;
+    return `<div class="rcard"><div class="rring" style="--p:${l.pct}"><b>${l.pct}%</b></div><div class="rinfo"><b>${esc(l.addr)}</b><span>${esc(l.city)} · подъезд ${esc(l.ent)} · ${esc(l.brig)}</span><span>Электрик ${esc(l.el)} · строитель ${esc(l.bld)}</span></div></div>${sCnt(l)}`
+      + (l.rep && l.rep.st === "ok" && !direct ? sNote("Прораб подтвердил отчёт ✓", "ok") : "") + (l.rep && l.rep.st === "back" && !direct ? sNote("Отчёт возвращён: " + esc(l.rep.why) + ". Исправьте и отправьте снова.", "bad") : "") + (locked && !direct ? sNote(`Отчёт у прораба, ждёт подтверждения (${sH(l.rep.h)} ч).`) : "")
+      + `<div class="rlist">${rows}</div>` + (direct ? sNote("Вы вносите дату напрямую: она сразу попадает в таблицу, подтверждение не нужно.") : sNote("Нажмите на квадрат: этап отмечен сегодняшней датой. Отметки уйдут прорабу, в таблицу они попадут после его подтверждения. После этапа «Замена лебёдки» электрик и строитель подъезда получат уведомление."));
+  }
+
+  function slkView() {
+    if (!sU) { view = "home"; return render(); }
+    const sub = sRoleName() + (sU.brig ? " · " + sU.brig : "");
+    let body;
+    if (!sD) body = sErr ? `<div class="card"><p class="err">${esc(sErr)}</p></div>` : `<div class="card"><p class="hint">Загружаем данные из таблицы…</p></div>`;
+    else if (sOpen !== null) body = sLiftDetail();
+    else {
+      const t = sTab, r = sU.role, m = {
+        "Объекты": () => r === "mon" ? sMonObjects() : r === "el" || r === "bld" ? sSubObjects() : sAllObjects(), "Снабжение": () => r === "boss" ? sReqTab("sup") : sReqTab("own"), "Заявки": () => sReqTab("sup"), "История": sHistory, "Проверка": sCheckTab, "Назначения": sAssignTab,
+        "ПТО": sPtoTab, "Сотрудники": sStaffTab, "Финансы": sFinTab, "Сводка": sSummary, "Отчёты": sRepTab
+      };
+      body = sTabBar() + (sErr ? `<p class="err">${esc(sErr)}</p>` : "") + (m[t] || m[sTabs()[0]])();
+    }
+    const crew = sU.role === "mon" || sU.role === "el" || sU.role === "bld" || sU.role === "pro" || sU.role === "boss";
+    let foot = "";
+    if (sD && sOpen !== null) { const l = sD.lifts[sOpen], np = Object.keys(sPend[l.key] || {}).length; const direct = sU.role === "pro" || sU.role === "boss"; foot = direct ? `<button class="btn ghost" data-a="s:close">К списку</button>` : `<button class="btn" data-a="s:send" ${np && !(l.rep && l.rep.st === "wait") ? "" : "disabled"}>Отправить прорабу${np ? " (" + np + ")" : ""}</button><button class="btn ghost" data-a="s:close">К моим объектам</button>`; }
+    else foot = `<button class="btn" data-a="s:reload">${sBusy ? "Обновляем…" : "Обновить данные"}</button>${crew ? `<button class="btn sec" data-a="sec_claim">Составление рекламации</button>` : ""}${window.RABOTA_TABLE_URL && (sU.role === "pro" || sU.role === "boss") ? `<a class="btn sec" href="${esc(window.RABOTA_TABLE_URL)}" target="_blank" rel="noopener">Открыть Google-таблицу</a>` : ""}<button class="btn ghost" data-a="s:logout">Выйти</button>`;
+    shell(sU.fio + " · " + sub, null, body, foot, { menu: false });
+    if (sD && sTab === "Сотрудники" && !sStaff && !sStaffLoading) sLoadStaff();
+    if (sD && sU.role === "boss" && sTab === "Сводка" && !sFin && !sFin_loading) sLoadFin();
+    if (sD && (sU.role === "acc" || (sU.role === "boss" && sTab === "Финансы")) && !sFin && !sFin_loading) sLoadFin();
+  }
+  let sFin_loading = false;
+  async function sLoadFin() { sFin_loading = true; try { sFin = await sApi("fin_get"); } catch (e) { sErr = e.message; } sFin_loading = false; if (view === "slk") render(); }
+  function sAct(a) {
+    const p = a.split(":"), c = p[0];
+    if (c === "enter") { if (sU) { view = "slk"; render(); if (!sD) sLoad(); return; } return sLoginSheet(); }
+    if (c === "logout") return sLogout();
+    if (c === "reload") { sFin = null; sStaff = null; return sLoad(); }
+    if (c === "tab") { sTab = p[1]; sOpen = null; sErr = ""; render(); return window.scrollTo(0, 0); }
+    if (c === "open") { sOpen = +p[1]; render(); return window.scrollTo(0, 0); }
+    if (c === "close") { sOpen = null; return render(); }
+    if (c === "tg") {
+      const l = sD.lifts[sOpen], i = +p[1];
+      if (sU.role === "pro" || sU.role === "boss") return sCall("setstage", { key: l.key, i, iso: l.st[i] ? "" : sToday() }, "Дата записана в таблицу ✓");
+      const pend = sPend[l.key] = sPend[l.key] || {}; if (pend[i]) delete pend[i]; else pend[i] = sToday(); return render();
+    }
+    if (c === "send") { const l = sD.lifts[sOpen], ch = sPend[l.key] || {}; return sCall("send_mon", { key: l.key, changes: ch }, "Отчёт отправлен прорабу ✓").then(j => { if (j) { delete sPend[l.key]; sOpen = null; render(); } }); }
+    if (c === "crew") { const l = sD.lifts[+p[1]]; return sCall("send_crew", { key: l.key, kind: p[2] }, "Отчёт отправлен прорабу ✓"); }
+    if (c === "why") { sWhy = ["Неверная дата", "Не хватает акта", "Этап не завершён"][+p[1]]; return render(); }
+    if (c === "dec") return sCall("decide", { id: p[1], ok: p[2] === "1", why: sWhy }, p[2] === "1" ? "Принято ✓" : "Возвращено");
+    if (c === "nrk") { sNr.kind = S_KINDS[+p[1]]; return render(); }
+    if (c === "nra") { sNr.addr = [...new Set(sD.lifts.map(l => l.addr))][+p[1]]; return render(); }
+    if (c === "nrsend") return sCall("req_new", { kind: sNr.kind, addr: sNr.addr, what: sNr.what }, "Заявка отправлена в снабжение ✓").then(() => { sNr = { kind: "", addr: "", what: "" }; render(); });
+    if (c === "racc") return sCall("req_accept", { id: sD.reqs[+p[1]].id }, "Заявка принята ✓");
+    if (c === "rarr") return sCall("req_arrived", { id: sD.reqs[+p[1]].id }, "Отмечено: пришло на объект ✓");
+    if (c === "sf") { const bs = ["Все", ...new Set((sD.reqs || []).map(r => r.brig))]; sSf = bs[+p[1]]; return render(); }
+    if (c === "pf") { const cs = ["Все", ...new Set((sD.lifts || []).map(l => l.city))]; sPf = cs[+p[1]]; return render(); }
+    if (c === "money") return sCall("askmoney", {}, "Запрос записан ✓").then(() => { sMoney = true; render(); });
+    if (c === "hand") { const l = sD.lifts[+p[1]]; sHand = { i: +p[1], role: p[2], nw: "", pct: p[2] === "mon" ? String(l.pct) : "", comment: "", err: "" }; return render(); }
+    if (c === "hn") { const l = sD.lifts[sHand.i], cands = sD.users.filter(u => u.role === sHand.role && u.fio !== l[sHand.role]); sHand.nw = cands[+p[1]].fio; return render(); }
+    if (c === "hno") { sHand = null; return render(); }
+    if (c === "hok") {
+      const h = sHand, l = sD.lifts[h.i]; h.pct = (document.getElementById("shp") || {}).value || ""; h.comment = (document.getElementById("shc") || {}).value || "";
+      if (!h.nw) { h.err = "Выберите, кто продолжит работу"; return render(); }
+      if (!/^\d{1,3}$/.test(h.pct.trim()) || +h.pct > 100) { h.err = "Впишите процент от 0 до 100: сколько сделал прежний"; return render(); }
+      return sCall("replace", { key: l.key, role: h.role, nw: h.nw, pct: h.pct.trim(), comment: h.comment.trim() }, "Замена записана ✓").then(j => { if (j) { sHand = null; render(); } });
+    }
+    if (c === "addh") { sAdd = { city: "", reg: "", addr: "", n: "", due: "", ents: [], err: "" }; return render(); }
+    if (c === "addno") { sAdd = null; return render(); }
+    if (c === "addn") {
+      const a = sAdd, n = parseInt(a.n, 10);
+      if (!a.city.trim() || !a.addr.trim()) { a.err = "Укажите город и адрес"; return render(); }
+      if (!(n >= 1 && n <= 40)) { a.err = "Число подъездов от 1 до 40"; return render(); }
+      a.err = ""; a.ents = Array.from({ length: n }, () => ({ mon: "", el: "", bld: "" })); return render();
+    }
+    if (c === "addok") {
+      const a = sAdd; if (a.ents.some(e => !e.mon || !e.el || !e.bld)) { a.err = "Назначьте монтажника, электрика и строителя на каждый подъезд"; return render(); }
+      return sCall("addhouse", { city: a.city.trim(), reg: a.reg.trim(), addr: a.addr.trim(), due: a.due, ents: a.ents }, "Дом добавлен в таблицу ✓").then(j => { if (j) { sAdd = null; render(); } });
+    }
+    if (c === "pf2") return;
+    if (c === "rper") { sRper = p[1]; sRep = null; return render(); }
+    if (c === "rnow") return sApi("report", { per: sRper, from: sRfrom, to: sRto }).then(j => { sRep = j.report; render(); }).catch(e => toast(e.message));
+    if (c === "nust") { sNu.fio = sRead("nuf"); sNu.brig = sRead("nub"); sNu.email = sRead("nue"); sNu.pw = sRead("nup"); sNu.st = sStatuses()[+p[1]]; return render(); }
+    if (c === "nugen") { sNu.fio = sRead("nuf"); sNu.brig = sRead("nub"); sNu.email = sRead("nue"); sNu.pw = sGen(); return render(); }
+    if (c === "nuadd") {
+      const fio = sRead("nuf"), brig = sRead("nub"), email = sRead("nue"), pw = sRead("nup"); Object.assign(sNu, { fio, brig, email, pw });
+      if (!fio || pw.length < 6) { sNu.err = "Впишите фамилию и пароль (от 6 символов)"; sNu.ok = ""; return render(); }
+      return sCall("user_add", { nfio: fio, nstatus: sNu.st, npw: pw, nbrig: brig, nemail: email }, "Доступ выдан, записано в таблицу ✓").then(j => { if (j) { sNu = { st: sNu.st, ok: fio + " (" + sNu.st + ") добавлен(а). Пароль: " + pw + ". Передайте его человеку лично." }; sStaff = null; render(); } else { sNu.err = "Не получилось: такая фамилия уже есть или данные неверны"; sNu.ok = ""; render(); } });
+    }
+    if (c === "showpw") { sShowPw = !sShowPw; return render(); }
+    if (c === "ed") { const u = sStaff[+p[1]]; sEd = { r: u.r, orig: u.fio, fio: u.fio, st: sStatuses().includes(u.st) ? u.st : "монтажник", pw: u.pw, brig: u.brig, email: u.email, err: "" }; return render(); }
+    if (c === "edno") { sEd = null; return render(); }
+    if (c === "edst") { Object.assign(sEd, { fio: sRead("edf"), brig: sRead("edb"), email: sRead("ede"), pw: sRead("edp"), st: sStatuses()[+p[1]] }); return render(); }
+    if (c === "edgen") { Object.assign(sEd, { fio: sRead("edf"), brig: sRead("edb"), email: sRead("ede"), pw: sGen() }); return render(); }
+    if (c === "edok") {
+      const o = { fio: sRead("edf"), brig: sRead("edb"), email: sRead("ede"), pw: sRead("edp") };
+      if (!o.fio || o.pw.length < 6) { sEd.err = "Впишите фамилию и пароль (от 6 символов)"; Object.assign(sEd, o); return render(); }
+      const orig = sEd.orig; toast("Сохраняем…");
+      return sApi("user_edit", { r: sEd.r, nfio: o.fio, nstatus: sEd.st, npw: o.pw, nbrig: o.brig, nemail: o.email }).then(async () => {
+        if (orig === sU.fio) { sU.fio = o.fio; sU.pw = o.pw; try { sessionStorage.setItem("zamer_slk", JSON.stringify(sU)); if (localStorage.getItem("zamer_slk_rem")) localStorage.setItem("zamer_slk_rem", JSON.stringify(sU)); } catch (e) {} }
+        sEd = null; sStaff = null; await sLoad(true); toast("Изменения записаны в таблицу ✓");
+      }).catch(e => { sEd.err = e.code === "dup" ? "Такая фамилия уже есть" : e.message; Object.assign(sEd, o); render(); });
+    }
+    if (c === "del") {
+      const u = sStaff[+p[1]]; if (!confirm("Закрыть доступ и удалить: " + u.fio + "?")) return;
+      return sApi("user_del", { r: u.r }).then(() => { sStaff = null; toast("Удалено ✓"); sLoad(true); }).catch(e => {
+        if (e.code === "assigned" && confirm(u.fio + " закреплён за подъездами. Всё равно удалить? Подъезды останутся без этого сотрудника, замените его на вкладке «Назначения».")) return sApi("user_del", { r: u.r, force: 1 }).then(() => { sStaff = null; toast("Удалено ✓"); sLoad(true); });
+        toast(e.message); });
+    }
+    if (c === "fbr") { const n = (document.getElementById("snb") || {}).value.trim(); if (n && !(n in sFin.pay)) { sFin.pay[n] = 0; } return render(); }
+    if (c === "frow") { sFin.rows.push({ brig: Object.keys(sFin.pay)[0] || "", city: "", addr: "", work: 0, road: 0, flat: 0, scrap: 0, cmt: "" }); return render(); }
+    if (c === "fsave") return sCall("fin_set", { rows: sFin.rows, pay: sFin.pay }, "Финансы сохранены в таблице ✓").then(() => { sFin = null; sLoadFin(); });
+  }
+  $app.addEventListener("input", e => {
+    const t = e.target, d = t.dataset || {};
+    if (d.sf === "nrw") sNr.what = t.value;
+    else if (d.sf && sAdd && ["acity", "areg", "aaddr", "an", "adue"].includes(d.sf)) sAdd[{ acity: "city", areg: "reg", aaddr: "addr", an: "n", adue: "due" }[d.sf]] = t.value;
+    else if (d.sf === "rfrom") sRfrom = t.value; else if (d.sf === "rto") sRto = t.value;
+    else if (d.sfp !== undefined && sFin) { sFin.pay[Object.keys(sFin.pay)[+d.sfp]] = Number(t.value.replace(/\D/g, "")) || 0; sUpdFin(); }
+    else if (d.sff !== undefined && sFin) { const [i, k] = d.sff.split(":"); sFin.rows[+i][k] = ["work", "road", "flat", "scrap"].includes(k) ? Number(t.value.replace(/\D/g, "")) || 0 : t.value; if (k === "city" || k === "brig") { /* пересчёт без перерисовки */ } sUpdFin(); }
+  });
+  $app.addEventListener("change", e => {
+    const t = e.target, d = t.dataset || {};
+    if (d.sff !== undefined && sFin && d.sff.endsWith(":brig")) { sFin.rows[+d.sff.split(":")[0]].brig = t.value; render(); return; }
+    if (d.se !== undefined && sAdd) { const [i, k] = d.se.split(":"); sAdd.ents[+i][k] = t.value; return; }
+    if (d.sall !== undefined && sAdd) { sAdd.ents.forEach(en => { en[d.sall] = t.value; }); return render(); }
+    if (d.spend !== undefined) { const l = sD.lifts[sOpen]; (sPend[l.key] = sPend[l.key] || {})[+d.spend] = t.value || sToday(); return render(); }
+    if (d.sdir !== undefined) { const l = sD.lifts[sOpen]; return sCall("setstage", { key: l.key, i: +d.sdir, iso: t.value }, "Дата записана в таблицу ✓"); }
+    if (d.sdue !== undefined) { const l = sD.lifts[+d.sdue]; return sCall("assign", { key: l.key, due: t.value }, "Срок записан ✓"); }
+    if (d.spto !== undefined) { const [i, k] = d.spto.split(":"), l = sD.lifts[+i], o = { key: l.key, pto: l.pto, decl: l.decl }; o[k] = t.value; return sCall("pto_set", o, "Записано в таблицу ✓"); }
+  });
+
   /* ---------- диспетчер ---------- */
   function render() {
     if (view === "home") return homeView();
@@ -1136,7 +1494,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (view === "axis") return axisView();
     if (view === "axrev") return axrevView();
     if (view === "cv") return cvView();
-    if (view === "jobs") return jobsView();
+    if (view === "slk") return slkView();
     if (view === "supply") return supplyView();
     if (view === "login") return loginView();
     if (view === "nocredits") return nocreditsView();
@@ -1221,6 +1579,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
   addEventListener("online", sheetFlush); setTimeout(sheetFlush, 3000);
   function goal(n) { try { if (window.ym) ym(113845787, "reachGoal", n); } catch (e) {} }
   function act(a) {
+    if (a.startsWith("s:")) return sAct(a.slice(2));
     if (/^sec_(win|door|frame|claim)$/.test(a) || a === "download") goal(a);
     if (/^ax_/.test(a)) return axAct(a);
     if (a === "sec_axis") {
@@ -1239,8 +1598,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       if (view === "axis") { view = "meas"; return render(); }
       if (view === "axrev") { view = "axis"; return render(); }
       if (view === "soon") { view = /^claim_/.test(soonView.what) ? "claim" : "home"; return render(); }
-      if (view === "meas" || view === "jobs" || view === "cv") { view = "home"; return render(); }
-    if (view === "work" || view === "claim") { view = "jobs"; return render(); }
+      if (view === "meas" || view === "cv") { view = "home"; return render(); }
+      if (view === "slk") { if (sOpen !== null) { sOpen = null; return render(); } view = "home"; return render(); }
+      if (view === "work" || view === "claim") { view = sU ? "slk" : "home"; return render(); }
       if (sub) { sub = null; return render(); }
       if (view === "hub") { view = "wizard"; pos = buildList().length - 1; }
       else if (view === "review") { if (isSimple()) { view = "wizard"; pos = buildList().length - 1; } else view = "hub"; }
@@ -1291,7 +1651,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     }
     if (a === "mail") {
       const E = "stroyliftkompleks@yandex.ru", o = document.createElement("div"); o.className = "sheet";
-      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><p class="hint" style="margin:0 0 10px">Разработчик: <b>Кащеев Виктор Петрович</b></p><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn sec" data-a="job_cv">Нужна работа монтажником? Анкета</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
+      o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Предложения по работе приложения</h3><p>Пишите на почту, будем рады любым идеям и замечаниям:</p><div class="mailaddr">${E}</div><p class="hint" style="margin:0 0 10px">Разработчик: <b>Кащеев Виктор Петрович</b></p><p class="hint ipn" style="margin:0 0 12px">© 2026 Кащеев Виктор Петрович. Все права защищены. Приложение «Замер ДШ», его программный код, оформление и тексты являются объектом авторских прав. Копирование, распространение и переработка без письменного согласия автора запрещены.</p><a class="btn" href="mailto:${E}?subject=Предложение по приложению «Замер ДШ»">Написать письмо</a><button class="btn sec" data-copy="${E}">Скопировать адрес</button><button class="btn sec" data-a="job_cv">Нужна работа монтажником? Анкета</button><button class="btn ghost" data-a="mailclose">Закрыть</button></div>`;
       o.addEventListener("click", ev => {
         if (ev.target.closest("[data-a=job_cv]")) { o.remove(); return act("job_cv"); }
         const c = ev.target.closest("[data-copy]");
@@ -1320,7 +1680,6 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       flash = "Открываем письмо…"; return render();
     }
     if (a === "m_meas") { wail(); view = "meas"; return render(); }
-    if (a === "m_jobs") { wail(); view = "jobs"; return render(); }
     if (a === "sec_work") { view = "work"; return render(); }
     if (a === "work_yes" || a === "work_no") {
       try { localStorage.setItem("zamer_work", JSON.stringify({ stopped: a === "work_yes", at: new Date().toISOString() })); } catch (e) {}
