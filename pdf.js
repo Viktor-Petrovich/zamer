@@ -112,7 +112,7 @@
     T(x, "Заявка на изготовление обрамлений ДШ. Общие параметры", PW / 2, PH - 50, { size: 14, bold: true, serif: true, align: "center" });
     T(x, "Адрес объекта: " + (order.address || ""), 40, PH - 80, { size: 10.5 });
     T(x, "Контактное лицо: " + (order.contact || ""), 40, PH - 97, { size: 10.5 });
-    const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло";
+    const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло"; const SEP = cm.btn_sep === "Да";
     const rows = [
       ["Количество остановок", order.stops],
       ["Размеры по этажам", order.dsh_same ? "одинаковые на всех этажах" : "индивидуально для каждого этажа"],
@@ -121,10 +121,10 @@
       ["Размер загиба, мм", cm.bend],
       ["Табло индикации", cm.ind_floor],
       ["Размер отверстия под табло (высота×ширина), мм", noInd ? "—" : cm.ind_size],
-      ["Кнопка вызова ставится", cm.btn_all === "Не на всех этажах" ? "на этажах: " + cm.btn_floors : "на всех этажах"],
-      ["Кнопка вызова: с какой стороны", cm.btn_side],
-      ["Кнопка вызова: расстояние от пола, мм", cm.btn_height],
-      ["Размер отверстия под кнопку вызова (высота×ширина), мм", cm.btn_size]];
+      ["Кнопка вызова ставится", SEP ? "отдельно стоящая (не в обрамлении)" : cm.btn_all === "Не на всех этажах" ? "на этажах: " + cm.btn_floors : "на всех этажах"],
+      ["Кнопка вызова: с какой стороны", SEP ? "—" : cm.btn_side],
+      ["Кнопка вызова: расстояние от пола, мм", SEP ? "—" : cm.btn_height],
+      ["Размер отверстия под кнопку вызова (высота×ширина), мм", SEP ? "—" : cm.btn_size]];
     const x0 = 40, y0 = PH - 125, w1 = 380, w2 = 220, rh = 30;
     rows.forEach(([name, val], i) => {
       const y = y0 - (i + 1) * rh;
@@ -411,22 +411,22 @@
     if (A) { R(40, 56, 22, 114, leftFill); R(138, 56, 22, 114, rightFill); R(40, 30, 120, 26, topFill); }
     else { R(40, 30, 22, 140, leftFill); R(138, 30, 22, 140, rightFill); R(62, 30, 76, 26, topFill); }
     cm = cm || {};
-    const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло";
+    const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло"; const BS = cm.btn_sep === "Да" ? "" : cm.btn_side;
     if (cm.ind_floor && !noInd) {
       boxT(x, X0(84), Y0(33), 32 * f, 20 * f, "#26323c", INKC, 1);
       boxT(x, X0(87), Y0(36), 26 * f, 14 * f, "#0f171d", null);
       T(x, "табло", X0(100), PH - Y0(46), { size: 6.5, align: "center", color: "#ffb347", bold: true });
     } else T(x, "верхнее", X0(100), PH - Y0(46), { size: 8, align: "center", color: INKC });
-    if (cm.btn_side) {
-      const left = String(cm.btn_side).toLowerCase().startsWith("слева"), bx = left ? 51 : 149, by = A ? 113 : 100;
-      boxT(x, X0(bx - 8), Y0(by - 8), 16 * f, 16 * f, "#e8912d", INKC, 1);
+    if (BS) {
+      const left = String(BS).toLowerCase().startsWith("слева"), bx = left ? 51 : 149, by = A ? 113 : 100;
+            boxT(x, X0(bx - 8), Y0(by - 8), 16 * f, 16 * f, "#e8912d", INKC, 1);
       x.fillStyle = "#fff"; x.beginPath(); x.arc(X0(bx), PH - Y0(by + 0), 3 * f, 0, 6.2832); x.fill();
       T(x, left ? "кнопка слева" : "кнопка справа", X0(100), PH - Y0(by + 3), { size: 6.5, align: "center", color: "#a85d0a", bold: true });
       x.strokeStyle = "#a85d0a"; x.lineWidth = .8; lineT(x, left ? X0(63) : X0(137), Y0(by), left ? X0(68) : X0(132), Y0(by));
     }
     [[51, "левое"], [149, "правое"]].forEach(([cx, s]) => {
-      x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.translate(X0(cx + 3) / K, Y0(cm.btn_side ? (A ? 78 : 62) : (A ? 113 : 100)) / K); x.rotate(-Math.PI / 2);
-      x.font = fontStr(8); x.fillStyle = INKC; x.textAlign = "center"; x.fillText(s, 0, cm.btn_side ? -0 : 0); x.restore();
+      x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.translate(X0(cx + 3) / K, Y0(BS ? (A ? 78 : 62) : (A ? 113 : 100)) / K); x.rotate(-Math.PI / 2);
+      x.font = fontStr(8); x.fillStyle = INKC; x.textAlign = "center"; x.fillText(s, 0, BS ? -0 : 0); x.restore();
     });
     x.strokeStyle = MUT; x.lineWidth = .6;
     if (A) { lineT(x, X0(14), Y0(30), X0(46), Y0(30)); lineT(x, X0(14), Y0(56), X0(46), Y0(56)); }
@@ -533,7 +533,7 @@
         rr(x, cx0, top, cw2, ch, 10, "#fff", LN, 1);
         T(x, "Общие параметры", cx0 + 14, PH - (top + 24), { size: 12, bold: true, color: INKC });
         const noInd = String(cm.ind_floor || "").toLowerCase() === "нет табло";
-        const btn = [cm.btn_all === "Не на всех этажах" ? "этажи " + cm.btn_floors : "на всех этажах", cm.btn_side && cm.btn_side.toLowerCase(), cm.btn_height ? cm.btn_height + " мм от пола" : "", cm.btn_size ? "отв. " + cm.btn_size : ""].filter(Boolean).join(", ");
+        const btn = cm.btn_sep === "Да" ? "отдельно стоящая (не в обрамлении)" : [cm.btn_all === "Не на всех этажах" ? "этажи " + cm.btn_floors : "на всех этажах", cm.btn_side && cm.btn_side.toLowerCase(), cm.btn_height ? cm.btn_height + " мм от пола" : "", cm.btn_size ? "отв. " + cm.btn_size : ""].filter(Boolean).join(", ");
         const cells = [["Табло", noInd ? "нет табло" : `${cm.ind_floor || ""}${cm.ind_size ? ", отв. " + cm.ind_size + " мм" : ""}`],
           ["Размеры", `${cm.bend_mode || ""}${cm.bend !== undefined && cm.bend !== "" ? ", загиб " + fmt(cm.bend) + " мм" : ""}`],
           ["Кнопка вызова", btn], ["Цвет окраски", cm.color],

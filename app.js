@@ -123,16 +123,17 @@
   const SETUP = [
     { p: "form.obj", t: "form", sec: "Объект", q: "Адрес и контактное лицо", hint: "Город, улица, дом: файл заявки будет назван этим адресом. Контакт: имя и телефон.",
       fields: [{ k: "text", p: "address", label: "Адрес объекта", ph: "г. Казань, ул. Мира, 3", area: 1 }, { k: "text", p: "contact", label: "Контактное лицо на объекте", ph: "Иван, +7 900 123-45-67" }] },
-    { p: "form.sch", t: "form", sch: 1, fscr: 1, floor: 1, sec: "Обрамление ДШ", q: "Параметры обрамления и проём", hint: "Схема и цвет, табло, загиб, кнопка вызова, затем проём и размеры обрамлений. Выбор действует на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); },
+    { p: "form.sch", t: "form", sch: 1, fscr: 1, floor: 1, sec: "Обрамление ДШ", q: "Параметры обрамления и проём", hint: "Схема и цвет, табло, загиб, кнопка вызова, затем проём и размеры обрамлений. Выбор действует на всю заявку.", finish: o => { o.common.ind_floor = o.common.ind_on === "Нет" ? "Нет табло" : (o.common.ind_where || "На всех этажах"); if (o.common.btn_sep === "Да") o.common.btn_size = ""; },
       fields: [{ k: "h", label: "Табло индикации" }, { k: "tgl", p: "common.ind_on", label: "Есть табло", def: "Да" }, { k: "seg", p: "common.ind_where", label: "Где", opts: [["Только 1 этаж", "Только на 1 этаже"], ["Все этажи", "На всех этажах"]], def: "На всех этажах", when: o => o.common.ind_on !== "Нет" },
         { k: "dims2", p: "common.ind_size", label: "Размер отверстия под табло", ph: ["80", "120"], when: o => o.common.ind_on !== "Нет" },
         { k: "h", label: "Загиб" }, { k: "seg", p: "common.bend_mode", label: "Размеры", opts: [["С учётом загиба", "С учётом загиба"], ["Без учёта загиба", "Без учёта загиба"]], def: "С учётом загиба" }, { k: "num", p: "common.bend", label: "Размер загиба", unit: mm, max: 500, min: 0 },
         { k: "h", label: "Кнопка вызова" },
-        { k: "seg", p: "common.btn_all", label: "Ставится", opts: [["На всех этажах", "На всех этажах"], ["Не на всех", "Не на всех этажах"]], def: "На всех этажах" },
-        { k: "floors", p: "common.btn_floors", label: "На каких этажах", ph: "1, 3, 5-7", when: o => o.common.btn_all === "Не на всех этажах" },
-        { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева" },
-        { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm },
-        { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"] }] }
+        { k: "tgl", p: "common.btn_sep", label: "Отдельно стоящая кнопка", def: "Нет" },
+        { k: "seg", p: "common.btn_all", label: "Ставится", opts: [["На всех этажах", "На всех этажах"], ["Не на всех", "Не на всех этажах"]], def: "На всех этажах", when: o => o.common.btn_sep !== "Да" },
+        { k: "floors", p: "common.btn_floors", label: "На каких этажах", ph: "1, 3, 5-7", when: o => o.common.btn_sep !== "Да" && o.common.btn_all === "Не на всех этажах" },
+        { k: "seg", p: "common.btn_side", label: "Сторона", opts: [["Слева", "Слева"], ["Справа", "Справа"]], def: "Слева", when: o => o.common.btn_sep !== "Да" },
+        { k: "num", p: "common.btn_height", label: "От пола до центра отверстия", unit: mm, when: o => o.common.btn_sep !== "Да" },
+        { k: "dims2", p: "common.btn_size", label: "Размер отверстия под кнопку", ph: ["30", "30"], when: o => o.common.btn_sep !== "Да" }] }
   ];
   const OPEN = [
     ["top", "Верхнее обрамление", "А — высота, Н — глубина верхнего обрамления.", [["top_A", "Размер А (высота)"], ["top_H", "Размер Н (глубина)"]]],
@@ -783,7 +784,7 @@
       ["Адрес", order.address], ["Контакт", order.contact], ["Схема", order.scheme], ["Остановок", order.stops],
       ["Ширина проёма / С", `${order.width} / ${order.C} мм`], ["Размеры", `${c.bend_mode}, загиб ${c.bend} мм`],
       ["Табло", c.ind_floor + (c.ind_floor === "Нет табло" ? "" : `, отв. ${c.ind_size} мм`)],
-      ["Кнопка", `${c.btn_all === "Не на всех этажах" ? "эт. " + c.btn_floors + ", " : ""}${c.btn_side}, ${c.btn_height} мм от пола, отв. ${c.btn_size} мм`], ["Цвет", c.color]];
+      ["Кнопка", c.btn_sep === "Да" ? "отдельно стоящая (не в обрамлении)" : `${c.btn_all === "Не на всех этажах" ? "эт. " + c.btn_floors + ", " : ""}${c.btn_side}, ${c.btn_height} мм от пола, отв. ${c.btn_size} мм`], ["Цвет", c.color]];
     return `<div class="card"><div class="sum">${rows.map(([a, b]) => `<span><b>${a}:</b> ${esc(b)}</span>`).join("")}</div></div>`;
   }
   async function reviewView() {
@@ -895,7 +896,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
-  const APP_VERSION = "V.2-11";
+  const APP_VERSION = "V.2-13";
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
@@ -924,8 +925,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (!(nm(P.w) > 0 && nm(P.h) > 0)) m.push("Портал: ширина и высота");
     if (!P.sdiff && !(nm(P.sw) > 0 && nm(P.sh) > 0)) m.push("Строительный проём: ширина и высота"); if (P.sdiff && ax.n > 0 && axWcnt() < ax.n) m.push("Проём по этажам: введено " + axWcnt() + " из " + ax.n);
     if (P.tab && !(nm(P.tabH) > 0 && nm(P.tabW) > 0)) m.push("Отверстие под табло: высота и ширина");
-    if (P.bm === "own" && !(nm(P.by) > 0)) m.push("Кнопка: высота от пола");
-    if (!(nm(P.bh) > 0 && nm(P.bw) > 0)) m.push("Отверстие под кнопку: высота и ширина");
+    if (!P.bsep && P.bm === "own" && !(nm(P.by) > 0)) m.push("Кнопка: высота от пола");
+    if (!P.bsep && !(nm(P.bh) > 0 && nm(P.bw) > 0)) m.push("Отверстие под кнопку: высота и ширина");
     return m;
   }
   function axWarn() {
@@ -1051,8 +1052,8 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
         <div class="axsec"><b>Цвет окраски</b>${axSeg("P.ral", P.ral, [["7035", "RAL 7035<br><small>стандартно</small>"], ["7038", "RAL 7038"]])}</div>
         <div class="axsec"><b>Табло</b>${axSeg("P.tab", String(P.tab), [["true", "Есть"], ["false", "Нет"]])}` +
         (P.tab ? `<label class="axl">На каком этаже</label><select class="axsel" data-axsel="P.tabFloor">${fo}</select><div class="axtwo">${axFld("P.tabH", "Высота отверстия под табло", P.tabH)}${axFld("P.tabW", "Ширина отверстия под табло", P.tabW)}</div>` : `<p>Табло не заказывается.</p>`) + `</div>
-        <div class="axsec"><b>Кнопка вызова</b><label class="axl">Размер от пола</label>${axSeg("P.bm", P.bm, [["std", "ГОСТ 1000 мм"], ["own", "Свой размер"]])}` +
-        (P.bm === "own" ? axFld("P.by", "Высота от пола", P.by) : "") + `<div class="axtwo">${axFld("P.bh", "Высота отверстия под кнопку", P.bh)}${axFld("P.bw", "Ширина отверстия под кнопку", P.bw)}</div></div>`;
+        <div class="axsec"><b>Кнопка вызова</b><button type="button" class="tgl${P.bsep ? " on" : ""}" role="switch" aria-checked="${!!P.bsep}" data-axt="P.bsep"><span>Отдельно стоящая кнопка</span><i class="sw2"><b></b></i></button>` +
+        (P.bsep ? `<p>Кнопка ставится отдельно, не в обрамлении. Размеры не нужны.</p>` : `<label class="axl">Размер от пола</label>${axSeg("P.bm", P.bm, [["std", "ГОСТ 1000 мм"], ["own", "Свой размер"]])}` + (P.bm === "own" ? axFld("P.by", "Высота от пола", P.by) : "") + `<div class="axtwo">${axFld("P.bh", "Высота отверстия под кнопку", P.bh)}${axFld("P.bw", "Ширина отверстия под кнопку", P.bw)}</div>`) + `</div>`;
     }
     const keep = axOv ? axOv.querySelector(".sheetbox").scrollTop : 0;
     if (!axOv) { axOv = document.createElement("div"); axOv.className = "sheet"; document.body.appendChild(axOv);
@@ -1086,7 +1087,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     }
     const common = { bend_mode: "Без учёта загиба", bend: axZ(), color: axRal(),
       ind_floor: P.tab ? (P.tabFloor === "all" ? "На всех этажах" : "Этаж " + P.tabFloor) : "Нет табло", ind_size: P.tab ? nm(P.tabH) + "×" + nm(P.tabW) : "",
-      btn_all: "На всех этажах", btn_floors: "", btn_side: "", btn_height: P.bm === "std" ? 1000 : nm(P.by), btn_size: nm(P.bh) + "×" + nm(P.bw) };
+      btn_all: "На всех этажах", btn_floors: "", btn_side: "", btn_height: P.bsep ? "" : P.bm === "std" ? 1000 : nm(P.by), btn_sep: P.bsep ? "Да" : "Нет", btn_size: P.bsep ? "" : nm(P.bh) + "×" + nm(P.bw) };
     return { stamp, address: ax.address.trim(), contact: ax.contact.trim(), worker: acc.name || "", scheme: "А", stops: ax.n, dsh_same: !ax.diff && !P.sdiff, common,
       thresholds: [], nashchelnik: [], cable: {}, openings };
   }
