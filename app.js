@@ -592,9 +592,54 @@
       if (f.k === "dims2") { const a = document.getElementById("f" + i + "a"), b = document.getElementById("f" + i + "b"); if (a && b) formDraft[f.p] = [a.value, b.value]; }
     });
   }
+  /* ---------- мои наборы: схема, цвет, табло, загиб, кнопка (хранятся в телефоне) ---------- */
+  const SET_KEYS = ["scheme", "common.color", "common.ind_on", "common.ind_where", "common.ind_size", "common.bend_mode", "common.bend", "common.btn_sep", "common.btn_all", "common.btn_floors", "common.btn_side", "common.btn_height", "common.btn_size"];
+  const loadSets = () => { try { const x = JSON.parse(localStorage.getItem("zamer_sets") || "[]"); return Array.isArray(x) ? x : []; } catch (e) { return []; } };
+  const saveSets = x => { try { localStorage.setItem("zamer_sets", JSON.stringify(x)); } catch (e) {} };
+  function setSummary(v) {
+    const g = k => v[k] || "", p = [];
+    if (g("scheme")) p.push("Схема " + g("scheme")); p.push(g("common.color") || "RAL 7035");
+    p.push(g("common.ind_on") === "Нет" ? "без табло" : "табло " + (g("common.ind_where") === "Только на 1 этаже" ? "1 этаж" : "все этажи") + (g("common.ind_size") ? " " + g("common.ind_size") : ""));
+    p.push((g("common.bend_mode") === "Без учёта загиба" ? "без учёта загиба" : "с учётом загиба") + (g("common.bend") !== "" ? " " + g("common.bend") + " мм" : ""));
+    p.push(g("common.btn_sep") === "Да" ? "кнопка отдельно стоящая" : "кнопка " + [g("common.btn_all") === "Не на всех этажах" ? "эт. " + g("common.btn_floors") : "", (g("common.btn_side") || "").toLowerCase(), g("common.btn_height") ? g("common.btn_height") + " мм от пола" : "", g("common.btn_size")].filter(Boolean).join(", "));
+    return p.join(" · ");
+  }
+  function curSetValues(s) {
+    snapForm(s); const v = {};
+    SET_KEYS.forEach(k => { let x = formDraft[k] !== undefined ? formDraft[k] : getP(order, k); if (Array.isArray(x)) x = x[0] && x[1] ? String(x[0]).replace(",", ".") + "×" + String(x[1]).replace(",", ".") : ""; if (x != null && x !== "") v[k] = String(x).trim(); });
+    return v;
+  }
+  function setsHtml() {
+    const l = loadSets(); if (!l.length) return "";
+    return `<div class="sets"><h3 class="fh">Мои наборы</h3><p class="hint">Нажмите на набор: схема, цвет, табло, загиб и кнопка заполнятся сами. Их можно поменять ниже.</p><div class="setrow">${l.map((x, i) => `<span class="setchip"><button type="button" data-setuse="${i}">${esc(x.name)}</button><button type="button" class="setdel" data-setdel="${i}" aria-label="Удалить набор ${esc(x.name)}">×</button></span>`).join("")}</div></div>`;
+  }
+  function applySet(i, s) {
+    const x = loadSets()[i]; if (!x || !s) return;
+    snapForm(s);
+    Object.keys(x.v).forEach(k => { if (SET_KEYS.indexOf(k) < 0) return; let val = x.v[k]; if (k === "common.bend" || k === "common.btn_height") { const n = Number(String(val).replace(",", ".")); val = isFinite(n) ? n : val; } setP(order, k, val); delete formDraft[k]; });
+    save(); wizardView.last = undefined; toast("Набор «" + x.name + "» применён. Проверьте ответы и введите размеры проёма.");
+  }
+  function setSaveSheet(s) {
+    const v = curSetValues(s), o = document.createElement("div"); o.className = "sheet";
+    o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Сохранить как набор</h3><p>${esc(setSummary(v))}</p><label class="plab" for="setnm">Название набора</label><div class="field"><input id="setnm" autocomplete="off" maxlength="40" placeholder="Например, Казань, ЖК Мира"></div><p class="err" id="setne"></p><button class="btn" type="button" data-q="go">Сохранить</button><button class="btn ghost" type="button" data-q="no">Отмена</button></div>`;
+    const go = () => {
+      const nm = o.querySelector("#setnm").value.trim(); if (!nm) { o.querySelector("#setne").textContent = "Введите название"; return; }
+      const l = loadSets(), j = l.findIndex(x => x.name.toLowerCase() === nm.toLowerCase()), item = { name: nm, v };
+      if (j > -1) l[j] = item; else l.push(item); saveSets(l); o.remove(); toast(j > -1 ? "Набор «" + nm + "» обновлён" : "Набор «" + nm + "» сохранён. Он появится вверху этого шага.");
+    };
+    o.addEventListener("click", ev => { if (ev.target === o || ev.target.closest("[data-q=no]")) return o.remove(); if (ev.target.closest("[data-q=go]")) go(); });
+    o.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); go(); } });
+    document.body.appendChild(o); setTimeout(() => { const i = o.querySelector("#setnm"); if (i) i.focus(); }, 60);
+  }
+  function setDelSheet(i) {
+    const x = loadSets()[i]; if (!x) return; const o = document.createElement("div"); o.className = "sheet";
+    o.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true"><h3>Удалить набор «${esc(x.name)}»?</h3><p>${esc(setSummary(x.v))}</p><p>Замеры, сделанные с этим набором, не изменятся.</p><button class="btn" type="button" data-q="go">Удалить</button><button class="btn ghost" type="button" data-q="no">Отмена</button></div>`;
+    o.addEventListener("click", ev => { if (ev.target === o || ev.target.closest("[data-q=no]")) return o.remove(); if (ev.target.closest("[data-q=go]")) { const l = loadSets(); l.splice(i, 1); saveSets(l); o.remove(); const s = buildList()[pos]; snapForm(s); toast("Набор «" + x.name + "» удалён"); } });
+    document.body.appendChild(o);
+  }
   function formHtml(s) {
     if (formDraft.__s !== s.p) formDraft = { __s: s.p };
-    return (s.sch ? schemeBlock() : "") + `<div class="form">` + s.fields.map((f, i) => {
+    return (s.sch ? setsHtml() + schemeBlock() : "") + `<div class="form">` + s.fields.map((f, i) => {
       if (!fvis(s, f)) return "";
       if (f.k === "h") return `<h3 class="fh">${esc(f.label)}</h3>`;
       const v = getP(order, f.p);
@@ -608,7 +653,7 @@
       }
       const raw = formDraft[f.p] !== undefined ? formDraft[f.p] : (v == null ? "" : String(v).replace(".", ","));
       return `<label class="plab">${esc(f.label)}</label><div class="field"><input id="f${i}" inputmode="${f.k === "floors" ? "text" : f.k === "int" ? "numeric" : "decimal"}" enterkeyhint="next" placeholder="${esc(f.ph || "")}" value="${esc(raw)}">${f.unit ? `<span class="u">${f.unit}</span>` : ""}</div>`;
-    }).join("") + `</div>`;
+    }).join("") + (s.sch ? `<button type="button" class="btn ghost setsave" data-setsave="1">Сохранить эти ответы как набор</button>` : "") + `</div>`;
   }
   function tglHtml0(p, lab, on) { return `<button class="tgl${on ? " on" : ""}" role="switch" aria-checked="${on}" data-ftg="${esc(p)}"><span>${esc(lab)}</span><i class="sw2"><b></b></i></button>`; }
   function submitForm(s) {
@@ -896,7 +941,7 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
       <div class="chip">${esc(pdfCache ? pdfCache.name : "")}</div></div></main>
       <footer class="act"><button class="btn" data-a="finish">На главный экран</button><button class="btn ghost" data-a="backrev">Вернуться к заявке</button></footer>`;
   }
-  const APP_VERSION = "V.2-13";
+  const APP_VERSION = "V.2-14";
   function menuView() {
     shell("Меню", null, `<div class="card">${LIM && acc.session ? `<div class="sum"><span><b>${esc(acc.name || "Аккаунт")}</b> (номер ${esc(acc.id)})</span><span>Осталось замеров: ${left()}</span></div>` : ""}<button class="btn sec" data-a="home">На главный экран</button><button class="btn sec" data-a="close">Вернуться к заявке</button><button class="btn sec" data-a="snd">${sndOn ? "🔊 Звуки: включены" : "🔇 Звуки: выключены"}</button><button class="btn sec" data-a="supply">Связь со снабжением</button><button class="btn sec" data-a="install">Инструкция по установке</button><button class="btn sec" data-a="refresh">Обновить приложение</button><button class="btn sec danger" data-a="new">Начать новую заявку</button>${LIM && acc.session ? `<button class="btn sec" data-a="logout">Выйти из аккаунта</button>` : ""}</div><p class="ver">Версия приложения: <b>${APP_VERSION}</b></p>`, "", { menu: false });
   }
@@ -1861,6 +1906,9 @@ ${A ? `<line x1="22" y1="30" x2="22" y2="56" class="dm" marker-start="url(#ar${k
     if (b.dataset.cvs) { b.classList.toggle("on"); cvData.skills = [...document.querySelectorAll("[data-cvs].on")].map(x => x.dataset.cvs); return; }
     if (b.dataset.cvtg) { const on = !b.classList.contains("on"); b.classList.toggle("on", on); b.setAttribute("aria-checked", on); cvData.trip = on ? "Да" : "Нет"; return; }
     if (b.dataset.supp) { supplyView.app = b.dataset.supp; document.querySelectorAll("[data-supp]").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); return; }
+    if (b.dataset.setuse !== undefined) return applySet(+b.dataset.setuse, buildList()[pos]);
+    if (b.dataset.setdel !== undefined) { snapForm(buildList()[pos]); return setDelSheet(+b.dataset.setdel); }
+    if (b.dataset.setsave) return setSaveSheet(buildList()[pos]);
     if (b.dataset.a) return act(b.dataset.a);
     if (b.dataset.pick !== undefined) {
       const l = buildList(), s = l[pos];
