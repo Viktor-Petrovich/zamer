@@ -1,23 +1,23 @@
-const CACHE = "zamer-v115";
-const FILES = ["./", "./index.html", "./app.js", "./pdf.js", "./field.js", "./fonts/Inter-Regular.woff", "./fonts/Inter-SemiBold.woff", "./fonts/Inter-ExtraBold.woff", "./config.js", "./sheet.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
-  "./icon-512-mask.png", "./form_p1.jpg", "./scheme_A.png", "./scheme_B.png"];
-self.addEventListener("install", e => {
-  // config.js может отсутствовать: не даём одной ошибке сломать установку
-  e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => c.add(f).catch(() => {})))));
-  self.skipWaiting();
+const CACHE = "zamer-dsh-flat-v12";
+const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
-self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-  self.clients.claim();
+self.addEventListener("activate", event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
-// Сначала сеть (всегда свежая версия), без сети берём из кэша
-self.addEventListener("fetch", e => {
-  const r = e.request;
-  if (r.method !== "GET" || !r.url.startsWith(self.location.origin)) return;
-  e.respondWith(fetch(r, { cache: "no-cache" }).then(res => {
-    if (res && res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(r, cp)); }
-    return res;
-  }).catch(() => caches.match(r, { ignoreSearch: true }).then(m => m || caches.match("./index.html"))));
+self.addEventListener("fetch", event => {
+  const request = event.request;
+  if (request.method !== "GET" || new URL(request.url).origin !== location.origin) return;
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request, { cache: "no-cache" }).then(response => {
+      if (response.ok) caches.open(CACHE).then(cache => cache.put("./index.html", response.clone()));
+      return response;
+    }).catch(() => caches.match("./index.html")));
+    return;
+  }
+  event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
+    if (response.ok) caches.open(CACHE).then(cache => cache.put(request, response.clone()));
+    return response;
+  })));
 });
-
-self.addEventListener("notificationclick", e => { e.notification.close(); e.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then(l => l.length ? l[0].focus() : clients.openWindow("./"))); });
